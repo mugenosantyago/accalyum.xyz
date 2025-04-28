@@ -40,13 +40,70 @@ export default function MutualFundingPage() {
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
+  // Add direct Alephium connection state
+  const [directAlephiumConnection, setDirectAlephiumConnection] = useState({
+    connected: false,
+    address: ""
+  })
+
   // Force check connection when component mounts
   useEffect(() => {
     if (checkConnection) {
       console.log("MutualFundingPage: Initial connection check")
       checkConnection()
     }
+    
+    // Add direct Alephium extension check
+    const checkAlephiumExtension = async () => {
+      if (typeof window !== "undefined" && window.alephium) {
+        try {
+          const isConnected = await window.alephium.isConnected()
+          if (isConnected) {
+            const address = await window.alephium.getSelectedAccount()
+            if (address) {
+              console.log("Direct Alephium extension connection found:", address)
+              setDirectAlephiumConnection({
+                connected: true,
+                address
+              })
+            }
+          }
+        } catch (error) {
+          console.error("Error checking Alephium extension:", error)
+        }
+      }
+    }
+    
+    checkAlephiumExtension()
+    
+    // Also listen for Alephium's account changes
+    const handleAccountsChanged = () => {
+      console.log("Accounts changed, rechecking Alephium connection")
+      checkAlephiumExtension()
+    }
+    
+    if (typeof window !== "undefined" && window.alephium && window.alephium.on) {
+      try {
+        window.alephium.on("accountsChanged", handleAccountsChanged)
+      } catch (error) {
+        console.error("Error setting up Alephium event listener:", error)
+      }
+    }
+    
+    return () => {
+      if (typeof window !== "undefined" && window.alephium && window.alephium.off) {
+        try {
+          window.alephium.off("accountsChanged", handleAccountsChanged)
+        } catch (error) {
+          console.error("Error removing Alephium event listener:", error)
+        }
+      }
+    }
   }, [checkConnection])
+
+  // Get the effective connected state - either from hook or direct Alephium
+  const effectiveIsConnected = isConnected || directAlephiumConnection.connected
+  const effectiveAddress = address || directAlephiumConnection.address
 
   // Initialize initiatives with loading state
   useEffect(() => {
@@ -151,7 +208,7 @@ export default function MutualFundingPage() {
   const handleDonate = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!isConnected) {
+    if (!effectiveIsConnected) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet first",
@@ -199,7 +256,7 @@ export default function MutualFundingPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: address,
+          from: effectiveAddress,
           to: initiative.treasuryAddress,
           amount: donationAmount,
           type: "donation",
@@ -309,7 +366,7 @@ export default function MutualFundingPage() {
                   }
                 >
                   {({ isConnected, address }) =>
-                    isConnected && address ? (
+                    effectiveIsConnected && effectiveAddress ? (
                       <form onSubmit={handleDonate} className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="project">{t("selectedInitiative")}</Label>
