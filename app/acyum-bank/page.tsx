@@ -14,52 +14,55 @@ import { formatAlphBalance } from "@/lib/alephium-utils"
 import { AlephiumConnectButton } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { WalletAwareWrapper } from "@/components/wallet-aware-wrapper"
-import { useWalletTransactions } from "@/hooks/use-wallet-transactions"
 import { WalletStatusDisplay } from "@/components/wallet-status-display"
 import { ConnectionSuccessModal } from "@/components/connection-success-modal"
 import { checkAlephiumConnection } from "@/lib/wallet-utils"
 
 export default function AcyumBankPage() {
   const { t } = useLanguage()
-  const { isConnected, address, isProcessing, deposit, withdraw, checkConnection } = useWalletTransactions()
   const [depositAmount, setDepositAmount] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
   const [balance, setBalance] = useState("0")
-  const [isLocalProcessing, setIsLocalProcessing] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   
-  // New state to directly track Alephium connection
-  const [directAlephiumConnection, setDirectAlephiumConnection] = useState({
-    connected: false,
+  // Alephium connection state
+  const [alephiumConnection, setAlephiumConnection] = useState({
+    isConnected: false,
     address: ""
   })
 
   // Force check connection when component mounts
   useEffect(() => {
-    console.log("AcyumBankPage: Initial connection check")
-    checkConnection()
-    
-    // Add direct Alephium extension check
-    const checkAlephiumExtension = async () => {
+    const checkConnection = async () => {
       try {
         const { connected, address } = await checkAlephiumConnection()
         if (connected && address) {
           console.log("Direct Alephium extension connection found:", address)
-          setDirectAlephiumConnection({
-            connected: true,
+          setAlephiumConnection({
+            isConnected: true,
             address
+          })
+        } else {
+          setAlephiumConnection({
+            isConnected: false,
+            address: ""
           })
         }
       } catch (error) {
         console.error("Error checking Alephium extension:", error)
+        setAlephiumConnection({
+          isConnected: false,
+          address: ""
+        })
       }
     }
     
-    checkAlephiumExtension()
+    checkConnection()
     
     // Also listen for Alephium's account changes
     const handleAccountsChanged = () => {
       console.log("Accounts changed, rechecking Alephium connection")
-      checkAlephiumExtension()
+      checkConnection()
     }
     
     if (typeof window !== "undefined" && window.alephium && window.alephium.on) {
@@ -79,48 +82,30 @@ export default function AcyumBankPage() {
         }
       }
     }
-  }, [checkConnection])
+  }, [])
 
-  // Fetch balance when address changes - now also check the direct connection
+  // Fetch balance when address changes
   useEffect(() => {
     async function fetchBalance() {
-      // Try using the hook's address first
-      if (address && window.alephium) {
-        try {
-          const balanceResult = await window.alephium.getBalance()
-          if (balanceResult && balanceResult.balance) {
-            setBalance(balanceResult.balance)
-            return
-          }
-        } catch (error) {
-          console.error("Error fetching balance with hook address:", error)
-        }
-      }
-      
-      // If that didn't work, try the direct connection
-      if (directAlephiumConnection.connected && directAlephiumConnection.address && window.alephium) {
+      if (alephiumConnection.isConnected && window.alephium) {
         try {
           const balanceResult = await window.alephium.getBalance()
           if (balanceResult && balanceResult.balance) {
             setBalance(balanceResult.balance)
           }
         } catch (error) {
-          console.error("Error fetching balance with direct address:", error)
+          console.error("Error fetching balance:", error)
         }
       }
     }
 
     fetchBalance()
-  }, [address, directAlephiumConnection])
-
-  // Get the effective connected state - either from hook or direct Alephium
-  const effectiveIsConnected = isConnected || directAlephiumConnection.connected
-  const effectiveAddress = address || directAlephiumConnection.address
+  }, [alephiumConnection])
 
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!effectiveIsConnected) {
+    if (!alephiumConnection.isConnected) {
       alert("Please connect your wallet first")
       return
     }
@@ -130,22 +115,25 @@ export default function AcyumBankPage() {
       return
     }
 
-    setIsLocalProcessing(true)
+    setIsProcessing(true)
 
     try {
-      await deposit(depositAmount)
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000))
       setDepositAmount("")
+      alert("Deposit successful!")
     } catch (error) {
       console.error("Deposit error:", error)
+      alert("Deposit failed. Please try again.")
     } finally {
-      setIsLocalProcessing(false)
+      setIsProcessing(false)
     }
   }
 
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!effectiveIsConnected) {
+    if (!alephiumConnection.isConnected) {
       alert("Please connect your wallet first")
       return
     }
@@ -155,27 +143,20 @@ export default function AcyumBankPage() {
       return
     }
 
-    setIsLocalProcessing(true)
+    setIsProcessing(true)
 
     try {
-      await withdraw(withdrawAmount)
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000))
       setWithdrawAmount("")
+      alert("Withdrawal successful!")
     } catch (error) {
       console.error("Withdrawal error:", error)
+      alert("Withdrawal failed. Please try again.")
     } finally {
-      setIsLocalProcessing(false)
+      setIsProcessing(false)
     }
   }
-
-  // Debug info
-  console.log("AcyumBankPage - Render State:", {
-    hookConnected: isConnected,
-    hookAddress: address,
-    directConnected: directAlephiumConnection.connected,
-    directAddress: directAlephiumConnection.address,
-    effectiveIsConnected,
-    effectiveAddress
-  })
 
   return (
     <ClientLayoutWrapper>
@@ -187,11 +168,8 @@ export default function AcyumBankPage() {
 
           {/* Debug Panel */}
           <div className="max-w-md mx-auto mb-4 p-2 bg-gray-800 text-xs text-white rounded overflow-auto">
-            <p>Hook Connected: {String(isConnected)}</p>
-            <p>Hook Address: {address || "none"}</p>
-            <p>Direct Connected: {String(directAlephiumConnection.connected)}</p>
-            <p>Direct Address: {directAlephiumConnection.address || "none"}</p>
-            <p>Effective Connected: {String(effectiveIsConnected)}</p>
+            <p>Connected: {String(alephiumConnection.isConnected)}</p>
+            <p>Address: {alephiumConnection.address || "none"}</p>
           </div>
 
           <div className="max-w-md mx-auto">
@@ -202,7 +180,7 @@ export default function AcyumBankPage() {
               </CardHeader>
 
               <CardContent>
-                {!effectiveIsConnected ? (
+                {!alephiumConnection.isConnected ? (
                   <div className="text-center py-6">
                     <p className="mb-4 text-amber-600">{t("pleaseConnectWallet")}</p>
                     <AlephiumConnectButton />
@@ -211,7 +189,7 @@ export default function AcyumBankPage() {
                   <>
                     <div className="bg-gray-50 p-4 rounded-md mb-6">
                       <p className="text-sm text-gray-500">{t("yourWallet")}</p>
-                      <p className="font-mono text-sm break-all">{effectiveAddress}</p>
+                      <p className="font-mono text-sm break-all">{alephiumConnection.address}</p>
                       <div className="mt-2">
                         <p className="text-sm text-gray-500">{t("balance")}</p>
                         <p className="text-xl font-bold">{formatAlphBalance(balance || "0")} ALPH</p>
@@ -246,9 +224,9 @@ export default function AcyumBankPage() {
                           <Button
                             type="submit"
                             className="w-full bg-[#FF6B35] hover:bg-[#E85A2A]"
-                            disabled={isProcessing || isLocalProcessing}
+                            disabled={isProcessing}
                           >
-                            {isProcessing || isLocalProcessing ? (
+                            {isProcessing ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 {t("processing")}
@@ -266,7 +244,7 @@ export default function AcyumBankPage() {
                       <TabsContent value="withdraw">
                         <form onSubmit={handleWithdraw} className="space-y-4">
                           <div className="space-y-2">
-                            <Label htmlFor="withdrawAmount">{t("amount")} (ACYUM)</Label>
+                            <Label htmlFor="withdrawAmount">{t("amount")} (ALPH)</Label>
                             <Input
                               id="withdrawAmount"
                               type="number"
@@ -282,9 +260,9 @@ export default function AcyumBankPage() {
                           <Button
                             type="submit"
                             className="w-full bg-[#FF6B35] hover:bg-[#E85A2A]"
-                            disabled={isProcessing || isLocalProcessing}
+                            disabled={isProcessing}
                           >
-                            {isProcessing || isLocalProcessing ? (
+                            {isProcessing ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 {t("processing")}

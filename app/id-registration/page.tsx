@@ -2,17 +2,17 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useWallet } from "@/hooks/use-wallet"
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useLanguage } from "@/components/language-provider"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
+import { checkAlephiumConnection } from "@/lib/wallet-utils"
 
 // Political parties array
 const politicalParties = [
@@ -34,7 +34,6 @@ const politicalParties = [
 ]
 
 export default function IDRegistrationPage() {
-  const { isConnected, address } = useWallet()
   const { toast } = useToast()
   const { t } = useLanguage()
   const [username, setUsername] = useState("")
@@ -46,6 +45,65 @@ export default function IDRegistrationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isRegistered, setIsRegistered] = useState(false)
   const [isPending, setIsPending] = useState(false)
+  
+  // Alephium connection state
+  const [alephiumConnection, setAlephiumConnection] = useState({
+    isConnected: false,
+    address: ""
+  })
+
+  // Check Alephium connection on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const { connected, address } = await checkAlephiumConnection()
+        if (connected && address) {
+          console.log("Direct Alephium connection detected:", address)
+          setAlephiumConnection({
+            isConnected: true,
+            address
+          })
+        } else {
+          setAlephiumConnection({
+            isConnected: false,
+            address: ""
+          })
+        }
+      } catch (error) {
+        console.error("Error checking Alephium connection:", error)
+        setAlephiumConnection({
+          isConnected: false,
+          address: ""
+        })
+      }
+    }
+    
+    checkConnection()
+    
+    // Also listen for Alephium's account changes
+    const handleAccountsChanged = () => {
+      console.log("Accounts changed, rechecking Alephium connection")
+      checkConnection()
+    }
+    
+    if (typeof window !== "undefined" && window.alephium && window.alephium.on) {
+      try {
+        window.alephium.on("accountsChanged", handleAccountsChanged)
+      } catch (error) {
+        console.error("Error setting up Alephium event listener:", error)
+      }
+    }
+    
+    return () => {
+      if (typeof window !== "undefined" && window.alephium && window.alephium.off) {
+        try {
+          window.alephium.off("accountsChanged", handleAccountsChanged)
+        } catch (error) {
+          console.error("Error removing Alephium event listener:", error)
+        }
+      }
+    }
+  }, [])
 
   const handlePartyChange = (value: string, checked: boolean) => {
     if (checked) {
@@ -67,7 +125,7 @@ export default function IDRegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!isConnected) {
+    if (!alephiumConnection.isConnected) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet first",
@@ -118,7 +176,7 @@ export default function IDRegistrationPage() {
         body: JSON.stringify({
           username,
           email,
-          address,
+          address: alephiumConnection.address,
           firstName,
           lastName,
           addressDigits,
@@ -192,7 +250,7 @@ export default function IDRegistrationPage() {
 
                     <div>
                       <Label className="text-gray-300">{t("walletAddress")}</Label>
-                      <p className="text-gray-100 font-medium text-sm break-all">{address}</p>
+                      <p className="text-gray-100 font-medium text-sm break-all">{alephiumConnection.address}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -219,7 +277,7 @@ export default function IDRegistrationPage() {
 
                     <div>
                       <Label className="text-gray-300">{t("walletAddress")}</Label>
-                      <p className="text-gray-100 font-medium text-sm break-all">{address}</p>
+                      <p className="text-gray-100 font-medium text-sm break-all">{alephiumConnection.address}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -304,9 +362,9 @@ export default function IDRegistrationPage() {
 
                     <div className="space-y-2">
                       <Label className="text-gray-300">{t("walletAddress")}</Label>
-                      {isConnected ? (
+                      {alephiumConnection.isConnected ? (
                         <p className="text-sm break-all bg-gray-800 p-2 rounded border border-gray-700 text-gray-300">
-                          {address}
+                          {alephiumConnection.address}
                         </p>
                       ) : (
                         <p className="text-sm text-amber-500">{t("connectWalletFirst")}</p>
@@ -342,7 +400,7 @@ export default function IDRegistrationPage() {
                     <Button
                       type="submit"
                       className="w-full bg-[#FF6B35] hover:bg-[#E85A2A]"
-                      disabled={!isConnected || isSubmitting}
+                      disabled={!alephiumConnection.isConnected || isSubmitting}
                     >
                       {isSubmitting ? (
                         <>

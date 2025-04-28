@@ -16,7 +16,6 @@ import { NodeProvider } from "@alephium/web3"
 import { AlephiumConnectButton } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { WalletAwareWrapper } from "@/components/wallet-aware-wrapper"
-import { useReliableWallet } from "@/hooks/use-reliable-wallet"
 import { ConnectionSuccessModal } from "@/components/connection-success-modal"
 import { checkAlephiumConnection } from "@/lib/wallet-utils"
 
@@ -33,7 +32,6 @@ interface Initiative {
 
 export default function MutualFundingPage() {
   const { t } = useLanguage()
-  const { isConnected, address, checkConnection } = useReliableWallet()
   const [donationAmount, setDonationAmount] = useState("")
   const [selectedInitiative, setSelectedInitiative] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -41,7 +39,7 @@ export default function MutualFundingPage() {
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
-  // Add direct Alephium connection state
+  // Alephium connection state
   const [directAlephiumConnection, setDirectAlephiumConnection] = useState({
     connected: false,
     address: ""
@@ -49,12 +47,7 @@ export default function MutualFundingPage() {
 
   // Force check connection when component mounts
   useEffect(() => {
-    if (checkConnection) {
-      console.log("MutualFundingPage: Initial connection check")
-      checkConnection()
-    }
-    
-    // Add direct Alephium extension check
+    // Check Alephium extension
     const checkAlephiumExtension = async () => {
       try {
         const { connected, address } = await checkAlephiumConnection()
@@ -95,11 +88,11 @@ export default function MutualFundingPage() {
         }
       }
     }
-  }, [checkConnection])
+  }, [])
 
-  // Get the effective connected state - either from hook or direct Alephium
-  const effectiveIsConnected = isConnected || directAlephiumConnection.connected
-  const effectiveAddress = address || directAlephiumConnection.address
+  // Get the effective connected state
+  const effectiveIsConnected = directAlephiumConnection.connected
+  const effectiveAddress = directAlephiumConnection.address
 
   // Initialize initiatives with loading state
   useEffect(() => {

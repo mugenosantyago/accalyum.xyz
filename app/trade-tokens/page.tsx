@@ -13,18 +13,16 @@ import { useLanguage } from "@/components/language-provider"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { AlephiumConnectButton } from "@/components/alephium-connect-button"
 import { WalletAwareWrapper } from "@/components/wallet-aware-wrapper"
-import { useReliableWallet } from "@/hooks/use-reliable-wallet"
 import { ConnectionSuccessModal } from "@/components/connection-success-modal"
 import { checkAlephiumConnection } from "@/lib/wallet-utils"
 
 export default function TradeTokensPage() {
   const { t } = useLanguage()
-  const { isConnected, address, connect, checkConnection } = useReliableWallet()
   const [buyAmount, setBuyAmount] = useState("")
   const [sellAmount, setSellAmount] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   
-  // Add direct Alephium connection state
+  // Alephium connection state
   const [directAlephiumConnection, setDirectAlephiumConnection] = useState({
     connected: false,
     address: ""
@@ -32,12 +30,7 @@ export default function TradeTokensPage() {
 
   // Force check connection when component mounts
   useEffect(() => {
-    if (checkConnection) {
-      console.log("TradeTokensPage: Initial connection check")
-      checkConnection()
-    }
-    
-    // Add direct Alephium extension check
+    // Check Alephium extension
     const checkAlephiumExtension = async () => {
       try {
         const { connected, address } = await checkAlephiumConnection()
@@ -78,11 +71,11 @@ export default function TradeTokensPage() {
         }
       }
     }
-  }, [checkConnection])
+  }, [])
   
-  // Get the effective connected state - either from hook or direct Alephium
-  const effectiveIsConnected = isConnected || directAlephiumConnection.connected
-  const effectiveAddress = address || directAlephiumConnection.address
+  // Get the effective connected state 
+  const effectiveIsConnected = directAlephiumConnection.connected
+  const effectiveAddress = directAlephiumConnection.address
 
   const handleBuy = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -150,11 +143,8 @@ export default function TradeTokensPage() {
           
           {/* Debug Panel */}
           <div className="max-w-md mx-auto mb-4 p-2 bg-gray-800 text-xs text-white rounded overflow-auto">
-            <p>Hook Connected: {String(isConnected)}</p>
-            <p>Hook Address: {address || "none"}</p>
             <p>Direct Connected: {String(directAlephiumConnection.connected)}</p>
             <p>Direct Address: {directAlephiumConnection.address || "none"}</p>
-            <p>Effective Connected: {String(effectiveIsConnected)}</p>
           </div>
 
           <div className="max-w-md mx-auto">

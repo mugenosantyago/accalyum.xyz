@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useWallet } from "@/hooks/use-wallet"
 import { ArrowDown, ArrowUp, Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { AlephiumConnectButton } from "@/components/alephium-connect-button"
@@ -21,28 +20,36 @@ interface Transaction {
 }
 
 export default function TransactionsPage() {
-  const { isConnected, address } = useWallet()
   const { t } = useLanguage()
   const [isLoading, setIsLoading] = useState(true)
   const [transactions, setTransactions] = useState<Transaction[]>([])
 
-  // Add direct connection state
-  const [directAddress, setDirectAddress] = useState<string | null>(null)
-  const [isDirectlyChecking, setIsDirectlyChecking] = useState(true)
+  // Alephium connection state
+  const [alephiumConnection, setAlephiumConnection] = useState({
+    isConnected: false,
+    address: ""
+  })
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true)
 
   // Check direct connection on mount using Alephium's native methods
   useEffect(() => {
     const checkConnection = async () => {
-      setIsDirectlyChecking(true)
+      setIsCheckingConnection(true)
       try {
         const { connected, address } = await checkAlephiumConnection()
         console.log("Direct Alephium connection check result:", connected, address)
-        setDirectAddress(address)
+        setAlephiumConnection({
+          isConnected: connected,
+          address: address || ""
+        })
       } catch (error) {
         console.error("Error checking direct connection:", error)
-        setDirectAddress(null)
+        setAlephiumConnection({
+          isConnected: false,
+          address: ""
+        })
       } finally {
-        setIsDirectlyChecking(false)
+        setIsCheckingConnection(false)
       }
     }
 
@@ -75,9 +82,8 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     const fetchTransactions = async () => {
-      // Only fetch if we have an address (either from our hook or direct check)
-      const effectiveAddress = address || directAddress
-      if (!effectiveAddress) {
+      // Only fetch if we have an address
+      if (!alephiumConnection.address) {
         setIsLoading(false)
         return
       }
@@ -121,25 +127,17 @@ export default function TransactionsPage() {
     }
 
     fetchTransactions()
-  }, [isConnected, address, directAddress])
+  }, [alephiumConnection.address])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleString()
   }
 
-  // Determine if we should show the connected UI
-  // IMPORTANT: We're being very aggressive here - if we have ANY address, show the connected UI
-  const effectiveAddress = address || directAddress
-  const showConnectedUI = !!effectiveAddress
-
   // Debug information
   console.log("Rendering TransactionsPage with state:", {
-    isConnected,
-    address,
-    directAddress,
-    showConnectedUI,
-    isDirectlyChecking,
+    alephiumConnection,
+    isCheckingConnection,
   })
 
   return (
@@ -159,18 +157,16 @@ export default function TransactionsPage() {
             <CardContent>
               {/* Debug information */}
               <div className="mb-4 p-2 bg-gray-800 text-xs text-white rounded overflow-auto">
-                <p>Debug: isConnected={String(isConnected)}</p>
-                <p>Debug: address={address || "null"}</p>
-                <p>Debug: directAddress={directAddress || "null"}</p>
-                <p>Debug: showConnectedUI={String(showConnectedUI)}</p>
+                <p>Debug: isConnected={String(alephiumConnection.isConnected)}</p>
+                <p>Debug: address={alephiumConnection.address || "null"}</p>
               </div>
 
-              {isDirectlyChecking ? (
+              {isCheckingConnection ? (
                 <div className="text-center py-6">
                   <Loader2 className="h-8 w-8 animate-spin text-[#FF6B35] mx-auto mb-4" />
                   <p>Checking wallet connection...</p>
                 </div>
-              ) : !showConnectedUI ? (
+              ) : !alephiumConnection.isConnected ? (
                 <div className="text-center py-6">
                   <p className="mb-4 text-amber-600">{t("viewYourTransactions")}</p>
                   <AlephiumConnectButton />
