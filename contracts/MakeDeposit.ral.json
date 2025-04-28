@@ -1,0 +1,19 @@
+{
+  "version": "v3.11.2",
+  "name": "MakeDeposit",
+  "bytecodeTemplate": "01010300000009b4{1}a2b4{1}0e0c{0}0100",
+  "fieldsSig": {
+    "names": ["depositContract", "amount"],
+    "types": ["Deposit", "U256"],
+    "isMutable": [false, false]
+  },
+  "functions": [
+    {
+      "name": "main",
+      "paramNames": [],
+      "paramTypes": [],
+      "paramIsMutable": [],
+      "returnTypes": []
+    }
+  ]
+}

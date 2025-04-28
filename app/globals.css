@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 210 40% 98%;
+    --card: 0 0% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 20.5 90.2% 48.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 20.5 90.2% 48.2%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 20.5 90.2% 48.2%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 20.5 90.2% 48.2%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image: radial-gradient(circle at center, rgba(40, 40, 40, 0.3) 0%, rgba(0, 0, 0, 0.5) 100%);
+    background-attachment: fixed;
+  }
+}
+
+/* Modern navigation styles */
+.nav-button {
+  @apply relative flex items-center justify-center w-14 h-14 rounded-lg bg-gray-900 border border-gray-800 
+         hover:bg-[#FF6B35] hover:border-[#FF6B35] transition-all duration-300 overflow-hidden;
+}
+
+.nav-button .icon {
+  @apply absolute transition-all duration-300 text-gray-400 group-hover:text-white;
+}
+
+.nav-button .label {
+  @apply absolute opacity-0 transform translate-y-8 transition-all duration-300 text-sm font-medium;
+}
+
+.nav-button:hover .icon {
+  @apply transform -translate-y-8 text-white;
+}
+
+.nav-button:hover .label {
+  @apply opacity-100 transform translate-y-0 text-white;
+}
+
+/* Modern card styles */
+.modern-card {
+  @apply bg-gray-900 border border-gray-800 rounded-xl overflow-hidden transition-all duration-300
+         hover:border-[#FF6B35]/30 hover:shadow-lg hover:shadow-[#FF6B35]/10;
+}
+
+/* Gradient text */
+.gradient-text {
+  @apply text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B35] to-[#FFD700];
+}
+
+/* Animated background */
+.animated-bg {
+  background: linear-gradient(
+    -45deg,
+    rgba(40, 40, 40, 0.3),
+    rgba(20, 20, 20, 0.5),
+    rgba(30, 30, 30, 0.4),
+    rgba(10, 10, 10, 0.6)
+  );
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Glowing effect */
+.glow {
+  box-shadow: 0 0 15px rgba(255, 107, 53, 0.5);
+}
+
+.glow-text {
+  text-shadow: 0 0 10px rgba(255, 107, 53, 0.7);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #121212;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff6b35;
+}
