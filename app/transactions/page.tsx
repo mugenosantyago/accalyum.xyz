@@ -8,7 +8,7 @@ import { ArrowDown, ArrowUp, Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { AlephiumConnectButton } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
-import { checkDirectWalletConnection } from "@/lib/wallet-utils"
+import { checkAlephiumConnection } from "@/lib/wallet-utils"
 import { ConnectionSuccessModal } from "@/components/connection-success-modal"
 
 interface Transaction {
@@ -35,16 +35,9 @@ export default function TransactionsPage() {
     const checkConnection = async () => {
       setIsDirectlyChecking(true)
       try {
-        if (typeof window !== "undefined" && window.alephium) {
-          const isConnected = await window.alephium.isConnected()
-          if (isConnected) {
-            const addr = await window.alephium.getSelectedAccount()
-            console.log("Direct wallet connection found:", addr)
-            setDirectAddress(addr)
-          } else {
-            setDirectAddress(null)
-          }
-        }
+        const { connected, address } = await checkAlephiumConnection()
+        console.log("Direct Alephium connection check result:", connected, address)
+        setDirectAddress(address)
       } catch (error) {
         console.error("Error checking direct connection:", error)
         setDirectAddress(null)

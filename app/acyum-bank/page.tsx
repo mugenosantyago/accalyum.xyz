@@ -17,6 +17,7 @@ import { WalletAwareWrapper } from "@/components/wallet-aware-wrapper"
 import { useWalletTransactions } from "@/hooks/use-wallet-transactions"
 import { WalletStatusDisplay } from "@/components/wallet-status-display"
 import { ConnectionSuccessModal } from "@/components/connection-success-modal"
+import { checkAlephiumConnection } from "@/lib/wallet-utils"
 
 export default function AcyumBankPage() {
   const { t } = useLanguage()
@@ -39,22 +40,17 @@ export default function AcyumBankPage() {
     
     // Add direct Alephium extension check
     const checkAlephiumExtension = async () => {
-      if (typeof window !== "undefined" && window.alephium) {
-        try {
-          const isConnected = await window.alephium.isConnected()
-          if (isConnected) {
-            const address = await window.alephium.getSelectedAccount()
-            if (address) {
-              console.log("Direct Alephium extension connection found:", address)
-              setDirectAlephiumConnection({
-                connected: true,
-                address
-              })
-            }
-          }
-        } catch (error) {
-          console.error("Error checking Alephium extension:", error)
+      try {
+        const { connected, address } = await checkAlephiumConnection()
+        if (connected && address) {
+          console.log("Direct Alephium extension connection found:", address)
+          setDirectAlephiumConnection({
+            connected: true,
+            address
+          })
         }
+      } catch (error) {
+        console.error("Error checking Alephium extension:", error)
       }
     }
     

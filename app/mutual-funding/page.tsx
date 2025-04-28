@@ -18,6 +18,7 @@ import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { WalletAwareWrapper } from "@/components/wallet-aware-wrapper"
 import { useReliableWallet } from "@/hooks/use-reliable-wallet"
 import { ConnectionSuccessModal } from "@/components/connection-success-modal"
+import { checkAlephiumConnection } from "@/lib/wallet-utils"
 
 interface Initiative {
   id: string
@@ -55,22 +56,17 @@ export default function MutualFundingPage() {
     
     // Add direct Alephium extension check
     const checkAlephiumExtension = async () => {
-      if (typeof window !== "undefined" && window.alephium) {
-        try {
-          const isConnected = await window.alephium.isConnected()
-          if (isConnected) {
-            const address = await window.alephium.getSelectedAccount()
-            if (address) {
-              console.log("Direct Alephium extension connection found:", address)
-              setDirectAlephiumConnection({
-                connected: true,
-                address
-              })
-            }
-          }
-        } catch (error) {
-          console.error("Error checking Alephium extension:", error)
+      try {
+        const { connected, address } = await checkAlephiumConnection()
+        if (connected && address) {
+          console.log("Direct Alephium extension connection found:", address)
+          setDirectAlephiumConnection({
+            connected: true,
+            address
+          })
         }
+      } catch (error) {
+        console.error("Error checking Alephium extension:", error)
       }
     }
     

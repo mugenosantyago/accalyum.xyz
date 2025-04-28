@@ -11,45 +11,36 @@ export function useWalletDetector() {
   const checkConnection = useCallback(async () => {
     setIsLoading(true)
     try {
-      // First check direct window.alephium access
+      // Only use Alephium's native extension API
       if (typeof window !== "undefined" && window.alephium) {
         try {
           const connected = await window.alephium.isConnected()
           if (connected) {
             const addr = await window.alephium.getSelectedAccount()
             if (addr) {
-              logger.info("useWalletDetector: Direct connection detected:", addr)
+              logger.info("useWalletDetector: Connection detected:", addr)
               setIsConnected(true)
               setAddress(addr)
               setIsLoading(false)
               return
             }
           }
+          
+          // If we get here with window.alephium but no connection, reset state
+          setIsConnected(false)
+          setAddress(null)
         } catch (err) {
-          logger.warn("useWalletDetector: Error checking direct connection:", err)
+          logger.warn("useWalletDetector: Error checking Alephium connection:", err)
+          setIsConnected(false)
+          setAddress(null)
         }
+      } else {
+        // No window.alephium available
+        setIsConnected(false)
+        setAddress(null)
       }
-
-      // Then check our custom WalletConnector
-      try {
-        const { WalletConnector } = await import("@/lib/alephium")
-        const walletInfo = await WalletConnector.getConnectedWallet()
-        if (walletInfo && walletInfo.address) {
-          logger.info("useWalletDetector: WalletConnector connection detected:", walletInfo.address)
-          setIsConnected(true)
-          setAddress(walletInfo.address)
-          setIsLoading(false)
-          return
-        }
-      } catch (err) {
-        logger.warn("useWalletDetector: Error checking WalletConnector:", err)
-      }
-
-      // If we get here, no connection was found
-      setIsConnected(false)
-      setAddress(null)
     } catch (error) {
-      logger.error("useWalletDetector: Error checking wallet connection:", error)
+      logger.error("useWalletDetector: Error in connection check:", error)
       setIsConnected(false)
       setAddress(null)
     } finally {
@@ -58,24 +49,31 @@ export function useWalletDetector() {
   }, [])
 
   useEffect(() => {
+    // Initial check
     checkConnection()
 
-    // Set up polling to check connection status
-    const intervalId = setInterval(checkConnection, 3000)
-
-    // Listen for custom wallet connection events
-    const handleWalletConnectionChanged = (event: any) => {
-      const { connected, address: newAddress } = event.detail || {}
-      logger.info("useWalletDetector: Wallet connection changed event:", { connected, newAddress })
-      setIsConnected(!!connected)
-      setAddress(newAddress || null)
+    // Listen for Alephium's accountsChanged event
+    const handleAccountsChanged = () => {
+      logger.info("useWalletDetector: Accounts changed, rechecking connection")
+      checkConnection()
     }
 
-    window.addEventListener("walletConnectionChanged", handleWalletConnectionChanged)
+    if (typeof window !== "undefined" && window.alephium && window.alephium.on) {
+      try {
+        window.alephium.on("accountsChanged", handleAccountsChanged)
+      } catch (error) {
+        logger.error("useWalletDetector: Error setting up Alephium event listener:", error)
+      }
+    }
 
     return () => {
-      clearInterval(intervalId)
-      window.removeEventListener("walletConnectionChanged", handleWalletConnectionChanged)
+      if (typeof window !== "undefined" && window.alephium && window.alephium.off) {
+        try {
+          window.alephium.off("accountsChanged", handleAccountsChanged)
+        } catch (error) {
+          logger.error("useWalletDetector: Error removing Alephium event listener:", error)
+        }
+      }
     }
   }, [checkConnection])
 

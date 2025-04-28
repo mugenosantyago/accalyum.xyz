@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2 } from "lucide-react"
-import { formatAddress } from "@/lib/wallet-utils"
+import { formatAddress, checkAlephiumConnection } from "@/lib/wallet-utils"
 
 interface ConnectionSuccessModalProps {
   featureName: string
@@ -20,28 +20,29 @@ export function ConnectionSuccessModal({ featureName }: ConnectionSuccessModalPr
 
     // Check for wallet connection using Alephium's native methods
     const checkConnection = async () => {
-      // Only use window.alephium, which is Alephium's official extension interface
-      if (typeof window !== "undefined" && window.alephium) {
-        try {
-          const isConnected = await window.alephium.isConnected()
-          if (isConnected) {
-            const address = await window.alephium.getSelectedAccount()
-            if (address && !hasShownModal) {
-              console.log(`ConnectionSuccessModal: Connection detected for ${featureName}`, address)
-              setConnectedAddress(address)
-              setIsOpen(true)
-              setHasShownModal(true)
-              return
-            }
-          }
-        } catch (error) {
-          console.error("Error checking connection:", error)
+      try {
+        // Use our simplified function to check for connection
+        const { connected, address } = await checkAlephiumConnection()
+        
+        if (connected && address && !hasShownModal) {
+          console.log(`ConnectionSuccessModal: Connection detected for ${featureName}`, address)
+          setConnectedAddress(address)
+          setIsOpen(true)
+          setHasShownModal(true)
+          return
         }
-      }
-      
-      // If not connected yet, try again soon
-      if (!hasShownModal) {
-        checkTimeout = setTimeout(checkConnection, 1000)
+        
+        // If not connected yet, try again soon
+        if (!hasShownModal) {
+          checkTimeout = setTimeout(checkConnection, 1000)
+        }
+      } catch (error) {
+        console.error("Error checking connection:", error)
+        
+        // If there was an error, try again soon
+        if (!hasShownModal) {
+          checkTimeout = setTimeout(checkConnection, 1000)
+        }
       }
     }
 
