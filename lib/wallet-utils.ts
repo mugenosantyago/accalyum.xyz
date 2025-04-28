@@ -27,6 +27,8 @@ export async function checkDirectWalletConnection(): Promise<{ connected: boolea
 
         if (address) {
           console.log("Direct connection confirmed with address:", address)
+          // Dispatch the event to notify listeners about the connection
+          triggerWalletConnectionEvent(true, address)
           return { connected: true, address }
         }
       }
@@ -38,6 +40,20 @@ export async function checkDirectWalletConnection(): Promise<{ connected: boolea
   }
 
   return result
+}
+
+/**
+ * Trigger the wallet connection changed event
+ */
+export function triggerWalletConnectionEvent(connected: boolean, address: string | null): void {
+  if (typeof window === "undefined") return
+  
+  console.log("Dispatching walletConnectionChanged event:", { connected, address })
+  window.dispatchEvent(
+    new CustomEvent("walletConnectionChanged", {
+      detail: { connected, address },
+    })
+  )
 }
 
 /**

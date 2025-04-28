@@ -16,6 +16,7 @@ import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { WalletAwareWrapper } from "@/components/wallet-aware-wrapper"
 import { useWalletTransactions } from "@/hooks/use-wallet-transactions"
 import { WalletStatusDisplay } from "@/components/wallet-status-display"
+import { ConnectionSuccessModal } from "@/components/connection-success-modal"
 
 export default function AcyumBankPage() {
   const { t } = useLanguage()
@@ -104,6 +105,8 @@ export default function AcyumBankPage() {
       <div className="min-h-screen flex flex-col">
         <main className="flex-grow container mx-auto py-12 px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">{t("acyumBank")}</h1>
+
+          <ConnectionSuccessModal featureName="ACYUM Bank" />
 
           <div className="max-w-md mx-auto">
             <Card>

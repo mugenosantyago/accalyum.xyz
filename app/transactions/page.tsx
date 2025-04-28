@@ -9,6 +9,7 @@ import { useLanguage } from "@/components/language-provider"
 import { AlephiumConnectButton } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { checkDirectWalletConnection } from "@/lib/wallet-utils"
+import { ConnectionSuccessModal } from "@/components/connection-success-modal"
 
 interface Transaction {
   id: string
@@ -125,6 +126,9 @@ export default function TransactionsPage() {
       <div className="min-h-screen flex flex-col">
         <main className="flex-grow container mx-auto py-12 px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">{t("transactionHistory")}</h1>
+
+          {/* Add ConnectionSuccessModal here */}
+          <ConnectionSuccessModal featureName="Transaction History" />
 
           <Card>
             <CardHeader>

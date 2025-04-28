@@ -17,6 +17,7 @@ import { AlephiumConnectButton } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { WalletAwareWrapper } from "@/components/wallet-aware-wrapper"
 import { useReliableWallet } from "@/hooks/use-reliable-wallet"
+import { ConnectionSuccessModal } from "@/components/connection-success-modal"
 
 interface Initiative {
   id: string
@@ -238,6 +239,8 @@ export default function MutualFundingPage() {
       <div className="min-h-screen flex flex-col">
         <main className="flex-grow container mx-auto py-12 px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">{t("mutualFunding")}</h1>
+
+          <ConnectionSuccessModal featureName="Mutual Funding" />
 
           <div className="max-w-4xl mx-auto">
             <div className="mb-8">

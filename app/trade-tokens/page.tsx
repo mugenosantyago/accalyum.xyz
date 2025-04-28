@@ -14,6 +14,7 @@ import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { AlephiumConnectButton } from "@/components/alephium-connect-button"
 import { WalletAwareWrapper } from "@/components/wallet-aware-wrapper"
 import { useReliableWallet } from "@/hooks/use-reliable-wallet"
+import { ConnectionSuccessModal } from "@/components/connection-success-modal"
 
 export default function TradeTokensPage() {
   const { t } = useLanguage()
@@ -91,6 +92,8 @@ export default function TradeTokensPage() {
       <div className="min-h-screen flex flex-col">
         <main className="flex-grow container mx-auto py-12 px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">{t("tradeTokens")}</h1>
+
+          <ConnectionSuccessModal featureName="Token Exchange" />
 
           <div className="max-w-md mx-auto">
             <Card>
