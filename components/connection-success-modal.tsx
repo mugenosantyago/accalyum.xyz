@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button"
 import { CheckCircle2 } from "lucide-react"
 import { formatAddress } from "@/lib/wallet-utils"
-import { checkDirectWalletConnection } from "@/lib/wallet-utils"
 
 interface ConnectionSuccessModalProps {
   featureName: string
@@ -19,16 +18,16 @@ export function ConnectionSuccessModal({ featureName }: ConnectionSuccessModalPr
   useEffect(() => {
     let checkTimeout: NodeJS.Timeout
 
-    // Check for wallet connection
+    // Check for wallet connection using Alephium's native methods
     const checkConnection = async () => {
-      // First try direct extension method
+      // Only use window.alephium, which is Alephium's official extension interface
       if (typeof window !== "undefined" && window.alephium) {
         try {
           const isConnected = await window.alephium.isConnected()
           if (isConnected) {
             const address = await window.alephium.getSelectedAccount()
             if (address && !hasShownModal) {
-              console.log(`ConnectionSuccessModal: Direct connection detected for ${featureName}`, address)
+              console.log(`ConnectionSuccessModal: Connection detected for ${featureName}`, address)
               setConnectedAddress(address)
               setIsOpen(true)
               setHasShownModal(true)
@@ -36,22 +35,8 @@ export function ConnectionSuccessModal({ featureName }: ConnectionSuccessModalPr
             }
           }
         } catch (error) {
-          console.error("Error checking direct connection:", error)
+          console.error("Error checking connection:", error)
         }
-      }
-
-      // Then try utility function
-      try {
-        const { connected, address } = await checkDirectWalletConnection()
-        if (connected && address && !hasShownModal) {
-          console.log(`ConnectionSuccessModal: Utility detected connection for ${featureName}`, address)
-          setConnectedAddress(address)
-          setIsOpen(true)
-          setHasShownModal(true)
-          return
-        }
-      } catch (error) {
-        console.error("Error checking connection via utility:", error)
       }
       
       // If not connected yet, try again soon
@@ -63,22 +48,29 @@ export function ConnectionSuccessModal({ featureName }: ConnectionSuccessModalPr
     // Start checking
     checkConnection()
 
-    // Listen for custom wallet connection events
-    const handleWalletConnectionChanged = (event: any) => {
-      const { connected, address } = event.detail || {}
-      if (connected && address && !hasShownModal) {
-        console.log(`ConnectionSuccessModal: Connection event for ${featureName}`, address)
-        setConnectedAddress(address)
-        setIsOpen(true)
-        setHasShownModal(true)
+    // Listen for Alephium's accountsChanged event
+    const handleAccountsChanged = () => {
+      console.log("Accounts changed event detected")
+      checkConnection()
+    }
+
+    if (typeof window !== "undefined" && window.alephium && window.alephium.on) {
+      try {
+        window.alephium.on("accountsChanged", handleAccountsChanged)
+      } catch (error) {
+        console.error("Error setting up Alephium event listener:", error)
       }
     }
 
-    window.addEventListener("walletConnectionChanged", handleWalletConnectionChanged)
-
     return () => {
       clearTimeout(checkTimeout)
-      window.removeEventListener("walletConnectionChanged", handleWalletConnectionChanged)
+      if (typeof window !== "undefined" && window.alephium && window.alephium.off) {
+        try {
+          window.alephium.off("accountsChanged", handleAccountsChanged)
+        } catch (error) {
+          console.error("Error removing Alephium event listener:", error)
+        }
+      }
     }
   }, [featureName, hasShownModal])
 

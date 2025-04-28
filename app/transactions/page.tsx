@@ -30,16 +30,24 @@ export default function TransactionsPage() {
   const [directAddress, setDirectAddress] = useState<string | null>(null)
   const [isDirectlyChecking, setIsDirectlyChecking] = useState(true)
 
-  // Check direct connection on mount
+  // Check direct connection on mount using Alephium's native methods
   useEffect(() => {
     const checkConnection = async () => {
       setIsDirectlyChecking(true)
       try {
-        const result = await checkDirectWalletConnection()
-        console.log("Transactions page - Direct connection check result:", result)
-        setDirectAddress(result.address)
+        if (typeof window !== "undefined" && window.alephium) {
+          const isConnected = await window.alephium.isConnected()
+          if (isConnected) {
+            const addr = await window.alephium.getSelectedAccount()
+            console.log("Direct wallet connection found:", addr)
+            setDirectAddress(addr)
+          } else {
+            setDirectAddress(null)
+          }
+        }
       } catch (error) {
         console.error("Error checking direct connection:", error)
+        setDirectAddress(null)
       } finally {
         setIsDirectlyChecking(false)
       }
@@ -47,9 +55,29 @@ export default function TransactionsPage() {
 
     checkConnection()
 
-    // Set up periodic checks
-    const intervalId = setInterval(checkConnection, 5000)
-    return () => clearInterval(intervalId)
+    // Listen for Alephium's accountsChanged event
+    const handleAccountsChanged = () => {
+      console.log("Accounts changed event detected, rechecking connection")
+      checkConnection()
+    }
+
+    if (typeof window !== "undefined" && window.alephium && window.alephium.on) {
+      try {
+        window.alephium.on("accountsChanged", handleAccountsChanged)
+      } catch (error) {
+        console.error("Error setting up Alephium event listener:", error)
+      }
+    }
+
+    return () => {
+      if (typeof window !== "undefined" && window.alephium && window.alephium.off) {
+        try {
+          window.alephium.off("accountsChanged", handleAccountsChanged)
+        } catch (error) {
+          console.error("Error removing Alephium event listener:", error)
+        }
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -127,7 +155,6 @@ export default function TransactionsPage() {
         <main className="flex-grow container mx-auto py-12 px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">{t("transactionHistory")}</h1>
 
-          {/* Add ConnectionSuccessModal here */}
           <ConnectionSuccessModal featureName="Transaction History" />
 
           <Card>
@@ -196,8 +223,8 @@ export default function TransactionsPage() {
                               tx.status === "completed"
                                 ? "bg-green-100 text-green-800"
                                 : tx.status === "pending"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-red-100 text-red-800"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
                             }`}
                           >
                             {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}

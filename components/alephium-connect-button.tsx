@@ -7,7 +7,6 @@ import { useWallet } from "@/hooks/use-wallet"
 import { useWalletDetector } from "@/hooks/use-wallet-detector"
 import { logger } from "@/lib/logger"
 import dynamic from "next/dynamic"
-import { triggerWalletConnectionEvent } from "@/lib/wallet-utils"
 
 // Dynamically import the official AlephiumConnectButton with no SSR
 const DynamicAlephiumConnectButton = dynamic(
@@ -32,14 +31,6 @@ function FallbackButton() {
   useEffect(() => {
     checkConnection()
   }, [checkConnection])
-
-  // Add this effect to trigger the event when connection is detected
-  useEffect(() => {
-    if (isConnected && address) {
-      logger.info("FallbackButton: Detected connection, triggering event", address)
-      triggerWalletConnectionEvent(true, address)
-    }
-  }, [isConnected, address])
 
   const handleConnect = async () => {
     setIsLoading(true)
@@ -94,14 +85,6 @@ export function AlephiumConnectButton() {
     setMounted(true)
     checkConnection()
   }, [checkConnection])
-
-  // Add this effect to trigger the event when connection is detected
-  useEffect(() => {
-    if (isConnected && address) {
-      logger.info("AlephiumConnectButton: Detected connection, triggering event", address)
-      triggerWalletConnectionEvent(true, address)
-    }
-  }, [isConnected, address])
 
   // During SSR or if not mounted yet, return a simple button
   if (!mounted) {
