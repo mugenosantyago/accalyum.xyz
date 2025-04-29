@@ -19,12 +19,17 @@ import { logger } from "@/lib/logger"
 import { MakeDeposit, Withdraw } from "@/contracts/scripts"
 import { config } from "@/lib/config"
 import { TokenFaucetInstance } from "@/artifacts/ts/TokenFaucet"
+import Image from 'next/image'
 
 // Constants and Interfaces (copied from original page.tsx)
 const ONE_ALPH = 10n ** 18n;
 const ALPH_TOKEN_ID = "0000000000000000000000000000000000000000000000000000000000000000";
 const DUST_AMOUNT = 10000n;
 const ACYUM_DECIMALS = 7; // Define decimals explicitly
+
+// Add sWEA constants, pulling from config or using placeholders
+const S_WEA_TOKEN_ID = config.alephium.sweaTokenIdHex ?? "YOUR_SWEA_TOKEN_ID_HEX";
+const S_WEA_DECIMALS = config.alephium.sweaDecimals ?? 18;
 
 interface CandySwapTokenData {
   id: string; 
@@ -98,10 +103,18 @@ export default function AcyumBankClient() {
   const { balance: alphBalanceWei, updateBalanceForTx } = useBalance();
   const displayAlphBalance = formatBigIntAmount(alphBalanceWei ?? 0n, 18, 4);
 
-  const acyumTokenId = config.alephium.acyumTokenId;
-  const acyumBalanceInfo = account?.tokenBalances?.find((token: { id: string; amount: bigint }) => token.id === acyumTokenId);
+  // Specify TokenBalance type
+  interface TokenBalance { id: string; amount: bigint; }
+
+  const acyumTokenId = config.alephium.acyumTokenIdHex;
+  const acyumBalanceInfo = account?.tokenBalances?.find((token: TokenBalance) => token.id === acyumTokenId);
   const acyumBalance = acyumBalanceInfo?.amount ?? 0n;
-  const displayAcyumBalance = formatBigIntAmount(acyumBalance, ACYUM_DECIMALS, 2);
+  const displayAcyumBalance = formatBigIntAmount(acyumBalance, config.alephium.acyumDecimals, 2);
+
+  // Get and format sWEA balance
+  const sweaBalanceInfo = account?.tokenBalances?.find((token: TokenBalance) => token.id === S_WEA_TOKEN_ID);
+  const sweaBalance = sweaBalanceInfo?.amount ?? 0n;
+  const displaySweaBalance = formatBigIntAmount(sweaBalance, S_WEA_DECIMALS, 2);
 
   const [acyumMarketData, setAcyumMarketData] = useState<CandySwapTokenData | null>(null);
   const [alphUsdPrice, setAlphUsdPrice] = useState<number | null>(null);
@@ -110,8 +123,8 @@ export default function AcyumBankClient() {
 
   const [depositAmount, setDepositAmount] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
-  const [depositTokenType, setDepositTokenType] = useState<"ALPH" | "ACYUM">("ALPH")
-  const [withdrawTokenType, setWithdrawTokenType] = useState<"ALPH" | "ACYUM">("ALPH")
+  const [depositTokenType, setDepositTokenType] = useState<"ALPH" | "ACYUM" | "sWEA">("ALPH")
+  const [withdrawTokenType, setWithdrawTokenType] = useState<"ALPH" | "ACYUM" | "sWEA">("ALPH")
   const [isProcessing, setIsProcessing] = useState(false)
   const [isFaucetProcessing, setIsFaucetProcessing] = useState(false)
 
@@ -294,14 +307,13 @@ export default function AcyumBankClient() {
   }, [address, isConnected]); 
 
   // --- Function to record transaction --- 
-  const recordTransaction = async (type: 'deposit' | 'withdraw', token: 'ALPH' | 'ACYUM', amountInSmallestUnit: bigint, txId: string) => {
-    if (!address) return; // Should not happen if called after successful tx
-    logger.info(`Recording ${type} transaction: ${amountInSmallestUnit} ${token} smallest units, TxID: ${txId}`);
+  const recordTransaction = async (type: 'deposit' | 'withdraw', token: 'ALPH' | 'ACYUM' | 'sWEA', amountInSmallestUnit: bigint, txId: string) => {
+    if (!address) return;
+    logger.info(`Recording ${type} transaction: ${amountInSmallestUnit} ${token} for ${address}, TxID: ${txId}`);
     try {
       const response = await fetch('/api/bank/record-tx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Send amount as string
         body: JSON.stringify({ address, type, token, amount: amountInSmallestUnit.toString(), txId }), 
       });
       if (!response.ok) {
@@ -309,22 +321,23 @@ export default function AcyumBankClient() {
         throw new Error(errorData.error || `API Error (${response.status})`);
       }
       logger.info("Transaction recorded successfully.");
-      // Re-fetch user bank balance after successful recording
+      // TODO: Update balance re-fetch logic to include sWEA once API supports it
       const fetchUserBankBalance = async () => {
         if (!address || !isConnected) return;
         logger.info(`Re-fetching bank balance ledger for user after ${type}: ${address}`);
         try {
           const response = await fetch(`/api/bank/balance/${address}`);
-          if (!response.ok) return; // Fail silently on re-fetch error
+          if (!response.ok) return;
           const data = await response.json();
           setUserBankAlphBalance(BigInt(data.alphBalance ?? '0'));
           setUserBankAcyumBalance(BigInt(data.acyumBalance ?? '0'));
-          logger.info(`User bank balance re-fetched: ALPH=${data.alphBalance}, ACYUM=${data.acyumBalance}`);
+          // setUserBankSweaBalance(BigInt(data.sweaBalance ?? '0')); // Needs API update
+          logger.info(`User bank balance re-fetched: ALPH=${data.alphBalance}, ACYUM=${data.acyumBalance}`); // Add sWEA log
         } catch (err) {
           logger.error("Failed to re-fetch user bank balance after recording tx:", err);
         }
       }
-      fetchUserBankBalance(); // Call the inner function
+      fetchUserBankBalance(); 
     } catch (error) {
       logger.error("Failed to record transaction:", error);
       toast({ title: "Ledger Sync Issue", description: `Could not record transaction off-chain: ${error instanceof Error ? error.message : 'Unknown error'}`, variant: "destructive" });
@@ -357,10 +370,7 @@ export default function AcyumBankClient() {
       logger.info(`ALPH Deposit successful: Tx ID ${result.txId}`);
       toast({ title: "ALPH Deposit Submitted", description: `Tx ID: ${result.txId}` });
       setDepositAmount("");
-
-      // Call recordTransaction with smallest unit amount
       recordTransaction('deposit', 'ALPH', depositAmountAttoAlph, result.txId);
-
     } catch (error) {
       logger.error("ALPH Deposit failed", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
@@ -380,7 +390,7 @@ export default function AcyumBankClient() {
     setIsProcessing(true);
     logger.info(`Attempting ACYUM deposit of ${depositAmount} to ${bankTreasuryAddress}...`);
     try {
-      const depositAmountSmallestUnit = BigInt(Math.floor(depositAmountNum * (10 ** ACYUM_DECIMALS)));
+      const depositAmountSmallestUnit = BigInt(Math.floor(depositAmountNum * (10 ** config.alephium.acyumDecimals)));
       
       const result = await signer.signAndSubmitTransferTx({
         signerAddress: address,
@@ -394,14 +404,51 @@ export default function AcyumBankClient() {
       logger.info(`ACYUM Deposit successful: Tx ID ${result.txId}`);
       toast({ title: "ACYUM Deposit Submitted", description: `Tx ID: ${result.txId}` });
       setDepositAmount("");
-
-      // Call recordTransaction with smallest unit amount
       recordTransaction('deposit', 'ACYUM', depositAmountSmallestUnit, result.txId);
-
     } catch (error) {
       logger.error("ACYUM Deposit failed", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       toast({ title: "ACYUM Deposit Failed", description: message, variant: "destructive" });
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  // Add sWEA deposit handler
+  const handleSweaDeposit = async () => {
+    if (!isConnected || !address || !signer) return toast({ title: "Error", description: "Wallet not connected", variant: "destructive" });
+    if (!bankTreasuryAddress) return toast({ title: "Error", description: "Bank treasury address not configured", variant: "destructive" });
+    // Check if sWEA is configured
+    if (!S_WEA_TOKEN_ID || S_WEA_TOKEN_ID === "YOUR_SWEA_TOKEN_ID_HEX") {
+        return toast({ title: "Error", description: "sWEA Token ID not configured", variant: "destructive" });
+    }
+    const depositAmountNum = Number.parseFloat(depositAmount);
+    if (!depositAmount || depositAmountNum <= 0) return toast({ title: "Error", description: "Invalid amount", variant: "destructive" });
+
+    setIsProcessing(true);
+    logger.info(`Attempting sWEA deposit of ${depositAmount} to ${bankTreasuryAddress}...`);
+    try {
+      const depositAmountSmallestUnit = BigInt(Math.floor(depositAmountNum * (10 ** S_WEA_DECIMALS)));
+      
+      const result = await signer.signAndSubmitTransferTx({
+        signerAddress: address,
+         destinations: [{
+           address: bankTreasuryAddress,
+           attoAlphAmount: DUST_AMOUNT, // Still need dust for token transfers
+           tokens: [{ id: S_WEA_TOKEN_ID, amount: depositAmountSmallestUnit }]
+         }]
+      });
+
+      logger.info(`sWEA Deposit successful: Tx ID ${result.txId}`);
+      toast({ title: "sWEA Deposit Submitted", description: `Tx ID: ${result.txId}` });
+      setDepositAmount("");
+
+      recordTransaction('deposit', 'sWEA', depositAmountSmallestUnit, result.txId);
+
+    } catch (error) {
+      logger.error("sWEA Deposit failed", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      toast({ title: "sWEA Deposit Failed", description: message, variant: "destructive" });
     } finally {
       setIsProcessing(false);
     }
@@ -495,8 +542,10 @@ export default function AcyumBankClient() {
     e.preventDefault();
     if (depositTokenType === 'ALPH') {
       handleAlphDeposit();
-    } else {
+    } else if (depositTokenType === 'ACYUM') {
       handleAcyumDeposit();
+    } else if (depositTokenType === 'sWEA') {
+      handleSweaDeposit(); // Call new handler
     }
   }
 
@@ -504,9 +553,9 @@ export default function AcyumBankClient() {
     e.preventDefault();
     if (withdrawTokenType === 'ALPH') {
       handleAlphWithdraw();
-    } else {
+    } else if (withdrawTokenType === 'ACYUM') {
       handleAcyumWithdraw();
-    }
+    } // Add sWEA withdraw logic here if needed later
   }
 
   const handleFaucet = async () => {
@@ -697,6 +746,20 @@ export default function AcyumBankClient() {
                                <input type="radio" id="deposit_acyum" name="deposit_token" value="ACYUM" checked={depositTokenType === 'ACYUM'} onChange={() => setDepositTokenType('ACYUM')} disabled={!acyumTokenId} />
                                <Label htmlFor="deposit_acyum" className={!acyumTokenId ? 'text-gray-500' : ''}>ACYUM</Label>
                              </div>
+                             <div className="flex items-center space-x-2">
+                               <input 
+                                 type="radio" 
+                                 id="deposit_swea" 
+                                 name="deposit_token" 
+                                 value="sWEA" 
+                                 checked={depositTokenType === 'sWEA'} 
+                                 onChange={() => setDepositTokenType('sWEA')} 
+                                 disabled={!S_WEA_TOKEN_ID || S_WEA_TOKEN_ID === 'YOUR_SWEA_TOKEN_ID_HEX'}
+                               />
+                               <Label htmlFor="deposit_swea" className={(!S_WEA_TOKEN_ID || S_WEA_TOKEN_ID === 'YOUR_SWEA_TOKEN_ID_HEX') ? 'text-gray-500 cursor-not-allowed' : ''}>
+                                 <span className="flex items-center gap-1"><Image src="/IMG_5086_Original.jpg" alt="sWEA" width={12} height={12} className="rounded-full"/> sWEA</span>
+                               </Label>
+                             </div>
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="depositAmount">{t("amount")} ({depositTokenType})</Label>
@@ -715,7 +778,7 @@ export default function AcyumBankClient() {
                           <Button
                             type="submit"
                             className="w-full bg-[#FF6B35] hover:bg-[#E85A2A]"
-                            disabled={isProcessing || !isConnected || !signer || (depositTokenType === 'ACYUM' && !acyumTokenId)}
+                            disabled={isProcessing || !isConnected || !signer || (depositTokenType === 'ACYUM' && !acyumTokenId) || (depositTokenType === 'sWEA' && !S_WEA_TOKEN_ID)}
                           >
                             {isProcessing ? (
                               <>
