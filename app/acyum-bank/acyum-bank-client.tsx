@@ -14,6 +14,7 @@ import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { WalletStatusDisplay } from "@/components/wallet-status-display"
 import { useToast } from "@/components/ui/use-toast"
 import { useWallet, useBalance } from "@alephium/web3-react"
+import { NodeProvider } from "@alephium/web3"
 import { logger } from "@/lib/logger"
 import { MakeDeposit, Withdraw } from "@/contracts/scripts"
 import { config } from "@/lib/config"
@@ -23,6 +24,7 @@ import { TokenFaucetInstance } from "@/artifacts/ts/TokenFaucet"
 const ONE_ALPH = 10n ** 18n;
 const ALPH_TOKEN_ID = "0000000000000000000000000000000000000000000000000000000000000000";
 const DUST_AMOUNT = 10000n;
+const ACYUM_DECIMALS = 7; // Define decimals explicitly
 
 interface CandySwapTokenData {
   id: string; 
@@ -32,6 +34,21 @@ interface CandySwapTokenData {
   orderBookPrice?: number; 
   totalVolume?: number;
   dailyVolume?: number;
+  // Note: CandySwap API doesn't provide token decimals here, we assume it for ACYUM
+}
+
+interface NodeTokenBalance {
+  id: string;
+  amount: string; // API returns amount as string
+}
+
+// Expected return type for getAddressesAddressBalance
+interface AddressBalance {
+  balance: string; // ALPH balance
+  tokenBalances?: NodeTokenBalance[]; // Optional array of token balances
+  lockedBalance?: string;
+  lockedTokenBalances?: NodeTokenBalance[];
+  // Other fields might exist depending on the node version
 }
 
 function formatBigIntAmount(amount: bigint | undefined | null, decimals: number, displayDecimals: number = 4): string {
@@ -84,7 +101,7 @@ export default function AcyumBankClient() {
   const acyumTokenId = config.alephium.acyumTokenId;
   const acyumBalanceInfo = account?.tokenBalances?.find((token: { id: string; amount: bigint }) => token.id === acyumTokenId);
   const acyumBalance = acyumBalanceInfo?.amount ?? 0n;
-  const displayAcyumBalance = formatBigIntAmount(acyumBalance, 7, 2);
+  const displayAcyumBalance = formatBigIntAmount(acyumBalance, ACYUM_DECIMALS, 2);
 
   const [acyumMarketData, setAcyumMarketData] = useState<CandySwapTokenData | null>(null);
   const [alphUsdPrice, setAlphUsdPrice] = useState<number | null>(null);
@@ -100,6 +117,18 @@ export default function AcyumBankClient() {
 
   const bankTreasuryAddress = config.treasury.communist;
   const faucetContractAddress = config.treasury.communist;
+  const providerUrl = config.alephium.providerUrl;
+
+  const [treasuryAlphBalance, setTreasuryAlphBalance] = useState<bigint | null>(null);
+  const [treasuryAcyumBalance, setTreasuryAcyumBalance] = useState<bigint | null>(null);
+  const [isTreasuryLoading, setIsTreasuryLoading] = useState(true);
+  const [treasuryError, setTreasuryError] = useState<string | null>(null);
+
+  // State for User's Net Deposited Bank Balance
+  const [userBankAlphBalance, setUserBankAlphBalance] = useState<bigint | null>(null);
+  const [userBankAcyumBalance, setUserBankAcyumBalance] = useState<bigint | null>(null);
+  const [isUserBankBalanceLoading, setIsUserBankBalanceLoading] = useState(false);
+  const [userBankBalanceError, setUserBankBalanceError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMarketData = async () => {
@@ -109,16 +138,16 @@ export default function AcyumBankClient() {
       setAlphUsdPrice(null);
 
       try {
-        const [candySwapResponse, coingeckoResponse] = await Promise.all([
-          fetch('https://candyswap.gg/api/token-list'),
+        const [tokenListRes, coingeckoRes] = await Promise.all([
+          fetch('/api/candyswap/token-list'),
           fetch('https://api.coingecko.com/api/v3/simple/price?ids=alephium&vs_currencies=usd')
         ]);
 
         // Process CandySwap data
-        if (!candySwapResponse.ok) {
-          throw new Error(`CandySwap API error! status: ${candySwapResponse.status}`);
+        if (!tokenListRes.ok) {
+          throw new Error(`CandySwap API error! status: ${tokenListRes.status}`);
         }
-        const candySwapData: CandySwapTokenData[] = await candySwapResponse.json();
+        const candySwapData: CandySwapTokenData[] = await tokenListRes.json();
         const acyumData = candySwapData.find(token => token.collectionTicker === acyumTokenId);
 
         if (acyumData) {
@@ -129,10 +158,10 @@ export default function AcyumBankClient() {
         }
 
         // Process CoinGecko data
-        if (!coingeckoResponse.ok) {
-          throw new Error(`CoinGecko API error! status: ${coingeckoResponse.status}`);
+        if (!coingeckoRes.ok) {
+          throw new Error(`CoinGecko API error! status: ${coingeckoRes.status}`);
         }
-        const coingeckoData = await coingeckoResponse.json();
+        const coingeckoData = await coingeckoRes.json();
         const price = coingeckoData?.alephium?.usd;
         if (typeof price === 'number') {
           setAlphUsdPrice(price);
@@ -163,6 +192,145 @@ export default function AcyumBankClient() {
     }
   }, [acyumTokenId]);
 
+  useEffect(() => {
+    let nodeProvider: NodeProvider | null = null;
+    if (providerUrl) { 
+       try {
+         nodeProvider = new NodeProvider(providerUrl);
+       } catch (initError) {
+         logger.error("Failed to initialize NodeProvider:", initError);
+         setTreasuryError("Failed to initialize connection to node.");
+         setIsTreasuryLoading(false);
+         return;
+       }
+    } else {
+        setTreasuryError("Provider URL not configured.");
+        setIsTreasuryLoading(false);
+        return;
+    }
+    
+    const fetchTreasuryBalances = async () => {
+      if (!nodeProvider || !bankTreasuryAddress) { 
+        if (!bankTreasuryAddress) setTreasuryError("Treasury address not configured.");
+        setIsTreasuryLoading(false);
+        return;
+      }
+
+      setIsTreasuryLoading(true);
+      setTreasuryError(null);
+      setTreasuryAlphBalance(null);
+      setTreasuryAcyumBalance(null);
+
+      try {
+        logger.info(`Fetching balances for treasury address: ${bankTreasuryAddress}`);
+        const balanceResult: AddressBalance = await nodeProvider.addresses.getAddressesAddressBalance(bankTreasuryAddress);
+        logger.debug("Treasury balance API result:", balanceResult);
+        
+        setTreasuryAlphBalance(BigInt(balanceResult.balance));
+
+        if (acyumTokenId && balanceResult.tokenBalances?.length) {
+          const treasuryAcyumInfo = balanceResult.tokenBalances.find((token: NodeTokenBalance) => token.id === acyumTokenId);
+          setTreasuryAcyumBalance(treasuryAcyumInfo ? BigInt(treasuryAcyumInfo.amount) : 0n);
+        } else {
+          setTreasuryAcyumBalance(0n);
+        }
+        logger.info(`Treasury balances set: ALPH=${treasuryAlphBalance ?? 'null'}, ACYUM=${treasuryAcyumBalance ?? 'null'}`);
+
+      } catch (error) {
+        logger.error(`Failed to fetch treasury balances for ${bankTreasuryAddress}:`, error);
+        const message = error instanceof Error ? error.message : "Could not load treasury balance";
+        setTreasuryError(message);
+        setTreasuryAlphBalance(null);
+        setTreasuryAcyumBalance(null);
+      } finally {
+        setIsTreasuryLoading(false);
+      }
+    };
+
+    fetchTreasuryBalances();
+    // Optional: Add a timer here to periodically refresh treasury balances if needed
+    // const intervalId = setInterval(fetchTreasuryBalances, 30000); // e.g., every 30 seconds
+    // return () => clearInterval(intervalId); 
+
+  }, [providerUrl, bankTreasuryAddress, acyumTokenId]);
+
+  // Effect to fetch User's Bank Balance (Uses API)
+  useEffect(() => {
+    const fetchUserBankBalance = async () => {
+      if (!address || !isConnected) {
+        setUserBankAlphBalance(null);
+        setUserBankAcyumBalance(null);
+        return;
+      }
+      setIsUserBankBalanceLoading(true);
+      setUserBankBalanceError(null);
+      logger.info(`Fetching bank balance ledger for user: ${address}`);
+      try {
+        // --- Call the actual API endpoint --- 
+        const response = await fetch(`/api/bank/balance/${address}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to fetch user bank balance: ${response.statusText}`);
+        }
+        const data = await response.json();
+        // API returns balances as strings, convert to BigInt
+        setUserBankAlphBalance(BigInt(data.alphBalance ?? '0'));
+        setUserBankAcyumBalance(BigInt(data.acyumBalance ?? '0'));
+        logger.info(`User bank balance fetched: ALPH=${data.alphBalance}, ACYUM=${data.acyumBalance}`);
+
+      } catch (error) {
+        logger.error("Failed to fetch user bank balance:", error);
+        const message = error instanceof Error ? error.message : "Could not load deposited balance";
+        setUserBankBalanceError(message);
+        setUserBankAlphBalance(null);
+        setUserBankAcyumBalance(null);
+      } finally {
+        setIsUserBankBalanceLoading(false);
+      }
+    };
+
+    fetchUserBankBalance();
+
+  }, [address, isConnected]); 
+
+  // --- Function to record transaction --- 
+  const recordTransaction = async (type: 'deposit' | 'withdraw', token: 'ALPH' | 'ACYUM', amountInSmallestUnit: bigint, txId: string) => {
+    if (!address) return; // Should not happen if called after successful tx
+    logger.info(`Recording ${type} transaction: ${amountInSmallestUnit} ${token} smallest units, TxID: ${txId}`);
+    try {
+      const response = await fetch('/api/bank/record-tx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Send amount as string
+        body: JSON.stringify({ address, type, token, amount: amountInSmallestUnit.toString(), txId }), 
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API Error (${response.status})`);
+      }
+      logger.info("Transaction recorded successfully.");
+      // Re-fetch user bank balance after successful recording
+      const fetchUserBankBalance = async () => {
+        if (!address || !isConnected) return;
+        logger.info(`Re-fetching bank balance ledger for user after ${type}: ${address}`);
+        try {
+          const response = await fetch(`/api/bank/balance/${address}`);
+          if (!response.ok) return; // Fail silently on re-fetch error
+          const data = await response.json();
+          setUserBankAlphBalance(BigInt(data.alphBalance ?? '0'));
+          setUserBankAcyumBalance(BigInt(data.acyumBalance ?? '0'));
+          logger.info(`User bank balance re-fetched: ALPH=${data.alphBalance}, ACYUM=${data.acyumBalance}`);
+        } catch (err) {
+          logger.error("Failed to re-fetch user bank balance after recording tx:", err);
+        }
+      }
+      fetchUserBankBalance(); // Call the inner function
+    } catch (error) {
+      logger.error("Failed to record transaction:", error);
+      toast({ title: "Ledger Sync Issue", description: `Could not record transaction off-chain: ${error instanceof Error ? error.message : 'Unknown error'}`, variant: "destructive" });
+    }
+  };
+
   const acyumUsdPrice = acyumMarketData?.orderBookPrice && alphUsdPrice
     ? acyumMarketData.orderBookPrice * alphUsdPrice
     : null;
@@ -189,6 +357,10 @@ export default function AcyumBankClient() {
       logger.info(`ALPH Deposit successful: Tx ID ${result.txId}`);
       toast({ title: "ALPH Deposit Submitted", description: `Tx ID: ${result.txId}` });
       setDepositAmount("");
+
+      // Call recordTransaction with smallest unit amount
+      recordTransaction('deposit', 'ALPH', depositAmountAttoAlph, result.txId);
+
     } catch (error) {
       logger.error("ALPH Deposit failed", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
@@ -208,7 +380,7 @@ export default function AcyumBankClient() {
     setIsProcessing(true);
     logger.info(`Attempting ACYUM deposit of ${depositAmount} to ${bankTreasuryAddress}...`);
     try {
-      const depositAmountSmallestUnit = BigInt(Math.floor(depositAmountNum * (10 ** 7)));
+      const depositAmountSmallestUnit = BigInt(Math.floor(depositAmountNum * (10 ** ACYUM_DECIMALS)));
       
       const result = await signer.signAndSubmitTransferTx({
         signerAddress: address,
@@ -222,6 +394,10 @@ export default function AcyumBankClient() {
       logger.info(`ACYUM Deposit successful: Tx ID ${result.txId}`);
       toast({ title: "ACYUM Deposit Submitted", description: `Tx ID: ${result.txId}` });
       setDepositAmount("");
+
+      // Call recordTransaction with smallest unit amount
+      recordTransaction('deposit', 'ACYUM', depositAmountSmallestUnit, result.txId);
+
     } catch (error) {
       logger.error("ACYUM Deposit failed", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
@@ -235,22 +411,34 @@ export default function AcyumBankClient() {
     if (!isConnected || !address || !signer) return toast({ title: "Error", description: "Wallet not connected", variant: "destructive" });
     const withdrawAmountNum = Number.parseFloat(withdrawAmount);
     if (!withdrawAmount || withdrawAmountNum <= 0) return toast({ title: "Error", description: "Invalid amount", variant: "destructive" });
+    const withdrawAmountAttoAlph = BigInt(Math.floor(withdrawAmountNum * Number(ONE_ALPH)));
+
+    // >> Add Check: withdrawal amount vs user's deposited balance <<
+    if (userBankAlphBalance === null && !isUserBankBalanceLoading) {
+       return toast({ title: "Error", description: "Cannot verify deposited balance. Please wait or refresh.", variant: "destructive" });
+    }
+    if (userBankAlphBalance !== null && withdrawAmountAttoAlph > userBankAlphBalance) {
+      const available = formatBigIntAmount(userBankAlphBalance, 18, 4);
+      return toast({ title: "Withdrawal Failed", description: `Withdrawal amount exceeds your deposited ALPH balance (${available} ALPH).`, variant: "destructive" });
+    }
 
     setIsProcessing(true);
     try {
       logger.info(`Attempting ALPH withdrawal of ${withdrawAmount}...`);
-      const withdrawAmountAttoAlph = BigInt(Math.floor(withdrawAmountNum * Number(ONE_ALPH)));
-      
       const result = await Withdraw.execute(signer, {
         initialFields: {
           token: ALPH_TOKEN_ID,
           amount: withdrawAmountAttoAlph
         },
-        attoAlphAmount: DUST_AMOUNT, // Assuming Withdraw script needs some ALPH
+        attoAlphAmount: DUST_AMOUNT,
       });
       logger.info(`ALPH Withdrawal successful: Tx ID ${result.txId}`);
       toast({ title: "ALPH Withdrawal Submitted", description: `Tx ID: ${result.txId}` });
       setWithdrawAmount("");
+
+      // Call recordTransaction with smallest unit amount
+      recordTransaction('withdraw', 'ALPH', withdrawAmountAttoAlph, result.txId);
+
     } catch (error) {
       logger.error("ALPH Withdrawal failed", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
@@ -265,24 +453,36 @@ export default function AcyumBankClient() {
     if (!acyumTokenId) return toast({ title: "Error", description: "ACYUM Token ID not configured", variant: "destructive" });
     const withdrawAmountNum = Number.parseFloat(withdrawAmount);
     if (!withdrawAmount || withdrawAmountNum <= 0) return toast({ title: "Error", description: "Invalid amount", variant: "destructive" });
+    const withdrawAmountSmallestUnit = BigInt(Math.floor(withdrawAmountNum * (10 ** ACYUM_DECIMALS)));
+
+    // >> Add Check: withdrawal amount vs user's deposited balance <<
+     if (userBankAcyumBalance === null && !isUserBankBalanceLoading) {
+       return toast({ title: "Error", description: "Cannot verify deposited balance. Please wait or refresh.", variant: "destructive" });
+    }
+    if (userBankAcyumBalance !== null && withdrawAmountSmallestUnit > userBankAcyumBalance) {
+      const available = formatBigIntAmount(userBankAcyumBalance, ACYUM_DECIMALS, 2);
+      return toast({ title: "Withdrawal Failed", description: `Withdrawal amount exceeds your deposited ACYUM balance (${available} ACYUM).`, variant: "destructive" });
+    }
 
     setIsProcessing(true);
     try {
       logger.info(`Attempting ACYUM withdrawal of ${withdrawAmount}...`);
-      const withdrawAmountSmallestUnit = BigInt(Math.floor(withdrawAmountNum * (10 ** 7)));
-      
       const result = await Withdraw.execute(signer, {
         initialFields: {
           token: acyumTokenId,
           amount: withdrawAmountSmallestUnit
         },
-        attoAlphAmount: DUST_AMOUNT, // Assuming Withdraw script needs some ALPH
+        attoAlphAmount: DUST_AMOUNT,
       });
 
       logger.info(`ACYUM Withdrawal successful: Tx ID ${result.txId}`);
       toast({ title: "ACYUM Withdrawal Submitted", description: `Tx ID: ${result.txId}` });
       setWithdrawAmount("");
-    } catch (error) {
+
+      // Call recordTransaction with smallest unit amount
+      recordTransaction('withdraw', 'ACYUM', withdrawAmountSmallestUnit, result.txId);
+
+    } catch (error) { // Ensure catch block exists
       logger.error("ACYUM Withdrawal failed", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       toast({ title: "ACYUM Withdrawal Failed", description: message, variant: "destructive" });
@@ -533,6 +733,29 @@ export default function AcyumBankClient() {
                       </TabsContent>
 
                       <TabsContent value="withdraw">
+                        {/* >> Add Display for Available Withdrawal Balance << */}
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
+                           <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-1">Available for Withdrawal:</h4>
+                           {isUserBankBalanceLoading ? (
+                              <span className="italic">Loading...</span>
+                           ) : userBankBalanceError ? (
+                              <span className="text-red-500">Error: {userBankBalanceError}</span>
+                           ) : (
+                              <>
+                                <div className="flex justify-between items-center">
+                                   <span>ALPH:</span>
+                                   {/* Ensure null check for display */}
+                                   <span className="font-mono">{userBankAlphBalance !== null ? formatBigIntAmount(userBankAlphBalance, 18, 4) : '-'}</span>
+                                </div>
+                                <div className="flex justify-between items-center mt-1">
+                                   <span>ACYUM:</span>
+                                   {/* Ensure null check for display */}
+                                   <span className="font-mono">{userBankAcyumBalance !== null ? formatBigIntAmount(userBankAcyumBalance, ACYUM_DECIMALS, 2) : '-'}</span>
+                                </div>
+                              </>
+                           )}
+                        </div>
+
                         <form onSubmit={handleWithdrawSubmit} className="space-y-4">
                           <div className="flex space-x-4 mb-2">
                              <Label>Token:</Label>

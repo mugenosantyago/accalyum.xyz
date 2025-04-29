@@ -45,70 +45,115 @@ export default function AcyumSwapClient() {
 
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const [acyumMarketData, setAcyumMarketData] = useState<CandySwapTokenData | null>(null);
+  const acyumTokenId = config.alephium.acyumTokenId;
+  const ACYUM_DECIMALS = 7; // Define decimals explicitly
+
+  // Rename state to hold raw data
+  const [rawAcyumMarketData, setRawAcyumMarketData] = useState<CandySwapTokenData | null>(null); 
   const [alphUsdPrice, setAlphUsdPrice] = useState<number | null>(null);
   const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
   const [marketDataError, setMarketDataError] = useState<string | null>(null);
 
-  const acyumTokenId = config.alephium.acyumTokenId;
+  // Calculated Rates State
+  const [acyumPerAlphRate, setAcyumPerAlphRate] = useState<number | undefined>(undefined);
+  const [alphPerAcyumRate, setAlphPerAcyumRate] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    const fetchMarketData = async () => {
-      setIsMarketDataLoading(true);
-      setMarketDataError(null);
+    async function fetchSwapData() {
+      setIsMarketDataLoading(true); 
+      setMarketDataError(null); 
+      setRawAcyumMarketData(null); // Reset raw data
+      setAlphUsdPrice(null); // Reset price
+      setAcyumPerAlphRate(undefined); // Reset rates
+      setAlphPerAcyumRate(undefined); // Reset rates
       try {
-        const [candySwapResponse, coingeckoResponse] = await Promise.all([
-          fetch('https://candyswap.gg/api/token-list'),
+        // Fetch token list via proxy and ALPH price from CoinGecko
+        const [tokenListRes, coingeckoRes] = await Promise.all([
+          fetch('/api/candyswap/token-list'), 
           fetch('https://api.coingecko.com/api/v3/simple/price?ids=alephium&vs_currencies=usd')
         ]);
 
-        if (!candySwapResponse.ok) throw new Error(`CandySwap API error! status: ${candySwapResponse.status}`);
-        const candySwapData: CandySwapTokenData[] = await candySwapResponse.json();
-        const acyumData = candySwapData.find(token => token.collectionTicker === acyumTokenId);
+        // Process CandySwap Token List
+        if (!tokenListRes.ok) {
+           const errorText = await tokenListRes.text();
+           logger.error(`CandySwap API Error: ${tokenListRes.status}`, errorText);
+           throw new Error(`CandySwap API error! status: ${tokenListRes.status}`);
+        }
+        const tokenListData: CandySwapTokenData[] = await tokenListRes.json();
+        const acyumData = tokenListData.find(token => token.collectionTicker === acyumTokenId);
         if (acyumData) {
-          setAcyumMarketData(acyumData);
+          setRawAcyumMarketData(acyumData); // Store raw data
           logger.info("Fetched ACYUM market data for Swap page:", acyumData);
+
+          // Calculate derived rates
+          if (typeof acyumData.orderBookPrice === 'number') {
+            const rawPrice = acyumData.orderBookPrice;
+            const calculatedAcyumPerAlph = rawPrice / (10 ** ACYUM_DECIMALS);
+            const calculatedAlphPerAcyum = 1 / calculatedAcyumPerAlph;
+            setAcyumPerAlphRate(calculatedAcyumPerAlph);
+            setAlphPerAcyumRate(calculatedAlphPerAcyum);
+            logger.info(`Calculated rates: ${calculatedAcyumPerAlph.toFixed(2)} ACYUM/ALPH, ${calculatedAlphPerAcyum.toFixed(6)} ALPH/ACYUM`);
+          } else {
+             logger.warn("ACYUM orderBookPrice is missing or not a number.");
+             setMarketDataError("ACYUM rate unavailable.");
+          }
+
         } else {
           logger.warn(`ACYUM token ID (${acyumTokenId}) not found in CandySwap API response.`);
+          setMarketDataError("ACYUM data not found on CandySwap."); 
         }
 
-        if (!coingeckoResponse.ok) throw new Error(`CoinGecko API error! status: ${coingeckoResponse.status}`);
-        const coingeckoData = await coingeckoResponse.json();
+        // Process CoinGecko Price Data
+        if (!coingeckoRes.ok) {
+           const errorText = await coingeckoRes.text();
+           logger.error(`CoinGecko API Error: ${coingeckoRes.status}`, errorText);
+           throw new Error(`CoinGecko API error! status: ${coingeckoRes.status}`);
+        }
+        const coingeckoData = await coingeckoRes.json();
         const price = coingeckoData?.alephium?.usd;
         if (typeof price === 'number') {
-          setAlphUsdPrice(price);
-          logger.info(`Fetched ALPH/USD price for Swap page: ${price}`);
+           setAlphUsdPrice(price);
+           logger.info(`Fetched ALPH/USD price for Swap page: ${price}`);
         } else {
-          throw new Error('Invalid data format from CoinGecko API');
+           logger.error('Invalid data format from CoinGecko API', coingeckoData);
+           throw new Error('Invalid price data format from CoinGecko API');
         }
         
-        if (!acyumData) setMarketDataError("ACYUM data not found on CandySwap.");
+        // Only clear generic market data error if both succeed and ACYUM data/rate was found
+        if (acyumData && acyumPerAlphRate !== undefined) { 
+           setMarketDataError(null); 
+        }
 
       } catch (error) {
         logger.error("Failed to fetch market data for Swap page:", error);
         const message = error instanceof Error ? error.message : "Failed to load market data";
-        setMarketDataError(message);
+        // Keep specific error if already set (e.g., ACYUM not found), otherwise set general fetch error
+        if (!marketDataError) { 
+          setMarketDataError(message);
+        }
       } finally {
         setIsMarketDataLoading(false);
       }
     };
-    if (acyumTokenId) fetchMarketData();
-    else {
+    if (acyumTokenId) {
+       fetchSwapData();
+    } else {
        setIsMarketDataLoading(false);
        setMarketDataError("ACYUM Token ID not configured.");
+       logger.warn("ACYUM Token ID not configured, skipping market data fetch.");
     }
-  }, [acyumTokenId]);
+  }, [acyumTokenId]); // Dependency array is correct
 
-  const acyumPerAlphRate = acyumMarketData?.orderBookPrice;
-  const alphPerAcyumRate = acyumPerAlphRate ? 1 / acyumPerAlphRate : undefined;
-
+  // Use calculated rates for output calculation
   useEffect(() => {
     const inputNum = parseFloat(inputAmount);
+    // Check if rates are calculated and valid numbers
     if (!isNaN(inputNum) && inputNum > 0 && acyumPerAlphRate !== undefined && alphPerAcyumRate !== undefined) {
       const calculatedOutput = isBuyingAcyum 
-        ? inputNum * acyumPerAlphRate 
-        : inputNum * alphPerAcyumRate;
-      setOutputAmount(calculatedOutput.toFixed(isBuyingAcyum ? 2 : 4));
+        ? inputNum * acyumPerAlphRate // ALPH input * (ACYUM/ALPH rate)
+        : inputNum * alphPerAcyumRate; // ACYUM input * (ALPH/ACYUM rate)
+      // Adjust precision based on output token
+      setOutputAmount(calculatedOutput.toFixed(isBuyingAcyum ? 2 : 6)); // More precision for ALPH output
     } else {
       setOutputAmount("");
     }
@@ -234,7 +279,7 @@ export default function AcyumSwapClient() {
                         {acyumPerAlphRate !== undefined && alphPerAcyumRate !== undefined ? (
                             <>
                                 <p>1 ALPH ≈ {acyumPerAlphRate.toFixed(2)} ACYUM</p>
-                                <p>1 ACYUM ≈ {alphPerAcyumRate.toFixed(4)} ALPH</p>
+                                <p>1 ACYUM ≈ {alphPerAcyumRate.toFixed(6)} ALPH</p>
                                 {alphUsdPrice && <p>(1 ALPH ≈ ${alphUsdPrice.toFixed(3)} USD)</p>}
                             </>
                         ) : (
@@ -245,7 +290,7 @@ export default function AcyumSwapClient() {
                     <Button
                       type="submit"
                       className="w-full bg-[#FF6B35] hover:bg-[#E85A2A]"
-                      disabled={isProcessing || !inputAmount || !outputAmount || !acyumPerAlphRate || !alphPerAcyumRate} // Disable if rates are missing
+                      disabled={isProcessing || !inputAmount || !outputAmount || acyumPerAlphRate === undefined || alphPerAcyumRate === undefined}
                     >
                       {isProcessing ? (
                         <>

@@ -81,7 +81,7 @@ export default function TokensClient() {
       
       try {
         const [candySwapResponse, coingeckoResponse] = await Promise.all([
-          fetch('https://candyswap.gg/api/token-list'),
+          fetch('/api/candyswap/token-list'),
           fetch('https://api.coingecko.com/api/v3/simple/price?ids=alephium&vs_currencies=usd')
         ]);
 
@@ -109,7 +109,10 @@ export default function TokensClient() {
           setAlphUsdPrice(price);
           logger.info(`Fetched ALPH/USD price for Tokens page: ${price}`);
         } else {
-          throw new Error('Invalid data format from CoinGecko API');
+          setAlphUsdPrice(null); // Ensure price is null if fetch fails
+          logger.error('Invalid or missing price data from CoinGecko API', coingeckoData);
+          // We might still want to display token balances even if USD price fails
+          // throw new Error('Invalid data format from CoinGecko API'); 
         }
 
       } catch (error) {
@@ -159,26 +162,42 @@ export default function TokensClient() {
       // Process other tokens
       userTokens.forEach((tb: { id: string; amount: bigint }) => {
         const tokenMarketInfo = marketData[tb.id];
-        // Determine decimals: Use market data if available, fallback for ACYUM, default to 18?
         const decimals = tokenMarketInfo?.decimals ?? (tb.id === config.alephium.acyumTokenId ? 7 : 18); 
         const name = tokenMarketInfo?.name ?? (tb.id === config.alephium.acyumTokenId ? "Acyum Token" : `Token ${tb.id.substring(0,4)}...`);
         const symbol = tokenMarketInfo?.slug?.toUpperCase() ?? (tb.id === config.alephium.acyumTokenId ? "ACYUM" : `TKN_${tb.id.substring(0,4)}`);
         
-        const balanceFormatted = formatBigIntAmount(tb.amount, decimals, decimals > 4 ? 4 : decimals); // Show more precision if low decimals
+        const balanceFormatted = formatBigIntAmount(tb.amount, decimals, decimals > 4 ? 4 : decimals);
         let valueAlphFormatted = "-";
         let valueUsdFormatted = "-";
 
-        const priceAlph = tokenMarketInfo?.orderBookPrice;
-        if (typeof priceAlph === 'number' && alphUsdPrice !== null) {
-          let factor = 1n;
-          for(let i=0; i<decimals; i++) { factor *= 10n; } // Use loop for BigInt power
-          const balanceNumber = Number(tb.amount) / Number(factor);
-          
-          const valueAlph = balanceNumber * priceAlph;
-          const valueUsd = valueAlph * alphUsdPrice;
-          
-          valueAlphFormatted = valueAlph.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-          valueUsdFormatted = valueUsd.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const rawOrderBookPrice = tokenMarketInfo?.orderBookPrice;
+
+        // Calculate Value only if price data is available
+        if (typeof rawOrderBookPrice === 'number' && rawOrderBookPrice > 0) { 
+          try {
+            const balanceNumber = Number(formatBigIntAmount(tb.amount, decimals, decimals)); // Get full precision number
+            
+            // Calculate ALPH per ThisToken rate
+            const alphPerTokenRate = (10 ** decimals) / rawOrderBookPrice;
+            const valueAlph = balanceNumber * alphPerTokenRate;
+            valueAlphFormatted = valueAlph.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+
+            // Calculate USD value if ALPH price is available
+            if (alphUsdPrice !== null) {
+              const valueUsd = valueAlph * alphUsdPrice;
+              valueUsdFormatted = valueUsd.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            } else {
+               valueUsdFormatted = "Price N/A";
+            }
+          } catch (calcError) {
+             logger.error(`Error calculating value for token ${symbol} (${tb.id}):`, calcError);
+             valueAlphFormatted = "Calc Error";
+             valueUsdFormatted = "Calc Error";
+          }
+        } else if (tokenMarketInfo?.orderBookPrice !== undefined) {
+           // Handle cases where price is 0 or not a number but exists
+           valueAlphFormatted = "0.00";
+           valueUsdFormatted = "$0.00";
         }
 
         processedTokens.push({
@@ -206,7 +225,7 @@ export default function TokensClient() {
       setIsLoading(false); // Finished processing tokens
     }
 
-  }, [isConnected, address, marketData, alphUsdPrice, marketDataError]); // Re-run when connection, address, tokens, or market data changes
+  }, [isConnected, address, userTokens, marketData, alphUsdPrice, marketDataError]); // Added userTokens dependency
 
   // JSX Structure
   return (
