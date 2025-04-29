@@ -296,6 +296,58 @@ export default function TokensClient() {
             </CardContent>
           </Card>
           */}
+
+          {/* Restore Card Content */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("tokenBalances")}</CardTitle>
+              <CardDescription>{t("viewAllTokens")}</CardDescription>
+              {marketDataError && !isLoading && (
+                <p className="text-sm text-red-500 pt-2">Market Data Error: {marketDataError}</p>
+              )}
+            </CardHeader>
+
+            <CardContent>
+              {!isConnected ? (
+                <div className="text-center py-6">
+                  <p className="mb-4 text-amber-600">{t("viewYourTokens")}</p>
+                  <WalletConnectDisplay />
+                </div>
+              ) : isLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#FF6B35]" />
+                  <span className="ml-2">Loading balances...</span>
+                </div>
+              ) : tokenRows.length === 0 && !marketDataError ? ( // Only show "No tokens" if no error
+                <div className="text-center py-8">
+                  <p className="text-gray-500">{t("noTokensFound")}</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("token")}</TableHead>
+                      <TableHead>{t("name")}</TableHead>
+                      <TableHead className="text-right">{t("balance")}</TableHead>
+                      <TableHead className="text-right">{t("value")} (ALPH)</TableHead>
+                      <TableHead className="text-right">{t("value")} (USD)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tokenRows.map((token) => (
+                      <TableRow key={token.id}>
+                        <TableCell className="font-medium">{token.symbol}</TableCell>
+                        <TableCell>{token.name}</TableCell>
+                        <TableCell className="text-right tabular-nums">{token.balance}</TableCell>
+                        <TableCell className="text-right tabular-nums">{token.valueAlph}</TableCell>
+                        <TableCell className="text-right tabular-nums">{token.valueUsd}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </main>
       </div>
     </ClientLayoutWrapper>
