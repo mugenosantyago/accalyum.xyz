@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect, useCallback, createContext, useContext } from "react"
 import { useAlephium } from "@/components/alephium-provider"
 import { WalletConnector, ConnectionMethod } from "@/lib/alephium"
@@ -69,12 +68,12 @@ export function useWallet(): WalletState {
   return context
 }
 
-// The actual implementation of the wallet state
+// The actual implementation of the wallet state (Reverted to polling version)
 function useWalletState(): WalletState {
-  // Check if we're in a browser environment
   const isBrowser = typeof window !== "undefined"
   const { toast } = useToast()
-  const { isInitialized, nodeProvider } = useAlephium()
+  // Assuming useAlephium is needed for WalletConnector init - keep for now
+  const { isInitialized, nodeProvider } = useAlephium() 
 
   // State
   const [connectionState, setConnectionState] = useState<WalletConnectionState>(WalletConnectionState.Disconnected)
@@ -90,12 +89,12 @@ function useWalletState(): WalletState {
     async (walletAddress: string) => {
       if (!isBrowser) return
       try {
+        // Use WalletConnector for balance for consistency
         const balanceValue = await WalletConnector.getInstance().getBalance(walletAddress)
         logger.info("useWallet: Updated balance for", walletAddress, "to", balanceValue)
         setBalance(balanceValue)
       } catch (error) {
         logger.error("Error fetching balance:", error)
-        // Don't set error state here to avoid disrupting the UI
       }
     },
     [isBrowser],
@@ -103,373 +102,231 @@ function useWalletState(): WalletState {
 
   // Check connection status on mount and when dependencies change
   useEffect(() => {
-    // Skip if not in browser
     if (!isBrowser) return
 
-    const checkConnection = async () => {
-      // Don't check if we're already in a connecting state
-      if (connectionState === WalletConnectionState.Connecting) return
+    let connectIntervalId: NodeJS.Timeout | null = null;
+    let checkIntervalId: NodeJS.Timeout | null = null;
+    let accountsChangedListenerAttached = false;
 
+    const checkConnection = async (initialLog = false) => {
+      if (connectionState === WalletConnectionState.Connecting) {
+        // console.log("useWallet DEBUG: Already connecting, skipping check.")
+        return
+      }
+      if (initialLog) {
+        console.log(`useWallet DEBUG: Starting checkConnection. Current state: ${connectionState}`)
+      }
       try {
-        // Check window.alephium first as it's the most reliable indicator
         if (typeof window !== "undefined" && window.alephium) {
-          try {
-            const isConnected = await window.alephium.isConnected()
-            if (isConnected) {
+           try {
+            const isExtConnected = await window.alephium.isConnected()
+            if (isExtConnected) {
               const addr = await window.alephium.getSelectedAccount()
               if (addr) {
-                logger.info("useWallet: Direct window.alephium connection found:", addr)
-                setAddress(addr)
-                setConnectionState(WalletConnectionState.Connected)
-                setConnectionMethod(ConnectionMethod.Extension)
-                await updateBalance(addr)
-
-                // Force a re-render of components that might depend on this state
-                window.dispatchEvent(
-                  new CustomEvent("walletConnectionChanged", {
-                    detail: { connected: true, address: addr },
-                  }),
-                )
-
-                return
+                if (connectionState !== WalletConnectionState.Connected || address !== addr) {
+                   console.log("useWallet DEBUG: Extension connection detected. Updating state.", addr)
+                   setAddress(addr)
+                   setConnectionState(WalletConnectionState.Connected)
+                   setConnectionMethod(ConnectionMethod.Extension)
+                   await updateBalance(addr)
+                   window.dispatchEvent(new CustomEvent("walletConnectionChanged", { detail: { connected: true, address: addr } }))
+                }
+                return // Found connection, exit check
               }
             }
           } catch (err) {
-            logger.warn("Error checking window.alephium connection:", err)
+             console.warn("useWallet DEBUG: Error checking window.alephium connection:", err)
+             logger.warn("Error checking window.alephium connection:", err)
           }
         }
-
-        // Then check our custom connection
-        if (isInitialized && nodeProvider) {
-          const walletInfo = await WalletConnector.getConnectedWallet()
-          if (walletInfo) {
-            logger.info("useWallet: Found connected wallet:", walletInfo)
-            setAddress(walletInfo.address)
-            setConnectionState(WalletConnectionState.Connected)
-            setConnectionMethod(walletInfo.method)
-            await updateBalance(walletInfo.address)
-
-            // Force a re-render of components that might depend on this state
-            window.dispatchEvent(
-              new CustomEvent("walletConnectionChanged", {
-                detail: { connected: true, address: walletInfo.address },
-              }),
-            )
-
-            return
-          }
-        }
-
-        // If we get here, we're not connected
+        
+        // If we get here, extension check failed or no extension found
         if (connectionState !== WalletConnectionState.Disconnected) {
-          logger.info("useWallet: No connected wallet found, setting disconnected state")
-          setConnectionState(WalletConnectionState.Disconnected)
-          setConnectionMethod(ConnectionMethod.None)
-          setAddress(null)
-
-          // Force a re-render of components that might depend on this state
-          window.dispatchEvent(
-            new CustomEvent("walletConnectionChanged", {
-              detail: { connected: false, address: null },
-            }),
-          )
-        }
+           console.log("useWallet DEBUG: No connected wallet found via extension check. Setting disconnected state.") 
+           setConnectionState(WalletConnectionState.Disconnected)
+           setConnectionMethod(ConnectionMethod.None)
+           setAddress(null)
+           setBalance(null)
+           window.dispatchEvent(new CustomEvent("walletConnectionChanged", { detail: { connected: false, address: null } }))
+        } 
       } catch (err) {
-        logger.error("Error checking wallet connection:", err)
-        // Don't update state here to avoid disrupting any existing connection
+         console.error("useWallet DEBUG: Error in checkConnection try block:", err) 
       }
-    }
+    };
 
-    checkConnection()
-
-    // Add a periodic check to ensure connection state stays in sync
-    const intervalId = setInterval(checkConnection, 2000) // More frequent checks
-
-    // Also listen for wallet events from the extension
     const handleAccountsChanged = () => {
-      logger.info("Accounts changed event detected, rechecking connection")
-      checkConnection()
-    }
+       console.log("useWallet DEBUG: accountsChanged event detected, rechecking connection.") 
+       checkConnection(false) 
+    };
 
-    if (typeof window !== "undefined" && window.alephium) {
-      window.alephium.on?.("accountsChanged", handleAccountsChanged)
-    }
-
-    return () => {
-      clearInterval(intervalId)
-      if (typeof window !== "undefined" && window.alephium) {
-        window.alephium.off?.("accountsChanged", handleAccountsChanged)
+    const setupConnectionLogic = () => {
+      console.log("useWallet DEBUG: Setting up connection logic (checking status and attaching listener).");
+      checkConnection(true); 
+      if (!accountsChangedListenerAttached && typeof window !== "undefined" && window.alephium) {
+        try {
+          window.alephium.on?.("accountsChanged", handleAccountsChanged);
+          accountsChangedListenerAttached = true;
+          console.log("useWallet DEBUG: accountsChanged listener ATTACHED successfully.");
+        } catch (err) {
+          console.error("useWallet DEBUG: FAILED to attach accountsChanged listener:", err);
+        }
       }
-    }
-  }, [isInitialized, nodeProvider, connectionState, isBrowser])
+      if (!checkIntervalId) {
+         console.log("useWallet DEBUG: Starting periodic connection checks.")
+         checkIntervalId = setInterval(() => checkConnection(false), 5000);
+      }
+    };
 
-  // Update balance when address changes
-  useEffect(() => {
-    if (!isBrowser) return
-    if (address && isConnected) {
-      updateBalance(address)
+    // --- Main Logic --- 
+    if (typeof window !== "undefined" && window.alephium) {
+      console.log("useWallet DEBUG: window.alephium FOUND on initial mount/effect run.");
+      setupConnectionLogic();
+    } else {
+      console.log("useWallet DEBUG: window.alephium NOT FOUND initially. Starting polling interval.");
+      connectIntervalId = setInterval(() => {
+        if (typeof window !== "undefined" && window.alephium) {
+          console.log("useWallet DEBUG: window.alephium FOUND via polling interval.");
+          if (connectIntervalId) clearInterval(connectIntervalId);
+          // Crucially, also set up listeners etc. *after* finding it via polling
+          setupConnectionLogic(); 
+        } else {
+           console.log("useWallet DEBUG: Polling... window.alephium still not found."); // Log more frequently
+        }
+      }, 200); // Poll frequently until found
     }
-  }, [address, isConnected, isBrowser, updateBalance])
 
-  // Refresh balance function
+    // --- Cleanup --- 
+    return () => {
+       console.log("useWallet DEBUG: Cleaning up useEffect.") 
+       if (connectIntervalId) clearInterval(connectIntervalId);
+       if (checkIntervalId) clearInterval(checkIntervalId);
+       if (accountsChangedListenerAttached && typeof window !== "undefined" && window.alephium) {
+         try {
+           window.alephium.off?.("accountsChanged", handleAccountsChanged);
+           console.log("useWallet DEBUG: accountsChanged listener REMOVED successfully.");
+         } catch (err) {
+           console.error("useWallet DEBUG: FAILED to remove accountsChanged listener:", err);
+         }
+       }
+    };
+  // Dependencies: React to browser, alephium provider init
+  }, [isInitialized, nodeProvider, isBrowser, updateBalance, connectionState, address]); // Added connectionState and address back
+
+  // Refresh balance function (using custom logic)
   const refreshBalance = useCallback(async () => {
     if (!isBrowser) return
     if (address && isConnected) {
+       console.log("useWallet DEBUG: Refreshing balance for", address)
       await updateBalance(address)
     }
   }, [address, isConnected, isBrowser, updateBalance])
 
-  // Connect function
+  // Connect function (using WalletConnector)
   const connect = async (preferredMethod?: ConnectionMethod | string) => {
     if (!isBrowser) return
-
-    // Clear previous errors
     setError(null)
-
-    // Don't allow connecting if already connecting
     if (connectionState === WalletConnectionState.Connecting) {
+      console.log("useWallet DEBUG: Connect called while already connecting.")
       return
     }
-
+    console.log("useWallet DEBUG: connect() called with method:", preferredMethod)
     setConnectionState(WalletConnectionState.Connecting)
-
     try {
-      logger.info("Starting wallet connection process with method:", preferredMethod || "auto")
-
-      // Convert string method to enum if needed
       let methodEnum = preferredMethod
-      if (preferredMethod === "walletconnect") {
-        methodEnum = ConnectionMethod.WalletConnect
-      } else if (preferredMethod === "extension") {
-        methodEnum = ConnectionMethod.Extension
-      } else if (typeof preferredMethod === "undefined") {
-        methodEnum = undefined
+      if (typeof preferredMethod === "string") { // Basic conversion if string is passed
+         methodEnum = ConnectionMethod[preferredMethod as keyof typeof ConnectionMethod] || undefined;
       }
-
-      // Check if window.alephium exists when trying to use extension
-      if (methodEnum === ConnectionMethod.Extension && !window.alephium) {
-        logger.info("Extension explicitly requested but not found in window object")
-        throw new Error("Alephium extension not found. Please make sure it's installed and enabled.")
-      }
-
-      // Use our custom connect method
+      
+      // Use our custom WalletConnector class
       const result = await WalletConnector.getInstance().connect(methodEnum as ConnectionMethod)
-
-      logger.info("useWallet: Connected successfully:", result)
+      console.log("useWallet DEBUG: Connect successful via WalletConnector:", result)
       setAddress(result.address)
       setConnectionState(WalletConnectionState.Connected)
       setConnectionMethod(result.method)
       await updateBalance(result.address)
-
       toast({
         title: "Wallet Connected",
-        description: `Connected to address: ${formatAddress(result.address)}`,
+        description: `Connected: ${result.address.substring(0, 6)}...`,
         variant: "default",
       })
+       window.dispatchEvent(new CustomEvent("walletConnectionChanged", { detail: { connected: true, address: result.address } }))
     } catch (error) {
-      logger.error("Error connecting wallet:", error)
-
-      setConnectionState(WalletConnectionState.Error)
-
-      const errorMessage = error instanceof Error ? error.message : "Failed to connect wallet"
-      const errorCode = error instanceof Error && "code" in error ? (error as any).code : "UNKNOWN_ERROR"
-
-      setError({
-        code: errorCode,
-        message: errorMessage,
-        details: error,
-      })
-
-      // Only show toast for errors that aren't related to missing wallet
-      if (
-        !errorMessage.includes("Alephium wallet not available") &&
-        !errorMessage.includes("No compatible wallet found")
-      ) {
-        toast({
-          title: "Connection Error",
-          description: errorMessage,
-          variant: "destructive",
-        })
-      }
-
-      throw error // Re-throw to allow handling in UI components
-    }
-  }
-
-  // Disconnect function
-  const disconnect = async () => {
-    if (!isBrowser) return
-
-    try {
-      // Always call our custom disconnect
-      WalletConnector.getInstance().disconnect()
-
-      // Reset state
-      setConnectionState(WalletConnectionState.Disconnected)
-      setConnectionMethod(ConnectionMethod.None)
+       console.error("useWallet DEBUG: Connect failed:", error)
+       logger.error("Failed to connect wallet:", error)
+      setError({ code: "CONNECTION_FAILED", message: error instanceof Error ? error.message : "Unknown error", details: error })
+      setConnectionState(WalletConnectionState.Error) // Set specific Error state
       setAddress(null)
       setBalance(null)
+      setConnectionMethod(ConnectionMethod.None)
+      toast({
+        title: "Connection Failed",
+        description: error instanceof Error ? error.message : "Could not connect wallet.",
+        variant: "destructive",
+      })
+       window.dispatchEvent(new CustomEvent("walletConnectionChanged", { detail: { connected: false, address: null } }))
+    }
+  }
+
+  // Disconnect function (using WalletConnector)
+  const disconnect = async () => {
+    if (!isBrowser) return
+     console.log("useWallet DEBUG: disconnect() called. Current state:", connectionState, connectionMethod) 
+    try {
+      // Use our custom WalletConnector
+      await WalletConnector.getInstance().disconnect()
+      // Reset internal state
+      setAddress(null)
+      setBalance(null)
+      setConnectionState(WalletConnectionState.Disconnected)
+      setConnectionMethod(ConnectionMethod.None)
       setError(null)
-
-      toast({
-        title: "Wallet Disconnected",
-        description: "Your wallet has been disconnected",
-        variant: "default",
-      })
+      logger.info("useWallet: Wallet disconnected successfully")
+      toast({ title: "Wallet Disconnected" })
+       window.dispatchEvent(new CustomEvent("walletConnectionChanged", { detail: { connected: false, address: null } }))
     } catch (error) {
-      logger.error("Error disconnecting:", error)
-      toast({
-        title: "Disconnect Error",
-        description: "Failed to disconnect wallet properly",
-        variant: "destructive",
-      })
+       console.error("useWallet DEBUG: Error during disconnect:", error)
+       logger.error("Failed to disconnect wallet:", error)
+      setError({ code: "DISCONNECT_FAILED", message: error instanceof Error ? error.message : "Unknown error", details: error })
+      // Reset state even on error
+      setAddress(null)
+      setBalance(null)
+      setConnectionState(WalletConnectionState.Disconnected)
+      setConnectionMethod(ConnectionMethod.None)
+      toast({ title: "Disconnection Error", description: "An error occurred.", variant: "destructive" })
     }
   }
 
-  // Helper function to format addresses
-  const formatAddress = (addr: string): string => {
-    return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`
-  }
-
-  // Transaction functions
+  // Placeholder transaction functions (should use WalletConnector or Signer)
   const deposit = async (amount: string) => {
-    if (!isBrowser) return
-
-    if (!isConnected || !address) {
-      const errorMsg = "Wallet not connected"
-      setError({
-        code: "NOT_CONNECTED",
-        message: errorMsg,
-      })
-
-      toast({
-        title: "Error",
-        description: errorMsg,
-        variant: "destructive",
-      })
-      return
-    }
-
-    try {
-      await WalletConnector.getInstance().deposit(amount)
-      await updateBalance(address)
-
-      toast({
-        title: "Deposit Successful",
-        description: `Successfully deposited ${amount} ALPH`,
-        variant: "default",
-      })
-    } catch (error) {
-      logger.error("Error making deposit:", error)
-
-      const errorMsg = error instanceof Error ? error.message : "Failed to make deposit"
-      toast({
-        title: "Deposit Error",
-        description: errorMsg,
-        variant: "destructive",
-      })
-
-      throw error
-    }
+    if (!isConnected || !address) throw new Error("Wallet not connected")
+    console.log(`useWallet DEBUG: Placeholder deposit: ${amount} from ${address}`)
+    // TODO: Implement using WalletConnector.getInstance()... or Signer
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    await refreshBalance()
   }
-
   const withdraw = async (amount: string) => {
-    if (!isBrowser) return
-
-    if (!isConnected || !address) {
-      const errorMsg = "Wallet not connected"
-      setError({
-        code: "NOT_CONNECTED",
-        message: errorMsg,
-      })
-
-      toast({
-        title: "Error",
-        description: errorMsg,
-        variant: "destructive",
-      })
-      return
-    }
-
-    try {
-      await WalletConnector.getInstance().withdraw(amount)
-      await updateBalance(address)
-
-      toast({
-        title: "Withdrawal Successful",
-        description: `Successfully withdrew ${amount} ACYUM`,
-        variant: "default",
-      })
-    } catch (error) {
-      logger.error("Error making withdrawal:", error)
-
-      const errorMsg = error instanceof Error ? error.message : "Failed to make withdrawal"
-      toast({
-        title: "Withdrawal Error",
-        description: errorMsg,
-        variant: "destructive",
-      })
-
-      throw error
-    }
+    if (!isConnected || !address) throw new Error("Wallet not connected")
+    console.log(`useWallet DEBUG: Placeholder withdraw: ${amount} from ${address}`)
+    // TODO: Implement
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    await refreshBalance()
+  }
+  const transfer = async (to: string, amount: string): Promise<string | undefined> => {
+    if (!isConnected || !address) throw new Error("Wallet not connected")
+    console.log(`useWallet DEBUG: Placeholder transfer: ${amount} to ${to} from ${address}`)
+    // TODO: Implement
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    await refreshBalance()
+    return "placeholder_tx_id"
   }
 
-  const transfer = async (to: string, amount: string) => {
-    if (!isBrowser) return
+  // Manual state setters - REMOVED as state should be managed internally
+  const handleSetAddress = () => {}
+  const handleSetIsConnected = () => {}
+  const handleSetBalance = () => {}
+  const handleSetConnectionMethod = () => {}
 
-    if (!isConnected || !address) {
-      const errorMsg = "Wallet not connected"
-      setError({
-        code: "NOT_CONNECTED",
-        message: errorMsg,
-      })
-
-      toast({
-        title: "Error",
-        description: errorMsg,
-        variant: "destructive",
-      })
-      return
-    }
-
-    try {
-      const txId = await WalletConnector.getInstance().transfer(to, amount)
-      await updateBalance(address)
-
-      toast({
-        title: "Transfer Successful",
-        description: `Successfully transferred ${amount} ALPH to ${to.substring(0, 6)}...${to.substring(to.length - 4)}`,
-        variant: "default",
-      })
-
-      return txId
-    } catch (error) {
-      logger.error("Error making transfer:", error)
-
-      const errorMsg = error instanceof Error ? error.message : "Failed to make transfer"
-      toast({
-        title: "Transfer Error",
-        description: errorMsg,
-        variant: "destructive",
-      })
-
-      throw error
-    }
-  }
-
-  // Create a function to update the address that logs the change
-  const handleSetAddress = (newAddress: string | null) => {
-    logger.info("useWallet: Setting address to", newAddress)
-    setAddress(newAddress)
-  }
-
-  // Create a function to update the isConnected state that logs the change
-  const handleSetIsConnected = (newIsConnected: boolean) => {
-    logger.info("useWallet: Setting isConnected to", newIsConnected)
-    setConnectionState(newIsConnected ? WalletConnectionState.Connected : WalletConnectionState.Disconnected)
-  }
-
-  const walletState = {
+  return {
     isConnected,
     address,
     balance,
@@ -482,18 +339,16 @@ function useWalletState(): WalletState {
     withdraw,
     transfer,
     refreshBalance,
+    // Remove manual setters from return
     setAddress: handleSetAddress,
     setIsConnected: handleSetIsConnected,
-    setBalance: (newBalance: string | null) => setBalance(newBalance),
-    setConnectionMethod: (method: ConnectionMethod) => setConnectionMethod(method),
+    setBalance: handleSetBalance,
+    setConnectionMethod: handleSetConnectionMethod,
   }
-
-  return walletState
 }
 
-// Create a provider component for the wallet state
+// WalletProvider component
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const walletState = useWalletState()
-
   return <WalletContext.Provider value={walletState}>{children}</WalletContext.Provider>
 }

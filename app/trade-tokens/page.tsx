@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,94 +11,45 @@ import { ArrowLeftRight, Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { AlephiumConnectButton } from "@/components/alephium-connect-button"
-import { WalletAwareWrapper } from "@/components/wallet-aware-wrapper"
-import { ConnectionSuccessModal } from "@/components/connection-success-modal"
-import { checkAlephiumConnection } from "@/lib/wallet-utils"
+import { useWallet } from "@/hooks/use-wallet"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function TradeTokensPage() {
   const { t } = useLanguage()
+  const { toast } = useToast()
+  const { 
+    isConnected, 
+    address, 
+  } = useWallet()
+  
   const [buyAmount, setBuyAmount] = useState("")
   const [sellAmount, setSellAmount] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   
-  // Alephium connection state
-  const [directAlephiumConnection, setDirectAlephiumConnection] = useState({
-    connected: false,
-    address: ""
-  })
-
-  // Force check connection when component mounts
-  useEffect(() => {
-    // Check Alephium extension
-    const checkAlephiumExtension = async () => {
-      try {
-        const { connected, address } = await checkAlephiumConnection()
-        if (connected && address) {
-          console.log("Direct Alephium extension connection found:", address)
-          setDirectAlephiumConnection({
-            connected: true,
-            address
-          })
-        }
-      } catch (error) {
-        console.error("Error checking Alephium extension:", error)
-      }
-    }
-    
-    checkAlephiumExtension()
-    
-    // Also listen for Alephium's account changes
-    const handleAccountsChanged = () => {
-      console.log("Accounts changed, rechecking Alephium connection")
-      checkAlephiumExtension()
-    }
-    
-    if (typeof window !== "undefined" && window.alephium && window.alephium.on) {
-      try {
-        window.alephium.on("accountsChanged", handleAccountsChanged)
-      } catch (error) {
-        console.error("Error setting up Alephium event listener:", error)
-      }
-    }
-    
-    return () => {
-      if (typeof window !== "undefined" && window.alephium && window.alephium.off) {
-        try {
-          window.alephium.off("accountsChanged", handleAccountsChanged)
-        } catch (error) {
-          console.error("Error removing Alephium event listener:", error)
-        }
-      }
-    }
-  }, [])
-  
-  // Get the effective connected state 
-  const effectiveIsConnected = directAlephiumConnection.connected
-  const effectiveAddress = directAlephiumConnection.address
-
   const handleBuy = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!effectiveIsConnected) {
-      alert("Please connect your wallet first")
+    if (!isConnected) {
+      toast({ title: "Error", description: "Please connect your wallet first", variant: "destructive" })
       return
     }
 
     if (!buyAmount || Number.parseFloat(buyAmount) <= 0) {
-      alert("Please enter a valid amount")
+      toast({ title: "Error", description: "Please enter a valid purchase amount", variant: "destructive" })
       return
     }
 
     setIsProcessing(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      // TODO: Implement actual buy logic using wallet interaction
+      await new Promise((resolve) => setTimeout(resolve, 1500)) // Simulate delay
       setBuyAmount("")
-      alert("Purchase successful!")
+      toast({ title: "Success", description: "Purchase initiated successfully." })
     } catch (error) {
       console.error("Purchase error:", error)
-      alert("Purchase failed. Please try again.")
+      const message = error instanceof Error ? error.message : "Please try again."
+      toast({ title: "Purchase Failed", description: message, variant: "destructive" })
     } finally {
       setIsProcessing(false)
     }
@@ -108,26 +58,27 @@ export default function TradeTokensPage() {
   const handleSell = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!effectiveIsConnected) {
-      alert("Please connect your wallet first")
+    if (!isConnected) {
+      toast({ title: "Error", description: "Please connect your wallet first", variant: "destructive" })
       return
     }
 
     if (!sellAmount || Number.parseFloat(sellAmount) <= 0) {
-      alert("Please enter a valid amount")
+      toast({ title: "Error", description: "Please enter a valid sell amount", variant: "destructive" })
       return
     }
 
     setIsProcessing(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      // TODO: Implement actual sell logic using wallet interaction
+      await new Promise((resolve) => setTimeout(resolve, 1500)) // Simulate delay
       setSellAmount("")
-      alert("Sale successful!")
+      toast({ title: "Success", description: "Sale initiated successfully." })
     } catch (error) {
       console.error("Sale error:", error)
-      alert("Sale failed. Please try again.")
+      const message = error instanceof Error ? error.message : "Please try again."
+      toast({ title: "Sale Failed", description: message, variant: "destructive" })
     } finally {
       setIsProcessing(false)
     }
@@ -139,14 +90,6 @@ export default function TradeTokensPage() {
         <main className="flex-grow container mx-auto py-12 px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">{t("tradeTokens")}</h1>
 
-          <ConnectionSuccessModal featureName="Token Exchange" />
-          
-          {/* Debug Panel */}
-          <div className="max-w-md mx-auto mb-4 p-2 bg-gray-800 text-xs text-white rounded overflow-auto">
-            <p>Direct Connected: {String(directAlephiumConnection.connected)}</p>
-            <p>Direct Address: {directAlephiumConnection.address || "none"}</p>
-          </div>
-
           <div className="max-w-md mx-auto">
             <Card>
               <CardHeader>
@@ -155,7 +98,7 @@ export default function TradeTokensPage() {
               </CardHeader>
 
               <CardContent>
-                {!effectiveIsConnected ? (
+                {!isConnected ? (
                   <div className="text-center py-6">
                     <p className="mb-4 text-amber-600">{t("accessTradingFeatures")}</p>
                     <AlephiumConnectButton />
@@ -174,12 +117,13 @@ export default function TradeTokensPage() {
                           <Input
                             id="buyAmount"
                             type="number"
-                            step="0.01"
+                            step="any"
                             min="0"
                             placeholder="0.00"
                             value={buyAmount}
                             onChange={(e) => setBuyAmount(e.target.value)}
                             required
+                            className="bg-gray-800 border-gray-700"
                           />
                         </div>
 
@@ -218,12 +162,13 @@ export default function TradeTokensPage() {
                           <Input
                             id="sellAmount"
                             type="number"
-                            step="0.01"
+                            step="any"
                             min="0"
                             placeholder="0.00"
                             value={sellAmount}
                             onChange={(e) => setSellAmount(e.target.value)}
                             required
+                            className="bg-gray-800 border-gray-700"
                           />
                         </div>
 

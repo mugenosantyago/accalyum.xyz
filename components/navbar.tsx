@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/components/language-provider"
 import { Menu, X, Globe } from "lucide-react"
-import { WalletConnectButton } from "@/components/wallet-connect-button"
+import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -60,7 +60,7 @@ export function Navbar() {
             <Globe className="h-4 w-4" aria-hidden="true" />
             <span>{language === "en" ? t("switchToJapanese") : t("switchToEnglish")}</span>
           </Button>
-          <WalletConnectButton />
+          <WalletConnectDisplay />
         </nav>
 
         {/* Mobile Menu Button */}
@@ -74,7 +74,7 @@ export function Navbar() {
           >
             <Globe className="h-4 w-4" aria-hidden="true" />
           </Button>
-          <WalletConnectButton />
+          <WalletConnectDisplay />
           <button
             onClick={toggleMenu}
             className="text-gray-300 hover:text-[#FF6B35] ml-2"

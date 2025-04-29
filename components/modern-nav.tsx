@@ -18,7 +18,8 @@ import {
   Globe,
 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
-import { AlephiumConnectButton } from "@/components/alephium-connect-button"
+import { WalletConnectDisplay } from "@/components/alephium-connect-button"
+import { siteConfig } from "@/lib/config"
 
 export function ModernNav() {
   const pathname = usePathname()
@@ -72,7 +73,7 @@ export function ModernNav() {
               <span className="label">{language === "en" ? "JP" : "EN"}</span>
             </button>
 
-            <AlephiumConnectButton />
+            <WalletConnectDisplay />
 
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -146,7 +147,7 @@ export function ModernNav() {
               </div>
               <div className="p-4 border-t border-gray-800">
                 <button
-                  onClick={toggleLanguage}
+                  onClick={() => { toggleLanguage(); setIsMobileMenuOpen(false); }}
                   className="flex items-center gap-2 p-3 w-full rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
                 >
                   <Globe size={20} />

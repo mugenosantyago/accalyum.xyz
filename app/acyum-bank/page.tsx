@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,151 +10,92 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowDown, ArrowUp, Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { formatAlphBalance } from "@/lib/alephium-utils"
-import { AlephiumConnectButton } from "@/components/alephium-connect-button"
+import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
-import { WalletAwareWrapper } from "@/components/wallet-aware-wrapper"
 import { WalletStatusDisplay } from "@/components/wallet-status-display"
-import { ConnectionSuccessModal } from "@/components/connection-success-modal"
-import { checkAlephiumConnection } from "@/lib/wallet-utils"
+import { useToast } from "@/components/ui/use-toast"
+import { useWallet, useBalance } from "@alephium/web3-react"
+import { logger } from "@/lib/logger"
 
 export default function AcyumBankPage() {
   const { t } = useLanguage()
+  const { toast } = useToast()
+  
+  const { 
+    account,
+    signer,
+    connectionStatus,
+  } = useWallet()
+
+  const address = account?.address ?? null;
+  const isConnected = connectionStatus === 'connected';
+  
+  const { balance, updateBalanceForTx } = useBalance();
+
   const [depositAmount, setDepositAmount] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
-  const [balance, setBalance] = useState("0")
   const [isProcessing, setIsProcessing] = useState(false)
   
-  // Alephium connection state
-  const [alephiumConnection, setAlephiumConnection] = useState({
-    isConnected: false,
-    address: ""
-  })
-
-  // Force check connection when component mounts
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const { connected, address } = await checkAlephiumConnection()
-        if (connected && address) {
-          console.log("Direct Alephium extension connection found:", address)
-          setAlephiumConnection({
-            isConnected: true,
-            address
-          })
-        } else {
-          setAlephiumConnection({
-            isConnected: false,
-            address: ""
-          })
-        }
-      } catch (error) {
-        console.error("Error checking Alephium extension:", error)
-        setAlephiumConnection({
-          isConnected: false,
-          address: ""
-        })
-      }
-    }
-    
-    checkConnection()
-    
-    // Also listen for Alephium's account changes
-    const handleAccountsChanged = () => {
-      console.log("Accounts changed, rechecking Alephium connection")
-      checkConnection()
-    }
-    
-    if (typeof window !== "undefined" && window.alephium && window.alephium.on) {
-      try {
-        window.alephium.on("accountsChanged", handleAccountsChanged)
-      } catch (error) {
-        console.error("Error setting up Alephium event listener:", error)
-      }
-    }
-    
-    return () => {
-      if (typeof window !== "undefined" && window.alephium && window.alephium.off) {
-        try {
-          window.alephium.off("accountsChanged", handleAccountsChanged)
-        } catch (error) {
-          console.error("Error removing Alephium event listener:", error)
-        }
-      }
-    }
-  }, [])
-
-  // Fetch balance when address changes
-  useEffect(() => {
-    async function fetchBalance() {
-      if (alephiumConnection.isConnected && window.alephium) {
-        try {
-          const balanceResult = await window.alephium.getBalance()
-          if (balanceResult && balanceResult.balance) {
-            setBalance(balanceResult.balance)
-          }
-        } catch (error) {
-          console.error("Error fetching balance:", error)
-        }
-      }
-    }
-
-    fetchBalance()
-  }, [alephiumConnection])
+  const displayBalance = formatAlphBalance(balance)
 
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!alephiumConnection.isConnected) {
-      alert("Please connect your wallet first")
+    if (!isConnected || !address || !signer) {
+      toast({ title: "Error", description: "Please connect wallet", variant: "destructive" })
       return
     }
-
     if (!depositAmount || Number.parseFloat(depositAmount) <= 0) {
-      alert("Please enter a valid amount")
+      toast({ title: "Error", description: "Invalid amount", variant: "destructive" })
       return
     }
-
     setIsProcessing(true)
-
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      logger.info(`Attempting deposit: ${depositAmount}...`);
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const fakeTxId = `placeholder_tx_${Date.now()}`;
+      toast({ title: "Success (Placeholder)", description: `Deposit tx: ${fakeTxId}` })
       setDepositAmount("")
-      alert("Deposit successful!")
+      if (updateBalanceForTx) {
+         updateBalanceForTx(fakeTxId);
+      } else {
+         logger.warn("updateBalanceForTx not available from useBalance")
+      }
     } catch (error) {
-      console.error("Deposit error:", error)
-      alert("Deposit failed. Please try again.")
+      const message = error instanceof Error ? error.message : "Error"
+      toast({ title: "Deposit Failed", description: message, variant: "destructive" })
     } finally {
       setIsProcessing(false)
     }
   }
 
   const handleWithdraw = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!alephiumConnection.isConnected) {
-      alert("Please connect your wallet first")
+     e.preventDefault()
+    if (!isConnected || !address || !signer) {
+      toast({ title: "Error", description: "Please connect wallet", variant: "destructive" })
       return
     }
-
-    if (!withdrawAmount || Number.parseFloat(withdrawAmount) <= 0) {
-      alert("Please enter a valid amount")
+     if (!withdrawAmount || Number.parseFloat(withdrawAmount) <= 0) {
+      toast({ title: "Error", description: "Invalid amount", variant: "destructive" })
       return
     }
-
-    setIsProcessing(true)
-
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      setWithdrawAmount("")
-      alert("Withdrawal successful!")
-    } catch (error) {
-      console.error("Withdrawal error:", error)
-      alert("Withdrawal failed. Please try again.")
-    } finally {
-      setIsProcessing(false)
-    }
+     setIsProcessing(true)
+     try {
+      logger.info(`Attempting withdrawal: ${withdrawAmount}...`);
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+       const fakeTxId = `placeholder_tx_${Date.now()}`;
+       toast({ title: "Success (Placeholder)", description: `Withdrawal tx: ${fakeTxId}` })
+       setWithdrawAmount("")
+       if (updateBalanceForTx) {
+          updateBalanceForTx(fakeTxId);
+       } else {
+         logger.warn("updateBalanceForTx not available from useBalance")
+       }
+     } catch (error) {
+       const message = error instanceof Error ? error.message : "Error"
+       toast({ title: "Withdrawal Failed", description: message, variant: "destructive" })
+     } finally {
+       setIsProcessing(false)
+     }
   }
 
   return (
@@ -163,36 +103,26 @@ export default function AcyumBankPage() {
       <div className="min-h-screen flex flex-col">
         <main className="flex-grow container mx-auto py-12 px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">{t("acyumBank")}</h1>
-
-          <ConnectionSuccessModal featureName="ACYUM Bank" />
-
-          {/* Debug Panel */}
-          <div className="max-w-md mx-auto mb-4 p-2 bg-gray-800 text-xs text-white rounded overflow-auto">
-            <p>Connected: {String(alephiumConnection.isConnected)}</p>
-            <p>Address: {alephiumConnection.address || "none"}</p>
-          </div>
-
           <div className="max-w-md mx-auto">
             <Card>
               <CardHeader>
                 <CardTitle>{t("acyumBanking")}</CardTitle>
                 <CardDescription>{t("depositWithdrawSecurely")}</CardDescription>
               </CardHeader>
-
               <CardContent>
-                {!alephiumConnection.isConnected ? (
+                {!isConnected ? (
                   <div className="text-center py-6">
                     <p className="mb-4 text-amber-600">{t("pleaseConnectWallet")}</p>
-                    <AlephiumConnectButton />
+                    <WalletConnectDisplay />
                   </div>
                 ) : (
                   <>
-                    <div className="bg-gray-50 p-4 rounded-md mb-6">
-                      <p className="text-sm text-gray-500">{t("yourWallet")}</p>
-                      <p className="font-mono text-sm break-all">{alephiumConnection.address}</p>
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md mb-6">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{t("yourWallet")}</p>
+                      <p className="font-mono text-sm break-all">{address}</p>
                       <div className="mt-2">
-                        <p className="text-sm text-gray-500">{t("balance")}</p>
-                        <p className="text-xl font-bold">{formatAlphBalance(balance || "0")} ALPH</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t("balance")}</p>
+                        <p className="text-xl font-bold">{displayBalance} ALPH</p>
                       </div>
                       <div className="mt-2">
                         <WalletStatusDisplay />
@@ -212,19 +142,20 @@ export default function AcyumBankPage() {
                             <Input
                               id="depositAmount"
                               type="number"
-                              step="0.01"
+                              step="any"
                               min="0"
                               placeholder="0.00"
                               value={depositAmount}
                               onChange={(e) => setDepositAmount(e.target.value)}
                               required
+                              className="bg-gray-800 border-gray-700"
                             />
                           </div>
 
                           <Button
                             type="submit"
                             className="w-full bg-[#FF6B35] hover:bg-[#E85A2A]"
-                            disabled={isProcessing}
+                            disabled={isProcessing || !isConnected || !signer}
                           >
                             {isProcessing ? (
                               <>
@@ -248,19 +179,20 @@ export default function AcyumBankPage() {
                             <Input
                               id="withdrawAmount"
                               type="number"
-                              step="0.01"
+                              step="any"
                               min="0"
                               placeholder="0.00"
                               value={withdrawAmount}
                               onChange={(e) => setWithdrawAmount(e.target.value)}
                               required
+                              className="bg-gray-800 border-gray-700"
                             />
                           </div>
 
                           <Button
                             type="submit"
                             className="w-full bg-[#FF6B35] hover:bg-[#E85A2A]"
-                            disabled={isProcessing}
+                            disabled={isProcessing || !isConnected || !signer}
                           >
                             {isProcessing ? (
                               <>

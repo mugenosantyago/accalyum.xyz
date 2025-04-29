@@ -10,8 +10,6 @@ import { config } from "@/lib/config"
 
 export function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
-  const walletConnectProjectId =
-    process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || config.alephium.walletConnectProjectId
   const networkId = process.env.NEXT_PUBLIC_ALEPHIUM_NETWORK || config.alephium.network
 
   useEffect(() => {
@@ -30,12 +28,10 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
   }
 
   return (
-    <AlephiumWalletProvider network={networkId as any} addressGroup={0} walletConnectProjectId={walletConnectProjectId}>
-      <ClientProviders>
+    <ClientProviders>
         <ModernNav />
         <main className="flex-grow pt-20">{children}</main>
-        <Footer />
-      </ClientProviders>
-    </AlephiumWalletProvider>
+        <Footer /> 
+    </ClientProviders>
   )
 }
