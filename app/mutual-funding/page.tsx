@@ -13,7 +13,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { useLanguage } from "@/components/language-provider"
 import { formatAlphBalance } from "@/lib/alephium-utils"
 import { NodeProvider } from "@alephium/web3"
-import { AlephiumConnectButton } from "@/components/alephium-connect-button"
+import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { WalletAwareWrapper } from "@/components/wallet-aware-wrapper"
 import { ConnectionSuccessModal } from "@/components/connection-success-modal"
@@ -280,6 +280,16 @@ export default function MutualFundingPage() {
     }
   }
 
+  // Debug information
+  console.log("Rendering MutualFundingPage with state:", {
+    effectiveIsConnected,
+    effectiveAddress,
+    isLoading,
+    isProcessing,
+    selectedInitiative,
+    donationAmount,
+  })
+
   return (
     <ClientLayoutWrapper>
       <div className="min-h-screen flex flex-col">
@@ -287,6 +297,23 @@ export default function MutualFundingPage() {
           <h1 className="text-3xl font-bold mb-8 text-center">{t("mutualFunding")}</h1>
 
           <ConnectionSuccessModal featureName="Mutual Funding" />
+
+          {/* Debug section */}
+          <div className="mb-4 p-2 bg-gray-800 text-xs text-white rounded overflow-auto">
+            <p>Debug: effectiveIsConnected={String(effectiveIsConnected)}</p>
+            <p>Debug: effectiveAddress={effectiveAddress || "null"}</p>
+          </div>
+
+          {!effectiveIsConnected && (
+            <div className="text-center py-6 mb-8">
+              <Card className="max-w-md mx-auto bg-gray-900 border-gray-800">
+                <CardContent className="pt-6">
+                  <p className="mb-4 text-amber-600">{t("connectToParticipate")}</p>
+                  <WalletConnectDisplay />
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           <div className="max-w-4xl mx-auto">
             <div className="mb-8">
@@ -350,7 +377,7 @@ export default function MutualFundingPage() {
                   fallback={
                     <div className="text-center py-6">
                       <p className="mb-4 text-amber-600">{t("accessDonationFeatures")}</p>
-                      <AlephiumConnectButton />
+                      <WalletConnectDisplay />
                     </div>
                   }
                 >

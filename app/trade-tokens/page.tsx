@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeftRight, Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
-import { AlephiumConnectButton } from "@/components/alephium-connect-button"
+import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { useWallet } from "@/hooks/use-wallet"
 import { useToast } from "@/components/ui/use-toast"
 
@@ -101,7 +101,7 @@ export default function TradeTokensPage() {
                 {!isConnected ? (
                   <div className="text-center py-6">
                     <p className="mb-4 text-amber-600">{t("accessTradingFeatures")}</p>
-                    <AlephiumConnectButton />
+                    <WalletConnectDisplay />
                   </div>
                 ) : (
                   <Tabs defaultValue="buy">

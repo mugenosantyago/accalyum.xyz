@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { formatAlphBalance, formatAcyumBalance } from "@/lib/alephium-utils"
-import { AlephiumConnectButton } from "@/components/alephium-connect-button"
+import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { checkAlephiumConnection } from "@/lib/wallet-utils"
 
@@ -152,7 +152,7 @@ export default function TokensPage() {
               ) : !alephiumConnection.isConnected ? (
                 <div className="text-center py-6">
                   <p className="mb-4 text-amber-600">{t("viewYourTokens")}</p>
-                  <AlephiumConnectButton />
+                  <WalletConnectDisplay />
                 </div>
               ) : isLoading ? (
                 <div className="flex justify-center py-12">

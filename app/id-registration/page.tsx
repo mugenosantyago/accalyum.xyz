@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useLanguage } from "@/components/language-provider"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { useWallet } from "@/hooks/use-wallet"
-import { AlephiumConnectButton } from "@/components/alephium-connect-button"
+import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 
 // Political parties array
 const politicalParties = [
@@ -226,7 +226,7 @@ export default function IDRegistrationPage() {
               ) : !isConnected ? (
                 <CardContent className="text-center py-6">
                   <p className="mb-4 text-amber-600">{t("connectWalletFirst")}</p>
-                  <AlephiumConnectButton />
+                  <WalletConnectDisplay />
                 </CardContent>
               ) : (
                 <form onSubmit={handleSubmit}>

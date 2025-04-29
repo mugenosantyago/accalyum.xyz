@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ArrowDown, ArrowUp, Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
-import { AlephiumConnectButton } from "@/components/alephium-connect-button"
+import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { checkAlephiumConnection } from "@/lib/wallet-utils"
 import { ConnectionSuccessModal } from "@/components/connection-success-modal"
@@ -169,7 +169,7 @@ export default function TransactionsPage() {
               ) : !alephiumConnection.isConnected ? (
                 <div className="text-center py-6">
                   <p className="mb-4 text-amber-600">{t("viewYourTransactions")}</p>
-                  <AlephiumConnectButton />
+                  <WalletConnectDisplay />
                 </div>
               ) : isLoading ? (
                 <div className="flex justify-center py-12">
