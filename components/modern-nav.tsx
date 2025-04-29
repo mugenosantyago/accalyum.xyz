@@ -40,7 +40,7 @@ export function ModernNav() {
     { href: "/", icon: <Home size={20} />, label: t("home") },
     { href: "/id-registration", icon: <IdCard size={20} />, label: t("idRegistration") },
     { href: "/acyum-bank", icon: <Landmark size={20} />, label: t("acyumBank") },
-    { href: "/trade-tokens", icon: <BarChart3 size={20} />, label: t("tradeTokens") },
+    { href: "/acyum-swap", icon: <BarChart3 size={20} />, label: t("tradeTokens") },
     { href: "/mutual-funding", icon: <HeartHandshake size={20} />, label: t("mutualFunding") },
     { href: "/tokens", icon: <Coins size={20} />, label: t("tokens") },
     { href: "/transactions", icon: <History size={20} />, label: t("transactions") },

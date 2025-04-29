@@ -13,6 +13,15 @@ import { useLanguage } from "@/components/language-provider"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { useWallet } from "@alephium/web3-react"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
+import { logger } from "@/lib/logger"
+import type { Metadata } from 'next'
+
+// Add metadata for the ID Registration page
+export const metadata: Metadata = {
+  title: 'ID Registration', // Uses template: "ID Registration | ACYUM"
+  description: 'Register your unique ID on the Alephium blockchain through the ACYUM platform. Secure your digital identity.',
+  keywords: ['Alephium', 'ACYUM', 'ID Registration', 'Identity', 'Blockchain', 'DID', 'Crypto'],
+};
 
 // Political parties array
 const politicalParties = [

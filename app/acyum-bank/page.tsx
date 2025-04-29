@@ -18,11 +18,33 @@ import { useWallet, useBalance } from "@alephium/web3-react"
 import { logger } from "@/lib/logger"
 import { MakeDeposit, Withdraw } from "@/contracts/scripts"
 import { config } from "@/lib/config"
+import { TokenFaucetInstance } from "@/artifacts/ts/TokenFaucet"
+import type { Metadata } from 'next'
+
+// Add metadata for the Acyum Bank page
+// Note: Metadata must be defined outside the component function
+export const metadata: Metadata = {
+  title: 'Acyum Bank', // Uses template: "Acyum Bank | ACYUM"
+  description: 'Deposit and withdraw ALPH and ACYUM tokens securely using the Acyum Bank feature on the Alephium network. Includes an ACYUM faucet.',
+  keywords: ['Alephium', 'ACYUM', 'Bank', 'Deposit', 'Withdraw', 'Faucet', 'DeFi', 'Crypto'],
+};
+
 // Define constants manually as workaround for import issues
 const ONE_ALPH = 10n ** 18n;
 const ALPH_TOKEN_ID = "0000000000000000000000000000000000000000000000000000000000000000";
 const DUST_AMOUNT = 10000n;
-import { TokenFaucetInstance } from "@/artifacts/ts/TokenFaucet"
+
+// Define interface for the expected API response structure (subset)
+interface CandySwapTokenData {
+  id: string; // This seems to be an internal CandySwap ID, not the token ID
+  collectionTicker: string; // This seems to be the actual Token ID / Contract Address
+  name: string;
+  slug: string;
+  orderBookPrice?: number; // Price, usually against ALPH
+  totalVolume?: number;
+  dailyVolume?: number;
+  // Add other fields as needed
+}
 
 function formatBigIntAmount(amount: bigint | undefined | null, decimals: number, displayDecimals: number = 4): string {
   const safeAmount = amount ?? 0n; 
@@ -71,12 +93,20 @@ export default function AcyumBankPage() {
   const isConnected = connectionStatus === 'connected' && !!address;
   
   const { balance: alphBalanceWei, updateBalanceForTx } = useBalance();
+  console.log('Formatting ALPH balance:', alphBalanceWei, typeof alphBalanceWei);
   const displayAlphBalance = formatBigIntAmount(alphBalanceWei ?? 0n, 18, 4);
 
   const acyumTokenId = config.alephium.acyumTokenId;
-  const acyumBalanceInfo = account?.tokenBalances?.find(token => token.id === acyumTokenId);
+  const acyumBalanceInfo = account?.tokenBalances?.find((token: { id: string; amount: bigint }) => token.id === acyumTokenId);
   const acyumBalance = acyumBalanceInfo?.amount ?? 0n;
+  console.log('Formatting ACYUM balance:', acyumBalance, typeof acyumBalance);
   const displayAcyumBalance = formatBigIntAmount(acyumBalance, 7, 2);
+
+  // New state for CandySwap data & ALPH/USD price
+  const [acyumMarketData, setAcyumMarketData] = useState<CandySwapTokenData | null>(null);
+  const [alphUsdPrice, setAlphUsdPrice] = useState<number | null>(null);
+  const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
+  const [marketDataError, setMarketDataError] = useState<string | null>(null);
 
   const [depositAmount, setDepositAmount] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
@@ -87,6 +117,77 @@ export default function AcyumBankPage() {
 
   const bankTreasuryAddress = config.treasury.communist;
   const faucetContractAddress = config.treasury.communist;
+
+  // Effect to fetch market data (CandySwap + CoinGecko)
+  useEffect(() => {
+    const fetchMarketData = async () => {
+      setIsMarketDataLoading(true);
+      setMarketDataError(null);
+      setAcyumMarketData(null); // Reset previous data
+      setAlphUsdPrice(null);    // Reset previous data
+
+      try {
+        // Fetch both APIs concurrently
+        const [candySwapResponse, coingeckoResponse] = await Promise.all([
+          fetch('https://candyswap.gg/api/token-list'),
+          fetch('https://api.coingecko.com/api/v3/simple/price?ids=alephium&vs_currencies=usd')
+        ]);
+
+        // Process CandySwap data
+        if (!candySwapResponse.ok) {
+          throw new Error(`CandySwap API error! status: ${candySwapResponse.status}`);
+        }
+        const candySwapData: CandySwapTokenData[] = await candySwapResponse.json();
+        const acyumData = candySwapData.find(token => token.collectionTicker === acyumTokenId);
+
+        if (acyumData) {
+          setAcyumMarketData(acyumData);
+          logger.info("Fetched ACYUM market data from CandySwap:", acyumData);
+        } else {
+          logger.warn(`ACYUM token ID (${acyumTokenId}) not found in CandySwap API response.`);
+          // Don't set a fatal error yet, CoinGecko might still succeed
+        }
+
+        // Process CoinGecko data
+        if (!coingeckoResponse.ok) {
+          throw new Error(`CoinGecko API error! status: ${coingeckoResponse.status}`);
+        }
+        const coingeckoData = await coingeckoResponse.json();
+        const price = coingeckoData?.alephium?.usd;
+        if (typeof price === 'number') {
+          setAlphUsdPrice(price);
+          logger.info(`Fetched ALPH/USD price from CoinGecko: ${price}`);
+        } else {
+           throw new Error('Invalid data format from CoinGecko API');
+        }
+        
+        // If ACYUM wasn't found earlier, now set the error
+        if (!acyumData) {
+           setMarketDataError("ACYUM data not found on CandySwap.");
+        }
+
+      } catch (error) {
+        logger.error("Failed to fetch market data:", error);
+        const message = error instanceof Error ? error.message : "Failed to load market data";
+        setMarketDataError(message);
+      } finally {
+        setIsMarketDataLoading(false);
+      }
+    };
+
+    if (acyumTokenId) {
+      fetchMarketData();
+    } else {
+      logger.warn("ACYUM Token ID not configured, skipping market data fetch.");
+      setIsMarketDataLoading(false);
+      setMarketDataError("ACYUM Token ID not configured.");
+    }
+  }, [acyumTokenId]); // Re-run if acyumTokenId changes
+
+  // Calculate ACYUM/USD price
+  const acyumUsdPrice = acyumMarketData?.orderBookPrice && alphUsdPrice
+    ? acyumMarketData.orderBookPrice * alphUsdPrice
+    : null;
 
   const handleAlphDeposit = async () => {
     if (!isConnected || !address || !signer) return toast({ title: "Error", description: "Wallet not connected", variant: "destructive" });
@@ -286,6 +387,27 @@ export default function AcyumBankPage() {
                          <div>
                            <p className="text-sm text-gray-500 dark:text-gray-400">ACYUM {t("balance")}</p>
                            <p className="text-xl font-bold">{displayAcyumBalance} ACYUM</p>
+                           {/* Display CandySwap/CoinGecko Market Data */}
+                           {isMarketDataLoading ? (
+                             <p className="text-xs text-gray-400">Loading market price...</p>
+                           ) : marketDataError ? (
+                             <p className="text-xs text-red-500">Error: {marketDataError}</p>
+                           ) : acyumMarketData?.orderBookPrice !== undefined && alphUsdPrice !== null ? (
+                             <>
+                               <p className="text-xs text-gray-400">
+                                 ≈ {(Number(displayAcyumBalance.replace(/,/g, '')) * acyumMarketData.orderBookPrice).toFixed(2)} ALPH 
+                                 (@ {acyumMarketData.orderBookPrice.toPrecision(3)} ALPH/ACYUM)
+                               </p>
+                               {acyumUsdPrice !== null && (
+                                <p className="text-xs text-gray-400">
+                                  ≈ ${(Number(displayAcyumBalance.replace(/,/g, '')) * acyumUsdPrice).toFixed(2)} USD 
+                                  (@ ${acyumUsdPrice.toFixed(4)} / ACYUM)
+                                </p>
+                               )}
+                             </>
+                           ) : (
+                             <p className="text-xs text-gray-400">Market price unavailable.</p>
+                           )}
                          </div>
                       </div>
                       <div className="mt-2">
@@ -293,6 +415,7 @@ export default function AcyumBankPage() {
                       </div>
                     </div>
 
+                    {/* ACYUM Faucet Card - This stays here */}
                     <Card className="mb-6 bg-gray-850 border-gray-700">
                       <CardHeader className="pb-2">
                          <CardTitle className="text-lg">ACYUM Faucet</CardTitle>
@@ -312,6 +435,52 @@ export default function AcyumBankPage() {
                       </CardContent>
                     </Card>
 
+                    {/* Display Market Info Card */}
+                    {!isMarketDataLoading && !marketDataError && (acyumMarketData || alphUsdPrice) && (
+                      <Card className="mb-6 bg-gray-850 border-gray-700">
+                        <CardHeader className="pb-2">
+                           <CardTitle className="text-lg">Market Info</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-2 text-sm">
+                           {acyumMarketData && (
+                             <>
+                               <p>ACYUM/ALPH Price:</p> 
+                               <p className="text-right">{acyumMarketData.orderBookPrice?.toPrecision(4) ?? 'N/A'}</p>
+                             </>
+                           )}
+                           {acyumUsdPrice !== null && (
+                            <>
+                              <p>ACYUM/USD Price:</p> 
+                              <p className="text-right">${acyumUsdPrice.toFixed(4)}</p>
+                            </>
+                           )}
+                           {alphUsdPrice !== null && (
+                            <>
+                              <p>ALPH/USD Price:</p> 
+                              <p className="text-right">${alphUsdPrice.toFixed(4)}</p>
+                            </>
+                           )}
+                           {acyumMarketData && (
+                             <>
+                               <p>Total Volume (ACYUM):</p> 
+                               <p className="text-right">{acyumMarketData.totalVolume?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? 'N/A'}</p>
+                               <p>24h Volume (ACYUM):</p> 
+                               <p className="text-right">{acyumMarketData.dailyVolume?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? 'N/A'}</p>
+                             </>
+                           )}
+                           <p className="text-xs col-span-2 text-gray-400 pt-2">
+                             {acyumMarketData && (
+                               <>Data from <a href={`https://candyswap.gg/token/${acyumMarketData.slug}`} target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400">CandySwap</a> {alphUsdPrice && "&"} </> 
+                             )}
+                             {alphUsdPrice && (
+                              <> <a href="https://www.coingecko.com/en/coins/alephium" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400">CoinGecko</a></>
+                             )}
+                           </p>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Deposit/Withdraw Tabs - This starts here */}
                     <Tabs defaultValue="deposit">
                       <TabsList className="grid grid-cols-2 mb-4">
                         <TabsTrigger value="deposit">{t("deposit")}</TabsTrigger>

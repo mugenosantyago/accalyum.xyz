@@ -7,6 +7,32 @@ import { AlephiumWalletProvider } from "@alephium/web3-react"
 
 const inter = Inter({ subsets: ["latin"] })
 
+// Define metadata BEFORE the layout component
+export const metadata = {
+  title: {
+    template: '%s | ACYUM',
+    default: 'ACYUM - Alephium DeFi Platform',
+  },
+  description: 'ACYUM: Your gateway to decentralized finance on the Alephium blockchain. Explore token swaps, banking, mutual funding, and more.',
+  openGraph: {
+    title: 'ACYUM - Alephium DeFi Platform',
+    description: 'Decentralized finance on Alephium: Swap, Bank, Fund.',
+    // Add a URL to your main logo image here
+    // images: [`${process.env.NEXT_PUBLIC_BASE_URL || 'https://accalyum.xyz'}/images/og-logo.png`], 
+    url: process.env.NEXT_PUBLIC_BASE_URL || 'https://accalyum.xyz',
+    siteName: 'ACYUM',
+    locale: 'en_US',
+    type: 'website',
+  },
+  // Add Twitter card tags if desired
+  // twitter: {
+  //   card: 'summary_large_image',
+  //   title: 'ACYUM - Alephium DeFi Platform',
+  //   description: 'Decentralized finance on Alephium: Swap, Bank, Fund.',
+  //   images: [`${process.env.NEXT_PUBLIC_BASE_URL || 'https://accalyum.xyz'}/images/twitter-logo.png`], 
+  // },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -23,7 +49,3 @@ export default function RootLayout({
     </html>
   )
 }
-
-export const metadata = {
-      generator: 'v0.dev'
-    };

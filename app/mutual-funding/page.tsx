@@ -18,6 +18,7 @@ import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { ConnectionSuccessModal } from "@/components/connection-success-modal"
 import { useWallet } from "@alephium/web3-react"
 import { logger } from "@/lib/logger"
+import type { Metadata } from 'next'
 
 interface Initiative {
   id: string
@@ -51,6 +52,13 @@ function formatBigIntAmount(amount: bigint | undefined | null, decimals: number,
   const displayFractional = fractionalString.slice(0, displayDecimals).replace(/0+$/, '');
   return `${integerPart}${displayFractional.length > 0 ? '.' + displayFractional : ''}`;
 }
+
+// Add metadata for the Mutual Funding page
+export const metadata: Metadata = {
+  title: 'Mutual Funding', // Uses template: "Mutual Funding | ACYUM"
+  description: 'Participate in the ACYUM Mutual Funding pool on the Alephium blockchain. Contribute ALPH and track pool statistics.',
+  keywords: ['Alephium', 'ACYUM', 'Mutual Funding', 'Pool', 'Contribute', 'DeFi', 'Crypto'],
+};
 
 export default function MutualFundingPage() {
   const { t } = useLanguage()
@@ -124,7 +132,7 @@ export default function MutualFundingPage() {
           logger.info(`Fetching balance for ${initiative.name} at address ${initiative.treasuryAddress}`)
           const balanceInfo = await nodeProvider.addresses.getAddressesAddressBalance(initiative.treasuryAddress)
 
-          const balanceInAlph = formatBigIntAmount(balanceInfo.balance, 18, 4)
+          const balanceInAlph = formatBigIntAmount(BigInt(balanceInfo.balance), 18, 4)
           logger.info(`Balance for ${initiative.name}: ${balanceInAlph} ALPH`)
 
           updatedInitiatives[i] = {
@@ -253,7 +261,7 @@ export default function MutualFundingPage() {
             <div className="text-center py-6 mb-8">
               <Card className="max-w-md mx-auto bg-gray-900 border-gray-800">
                 <CardContent className="pt-6">
-                  <p className="mb-4 text-amber-600">{t("connectToParticipate")}</p>
+                  <p className="mb-4 text-amber-600">Please connect your wallet to participate.</p>
                   <WalletConnectDisplay />
                 </CardContent>
               </Card>

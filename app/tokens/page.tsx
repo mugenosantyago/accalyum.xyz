@@ -9,13 +9,28 @@ import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { useWallet, useBalance } from "@alephium/web3-react"
 import { config } from "@/lib/config"
-import { ALPH_TOKEN_ID } from "@alephium/web3"
+import { logger } from "@/lib/logger"
+import type { Metadata } from 'next'
 
-interface TokenBalance {
+interface CandySwapTokenData {
+  id: string;
+  collectionTicker: string;
+  name: string;
+  slug: string;
+  decimals?: number;
+  orderBookPrice?: number;
+  totalVolume?: number;
+  dailyVolume?: number;
+}
+
+interface TokenBalanceRowData {
+  id: string;
   symbol: string
   name: string
   balance: string
-  value: string
+  balanceRaw: bigint
+  valueAlph: string
+  valueUsd: string
 }
 
 function formatBigIntAmount(amount: bigint | undefined | null, decimals: number, displayDecimals: number = 4): string {
@@ -34,10 +49,20 @@ function formatBigIntAmount(amount: bigint | undefined | null, decimals: number,
   return `${integerPart}${displayFractional.length > 0 ? '.' + displayFractional : ''}`;
 }
 
+// Add metadata for the Tokens page
+export const metadata: Metadata = {
+  title: 'Token Balances', // Uses template: "Token Balances | ACYUM"
+  description: 'View your Alephium token balances, including ALPH and ACYUM, with their current estimated values in ALPH and USD.',
+  keywords: ['Alephium', 'ACYUM', 'Tokens', 'Balance', 'Wallet', 'Portfolio', 'Crypto'],
+};
+
 export default function TokensPage() {
   const { t } = useLanguage()
   const [isLoading, setIsLoading] = useState(true)
-  const [tokens, setTokens] = useState<TokenBalance[]>([])
+  const [marketData, setMarketData] = useState<Record<string, CandySwapTokenData>>({})
+  const [alphUsdPrice, setAlphUsdPrice] = useState<number | null>(null)
+  const [marketDataError, setMarketDataError] = useState<string | null>(null)
+  const [tokenRows, setTokenRows] = useState<TokenBalanceRowData[]>([])
 
   const {
     account,
@@ -48,46 +73,102 @@ export default function TokensPage() {
   const isConnected = connectionStatus === 'connected' && !!address;
 
   useEffect(() => {
-    const fetchTokens = async () => {
+    const fetchMarketData = async () => {
+      setMarketDataError(null);
+      try {
+        const [candySwapResponse, coingeckoResponse] = await Promise.all([
+          fetch('https://candyswap.gg/api/token-list'),
+          fetch('https://api.coingecko.com/api/v3/simple/price?ids=alephium&vs_currencies=usd')
+        ]);
+
+        if (!candySwapResponse.ok) throw new Error(`CandySwap API error! status: ${candySwapResponse.status}`);
+        const candySwapData: CandySwapTokenData[] = await candySwapResponse.json();
+        const marketDataMap: Record<string, CandySwapTokenData> = {};
+        candySwapData.forEach(token => {
+          if (token.collectionTicker) {
+            marketDataMap[token.collectionTicker] = token;
+          }
+        });
+        setMarketData(marketDataMap);
+        logger.info("Fetched CandySwap market data for Tokens page.");
+
+        if (!coingeckoResponse.ok) throw new Error(`CoinGecko API error! status: ${coingeckoResponse.status}`);
+        const coingeckoData = await coingeckoResponse.json();
+        const price = coingeckoData?.alephium?.usd;
+        if (typeof price === 'number') {
+          setAlphUsdPrice(price);
+          logger.info(`Fetched ALPH/USD price for Tokens page: ${price}`);
+        } else {
+          throw new Error('Invalid data format from CoinGecko API');
+        }
+      } catch (error) {
+        logger.error("Failed to fetch market data for Tokens page:", error);
+        const message = error instanceof Error ? error.message : "Failed to load market data";
+        setMarketDataError(message);
+        setMarketData({});
+        setAlphUsdPrice(null);
+      }
+    };
+    fetchMarketData();
+  }, []);
+
+  useEffect(() => {
+    const processUserTokens = () => {
       setIsLoading(true);
-      if (!address) {
-        setTokens([]);
-        setIsLoading(false)
-        return
+      if (!address || Object.keys(marketData).length === 0 || alphUsdPrice === null) {
+        setTokenRows([]);
+        if (!address || (marketDataError && Object.keys(marketData).length === 0 && alphUsdPrice === null)) {
+            setIsLoading(false);
+        }
+        return;
       }
 
       try {
-        const fetchedTokens: TokenBalance[] = [];
-        account?.tokenBalances?.forEach(tb => {
-            let name = `Token ${tb.id.substring(0,4)}...`;
-            let decimals = 18;
-            let symbol = `TKN_${tb.id.substring(0,4)}`;
+        const processedTokens: TokenBalanceRowData[] = [];
+        account?.tokenBalances?.forEach((tb: { id: string; amount: bigint }) => {
+          const tokenMarketInfo = marketData[tb.id];
+          const decimals = tokenMarketInfo?.decimals ?? (tb.id === config.alephium.acyumTokenId ? 7 : 18);
+          const name = tokenMarketInfo?.name ?? (tb.id === config.alephium.acyumTokenId ? "American Communist Youth Uprising Movement" : `Token ${tb.id.substring(0,4)}...`);
+          const symbol = tokenMarketInfo?.slug ?? (tb.id === config.alephium.acyumTokenId ? "ACYUM" : `TKN_${tb.id.substring(0,4)}`);
+          
+          const balanceFormatted = formatBigIntAmount(tb.amount, decimals, decimals);
+          let valueAlphFormatted = "-";
+          let valueUsdFormatted = "-";
+
+          const priceAlph = tokenMarketInfo?.orderBookPrice;
+          if (typeof priceAlph === 'number' && typeof alphUsdPrice === 'number') {
+            let factor = 1n;
+            for(let i=0; i<decimals; i++) { factor *= 10n; }
+            const balanceNumber = Number(tb.amount) / Number(factor);
             
-            if (tb.id === config.alephium.acyumTokenId) {
-                name = "American Communist Youth Uprising Movement";
-                symbol = "ACYUM";
-                decimals = 7;
-            }
+            const valueAlph = balanceNumber * priceAlph;
+            const valueUsd = valueAlph * alphUsdPrice;
+            
+            valueAlphFormatted = valueAlph.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+            valueUsdFormatted = valueUsd.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          }
 
-            fetchedTokens.push({
-                symbol: symbol,
-                name: name, 
-                balance: formatBigIntAmount(tb.amount, decimals, decimals),
-                value: "0.00"
-            });
+          processedTokens.push({
+            id: tb.id,
+            symbol: symbol,
+            name: name,
+            balance: balanceFormatted,
+            balanceRaw: tb.amount,
+            valueAlph: valueAlphFormatted,
+            valueUsd: valueUsdFormatted
+          });
         });
-
-        setTokens(fetchedTokens)
+        setTokenRows(processedTokens);
       } catch (error) {
-        console.error("Error fetching tokens:", error)
-        setTokens([]);
+        logger.error("Error processing user tokens:", error);
+        setTokenRows([]);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
 
-    fetchTokens()
-  }, [address, account?.tokenBalances])
+    processUserTokens();
+  }, [address, account?.tokenBalances, marketData, alphUsdPrice, marketDataError]);
 
   return (
     <ClientLayoutWrapper>
@@ -111,9 +192,13 @@ export default function TokensPage() {
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-[#FF6B35]" />
                 </div>
-              ) : tokens.length === 0 ? (
+              ) : tokenRows.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500">{t("noTokensFound")}</p>
+                </div>
+              ) : marketDataError ? (
+                <div className="text-center py-4 text-red-500">
+                  <p>Error loading market data: {marketDataError}</p>
                 </div>
               ) : (
                 <Table>
@@ -123,15 +208,17 @@ export default function TokensPage() {
                       <TableHead>{t("name")}</TableHead>
                       <TableHead className="text-right">{t("balance")}</TableHead>
                       <TableHead className="text-right">{t("value")} (ALPH)</TableHead>
+                      <TableHead className="text-right">{t("value")} (USD)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tokens.map((token) => (
-                      <TableRow key={token.symbol}>
+                    {tokenRows.map((token) => (
+                      <TableRow key={token.id}>
                         <TableCell className="font-medium">{token.symbol}</TableCell>
                         <TableCell>{token.name}</TableCell>
                         <TableCell className="text-right">{token.balance}</TableCell>
-                        <TableCell className="text-right">{token.value} ALPH</TableCell>
+                        <TableCell className="text-right">{token.valueAlph}</TableCell>
+                        <TableCell className="text-right">{token.valueUsd}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

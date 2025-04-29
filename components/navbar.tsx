@@ -38,7 +38,7 @@ export function Navbar() {
           <Link href="/acyum-bank" className="text-gray-300 hover:text-[#FF6B35]">
             {t("acyumBank")}
           </Link>
-          <Link href="/trade-tokens" className="text-gray-300 hover:text-[#FF6B35]">
+          <Link href="/acyum-swap" className="text-gray-300 hover:text-[#FF6B35]">
             {t("tradeTokens")}
           </Link>
           <Link href="/mutual-funding" className="text-gray-300 hover:text-[#FF6B35]">
@@ -108,7 +108,7 @@ export function Navbar() {
             <Link href="/acyum-bank" className="text-gray-300 hover:text-[#FF6B35] py-2">
               {t("acyumBank")}
             </Link>
-            <Link href="/trade-tokens" className="text-gray-300 hover:text-[#FF6B35] py-2">
+            <Link href="/acyum-swap" className="text-gray-300 hover:text-[#FF6B35] py-2">
               {t("tradeTokens")}
             </Link>
             <Link href="/mutual-funding" className="text-gray-300 hover:text-[#FF6B35] py-2">

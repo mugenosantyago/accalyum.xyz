@@ -9,6 +9,8 @@ import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { useWallet } from "@alephium/web3-react"
 import { ConnectionSuccessModal } from "@/components/connection-success-modal"
+import { logger } from "@/lib/logger"
+import type { Metadata } from 'next'
 
 interface Transaction {
   id: string
@@ -18,6 +20,13 @@ interface Transaction {
   timestamp: string
   status: "completed" | "pending" | "failed"
 }
+
+// Add metadata for the Transactions page
+export const metadata: Metadata = {
+  title: 'Transactions', // Uses template: "Transactions | ACYUM"
+  description: 'View your transaction history on the Alephium blockchain associated with your connected wallet address via the ACYUM platform.',
+  keywords: ['Alephium', 'ACYUM', 'Transactions', 'History', 'Blockchain', 'Explorer', 'Crypto'],
+};
 
 export default function TransactionsPage() {
   const { t } = useLanguage()
@@ -66,7 +75,7 @@ export default function TransactionsPage() {
         <main className="flex-grow container mx-auto py-12 px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">{t("transactionHistory")}</h1>
 
-          <ConnectionSuccessModal featureName="Transaction History" />
+          <ConnectionSuccessModal featureName="Transactions" />
 
           <Card>
             <CardHeader>
@@ -77,7 +86,7 @@ export default function TransactionsPage() {
             <CardContent>
               {!isConnected ? (
                 <div className="text-center py-6">
-                  <p className="mb-4 text-amber-600">{t("connectToViewHistory")}</p>
+                  <p className="mb-4 text-amber-600">Please connect your wallet to view transaction history.</p>
                   <WalletConnectDisplay />
                 </div>
               ) : isLoading ? (
