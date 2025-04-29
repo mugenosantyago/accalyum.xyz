@@ -80,6 +80,8 @@ function formatBigIntAmount(amount: bigint | undefined | null, decimals: number,
 }
 
 // Client Component containing the page logic
+"use client"
+
 function AcyumBankClient() {
   const { t } = useLanguage()
   const { toast } = useToast()

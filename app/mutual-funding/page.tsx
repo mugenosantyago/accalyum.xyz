@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 
 import { useState, useEffect } from "react"
@@ -61,6 +59,7 @@ export const metadata: Metadata = {
 };
 
 // Client Component containing the page logic
+"use client"
 function MutualFundingClient() {
   const { t } = useLanguage()
   const [donationAmount, setDonationAmount] = useState("")

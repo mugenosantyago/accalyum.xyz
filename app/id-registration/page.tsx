@@ -1,5 +1,3 @@
-"use client"
-
 import React, { useState, useEffect } from 'react'
 import type { Metadata } from 'next'
 import { Button } from "@/components/ui/button"
@@ -42,6 +40,7 @@ const politicalParties = [
 ]
 
 // Client Component containing the page logic
+"use client"
 function IdRegistrationClient() {
   const { toast } = useToast()
   const { t } = useLanguage()

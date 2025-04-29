@@ -1,5 +1,3 @@
-"use client"
-
 import React, { useState, useEffect, useCallback } from 'react'
 import type { Metadata } from 'next'
 import { Button } from "@/components/ui/button"
@@ -35,6 +33,7 @@ export const metadata: Metadata = {
 };
 
 // Client Component containing the page logic
+"use client"
 function AcyumSwapClient() {
   const { t } = useLanguage()
   const { toast } = useToast()
