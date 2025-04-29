@@ -4,7 +4,7 @@ export const translations = {
     home: "Home",
     idRegistration: "ID Registration",
     acyumBank: "Acyum Bank",
-    tradeTokens: "Acyum Swapn",
+    tradeTokens: "acyumSwap",
     mutualFunding: "Mutual Funding",
     tokens: "Tokens",
     transactions: "Transactions",
@@ -119,7 +119,7 @@ export const translations = {
     subject: "Subject",
     message: "Message",
     sendingMessage: "Sending...",
-    sendMessage: "Send Message",
+    send: "Send",
 
     // Common UI Elements
     loading: "Loading...",
@@ -134,13 +134,19 @@ export const translations = {
     back: "Back",
     next: "Next",
     submit: "Submit",
+
+    // Header
+    launchApp: "Launch App",
+    wallet: "Wallet",
+    earn: "Earn",
+    liquidity: "Liquidity",
   },
   ja: {
     // Navigation
     home: "ホーム",
     idRegistration: "ID登録",
-    acyumBank: "Acyumバンク",
-    tradeTokens: "Acyum スワップン",
+    acyumBank: "Acyum銀行",
+    tradeTokens: "acyumSwap",
     mutualFunding: "相互資金",
     tokens: "トークン",
     transactions: "取引履歴",
@@ -242,7 +248,7 @@ export const translations = {
     // Transactions Page
     transactionHistory: "取引履歴",
     recentTransactions: "最近の取引",
-    viewTransactions: "最近の入金と出金の取引を表示します。",
+    viewTransactions: "最近の入出金取引を表示します。",
     viewYourTransactions: "取引を表示するにはウォレットを接続してください",
     noTransactionsFound: "取引が見つかりません。",
     type: "タイプ",
@@ -251,12 +257,11 @@ export const translations = {
 
     // Contact Page
     contactUs: "お問い合わせ",
-    getInTouch: "お問い合わせ",
-    sendMessage: "メッセージを送信すると、できるだけ早くご連絡いたします。",
+    getInTouch: "連絡を取る",
     subject: "件名",
     message: "メッセージ",
     sendingMessage: "送信中...",
-    sendMessage: "メッセージを送信",
+    send: "送信",
 
     // Common UI Elements
     loading: "読み込み中...",
@@ -271,5 +276,48 @@ export const translations = {
     back: "戻る",
     next: "次へ",
     submit: "送信",
+
+    // Header
+    launchApp: "アプリを起動",
+    wallet: "ウォレット",
+    earn: "稼ぐ",
+    liquidity: "流動性",
+
+    // Footer & Common UI
+    copyright: "著作権",
+    allRightsReserved: "全著作権所有",
+    connected: "接続済み",
+    disconnect: "切断",
+    alphBalance: "ALPH残高",
+    acyumBalance: "ACYUM残高",
+    insufficientBalance: "残高不足",
+    enterAmount: "金額を入力",
+    selectToken: "トークンを選択",
+    max: "最大",
+    details: "詳細",
+    price: "価格",
+    slippageTolerance: "スリッページ許容度",
+    swap: "スワップ",
+    addLiquidity: "流動性を追加",
+    removeLiquidity: "流動性を削除",
+    pool: "プール",
+    yourLiquidity: "あなたの流動性",
+    shareOfPool: "プールのシェア",
+    apy: "APY",
+    transactionSettings: "トランザクション設定",
+    transactionDeadline: "トランザクション期限",
+    minutes: "分",
+    saveSettings: "設定を保存",
+    invalidInput: "無効な入力",
+    transactionSubmitted: "トランザクション送信済み",
+    viewOnExplorer: "エクスプローラーで表示",
+    close: "閉じる",
+    settings: "設定",
+    language: "言語",
+    darkMode: "ダークモード",
+    lightMode: "ライトモード",
+    system: "システム",
+    search: "検索",
+    noResults: "結果なし",
   },
 }

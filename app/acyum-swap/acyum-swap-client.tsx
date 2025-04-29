@@ -56,95 +56,91 @@ export default function AcyumSwapClient() {
   const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
   const [marketDataError, setMarketDataError] = useState<string | null>(null);
 
-  // Calculated Rates State
-  const [acyumPerAlphRate, setAcyumPerAlphRate] = useState<number | undefined>(undefined);
-  const [alphPerAcyumRate, setAlphPerAcyumRate] = useState<number | undefined>(undefined);
+  // Calculated Rates State - Set Fixed Rates
+  const fixedAlphPerAcyumRate = 0.7;
+  const fixedAcyumPerAlphRate = 1 / fixedAlphPerAcyumRate; // Approx 1.42857...
+  const [acyumPerAlphRate, setAcyumPerAlphRate] = useState<number | undefined>(fixedAcyumPerAlphRate);
+  const [alphPerAcyumRate, setAlphPerAcyumRate] = useState<number | undefined>(fixedAlphPerAcyumRate);
 
   useEffect(() => {
-    async function fetchSwapData() {
+    // Renamed function to reflect it fetches more than just swap rates now
+    async function fetchExternalData() { 
       setIsMarketDataLoading(true); 
       setMarketDataError(null); 
       setRawAcyumMarketData(null); // Reset raw data
       setAlphUsdPrice(null); // Reset price
-      setAcyumPerAlphRate(undefined); // Reset rates
-      setAlphPerAcyumRate(undefined); // Reset rates
+      // Rates are fixed, no need to reset/set them here
+
       try {
-        // Fetch token list via proxy and ALPH price from CoinGecko
+        // Fetch token list via proxy (for volume/metadata) and ALPH price from CoinGecko
         const [tokenListRes, coingeckoRes] = await Promise.all([
           fetch('/api/candyswap/token-list'), 
           fetch('https://api.coingecko.com/api/v3/simple/price?ids=alephium&vs_currencies=usd')
         ]);
 
-        // Process CandySwap Token List
+        // Process CandySwap Token List (for volume/metadata, NOT price)
         if (!tokenListRes.ok) {
            const errorText = await tokenListRes.text();
            logger.error(`CandySwap API Error: ${tokenListRes.status}`, errorText);
-           throw new Error(`CandySwap API error! status: ${tokenListRes.status}`);
-        }
-        const tokenListData: CandySwapTokenData[] = await tokenListRes.json();
-        // Find ACYUM using the collectionTicker (which holds the Contract Address from the API)
-        const acyumData = tokenListData.find(token => token.collectionTicker === acyumContractAddressForAPI); 
-        if (acyumData) {
-          setRawAcyumMarketData(acyumData); // Store raw data
-          logger.info("Fetched ACYUM market data for Swap page:", acyumData);
-
-          // Calculate derived rates
-          if (typeof acyumData.orderBookPrice === 'number') {
-            const rawPrice = acyumData.orderBookPrice;
-            const calculatedAcyumPerAlph = rawPrice / (10 ** ACYUM_DECIMALS);
-            const calculatedAlphPerAcyum = 1 / calculatedAcyumPerAlph;
-            setAcyumPerAlphRate(calculatedAcyumPerAlph);
-            setAlphPerAcyumRate(calculatedAlphPerAcyum);
-            logger.info(`Calculated rates: ${calculatedAcyumPerAlph.toFixed(2)} ACYUM/ALPH, ${calculatedAlphPerAcyum.toFixed(6)} ALPH/ACYUM`);
-          } else {
-             logger.warn("ACYUM orderBookPrice is missing or not a number.");
-             setMarketDataError("ACYUM rate unavailable.");
-          }
-
+           // Set error but continue to fetch coingecko if possible
+           setMarketDataError(`CandySwap API error! status: ${tokenListRes.status}`); 
         } else {
-          logger.warn(`ACYUM contract address (${acyumContractAddressForAPI}) not found in CandySwap API response.`);
-          setMarketDataError("ACYUM data not found on CandySwap."); 
+            const tokenListData: CandySwapTokenData[] = await tokenListRes.json();
+            // Find ACYUM using the collectionTicker
+            const acyumData = tokenListData.find(token => token.collectionTicker === acyumContractAddressForAPI); 
+            if (acyumData) {
+              setRawAcyumMarketData(acyumData); // Store raw data for volume etc.
+              logger.info("Fetched ACYUM market metadata/volume for Swap page:", acyumData);
+              // No longer calculating rate from acyumData.orderBookPrice
+            } else {
+              logger.warn(`ACYUM contract address (${acyumContractAddressForAPI}) not found in CandySwap API response.`);
+              // Don't necessarily set an error, metadata/volume might just be unavailable
+            }
         }
 
         // Process CoinGecko Price Data
         if (!coingeckoRes.ok) {
            const errorText = await coingeckoRes.text();
            logger.error(`CoinGecko API Error: ${coingeckoRes.status}`, errorText);
-           throw new Error(`CoinGecko API error! status: ${coingeckoRes.status}`);
-        }
-        const coingeckoData = await coingeckoRes.json();
-        const price = coingeckoData?.alephium?.usd;
-        if (typeof price === 'number') {
-           setAlphUsdPrice(price);
-           logger.info(`Fetched ALPH/USD price for Swap page: ${price}`);
+           // Append error message
+           setMarketDataError(prev => prev ? `${prev} & CoinGecko API error! status: ${coingeckoRes.status}` : `CoinGecko API error! status: ${coingeckoRes.status}`);
         } else {
-           logger.error('Invalid data format from CoinGecko API', coingeckoData);
-           throw new Error('Invalid price data format from CoinGecko API');
+            const coingeckoData = await coingeckoRes.json();
+            const price = coingeckoData?.alephium?.usd;
+            if (typeof price === 'number') {
+               setAlphUsdPrice(price);
+               logger.info(`Fetched ALPH/USD price for Swap page: ${price}`);
+            } else {
+               logger.error('Invalid data format from CoinGecko API', coingeckoData);
+               // Append error message
+               setMarketDataError(prev => prev ? `${prev} & Invalid price data format from CoinGecko API` : 'Invalid price data format from CoinGecko API');
+            }
         }
         
-        // Only clear generic market data error if both succeed and ACYUM data/rate was found
-        if (acyumData && acyumPerAlphRate !== undefined) { 
-           setMarketDataError(null); 
-        }
+        // Log the fixed rates being used regardless of API success/failure
+        logger.info(`Using FIXED rates: ${fixedAcyumPerAlphRate.toFixed(2)} ACYUM/ALPH, ${fixedAlphPerAcyumRate.toFixed(1)} ALPH/ACYUM`);
 
-      } catch (error) {
-        logger.error("Failed to fetch market data for Swap page:", error);
+
+      } catch (error) { // Catch unexpected errors during fetch/processing
+        logger.error("Failed to fetch external data for Swap page:", error);
         const message = error instanceof Error ? error.message : "Failed to load market data";
-        // Keep specific error if already set (e.g., ACYUM not found), otherwise set general fetch error
-        if (!marketDataError) { 
-          setMarketDataError(message);
-        }
+        // Append error message
+        setMarketDataError(prev => prev ? `${prev} & ${message}` : message);
       } finally {
         setIsMarketDataLoading(false);
       }
     };
+
     if (acyumContractAddressForAPI) { // Check if address is configured
-       fetchSwapData();
+       fetchExternalData();
     } else {
        setIsMarketDataLoading(false);
        setMarketDataError("ACYUM Contract Address not configured.");
-       logger.warn("ACYUM Contract Address not configured, skipping market data fetch.");
+       logger.warn("ACYUM Contract Address not configured, skipping external data fetch.");
+       // Still log the fixed rates being used
+       logger.info(`Using FIXED rates: ${fixedAcyumPerAlphRate.toFixed(2)} ACYUM/ALPH, ${fixedAlphPerAcyumRate.toFixed(1)} ALPH/ACYUM`);
     }
+    // Dependency array only needs acyumContractAddressForAPI for the fetch trigger.
   }, [acyumContractAddressForAPI]);
 
   // Use calculated rates for output calculation
@@ -207,8 +203,8 @@ export default function AcyumSwapClient() {
           <div className="max-w-md mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle>Acyum Swapn</CardTitle>
-                <CardDescription>Exchange ALPH and ACYUM</CardDescription>
+                <CardTitle>acyumSwap</CardTitle>
+                <CardDescription>{t('buyAndSell')}</CardDescription>
               </CardHeader>
 
               <CardContent>
@@ -279,14 +275,17 @@ export default function AcyumSwapClient() {
                     </div>
                     
                     <div className="text-xs text-gray-400 text-center space-y-1 pt-2 pb-2">
+                        {/* Always display fixed rates if available (state is initialized) */}
                         {acyumPerAlphRate !== undefined && alphPerAcyumRate !== undefined ? (
                             <>
-                                <p>1 ALPH ≈ {acyumPerAlphRate.toFixed(2)} ACYUM</p>
-                                <p>1 ACYUM ≈ {alphPerAcyumRate.toFixed(6)} ALPH</p>
-                                {alphUsdPrice && <p>(1 ALPH ≈ ${alphUsdPrice.toFixed(3)} USD)</p>}
+                                {/* Displaying fixed rates */}
+                                <p>1 ALPH ≈ {acyumPerAlphRate.toFixed(2)} ACYUM</p> 
+                                <p>1 ACYUM ≈ {alphPerAcyumRate.toFixed(1)} ALPH</p> {/* Adjusted precision to .toFixed(1) for 0.7 */}
+                                {alphUsdPrice ? <p>(1 ALPH ≈ ${alphUsdPrice.toFixed(3)} USD)</p> : <p>(USD rate unavailable)</p>}
                             </>
                         ) : (
-                            <p>Rate unavailable.</p>
+                            // This case should theoretically not happen with fixed rates initialized
+                            <p>Rate unavailable.</p> 
                         )}
                     </div>
 
