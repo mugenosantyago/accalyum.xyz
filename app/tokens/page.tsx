@@ -5,10 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
-import { formatAlphBalance, formatAcyumBalance } from "@/lib/alephium-utils"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
-import { checkAlephiumConnection } from "@/lib/wallet-utils"
+import { useWallet, useBalance } from "@alephium/web3-react"
+import { config } from "@/lib/config"
+import { ALPH_TOKEN_ID } from "@alephium/web3"
 
 interface TokenBalance {
   symbol: string
@@ -17,113 +18,76 @@ interface TokenBalance {
   value: string
 }
 
+function formatBigIntAmount(amount: bigint | undefined | null, decimals: number, displayDecimals: number = 4): string {
+  const safeAmount = amount ?? 0n; 
+  if (typeof safeAmount !== 'bigint') return "Error";
+  let factor = 1n;
+  try {
+    if (decimals < 0 || decimals > 100) throw new Error("Invalid decimals value");
+    for (let i = 0; i < decimals; i++) { factor *= 10n; }
+  } catch (e) { return "Error"; }
+  const integerPart = safeAmount / factor; 
+  const fractionalPart = safeAmount % factor; 
+  if (fractionalPart === 0n) return integerPart.toString();
+  const fractionalString = fractionalPart.toString().padStart(decimals, '0');
+  const displayFractional = fractionalString.slice(0, displayDecimals).replace(/0+$/, '');
+  return `${integerPart}${displayFractional.length > 0 ? '.' + displayFractional : ''}`;
+}
+
 export default function TokensPage() {
   const { t } = useLanguage()
   const [isLoading, setIsLoading] = useState(true)
   const [tokens, setTokens] = useState<TokenBalance[]>([])
 
-  // Alephium connection state
-  const [alephiumConnection, setAlephiumConnection] = useState({
-    isConnected: false,
-    address: ""
-  })
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true)
+  const {
+    account,
+    connectionStatus
+  } = useWallet();
 
-  // Check direct connection on mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      setIsCheckingConnection(true)
-      try {
-        const { connected, address } = await checkAlephiumConnection()
-        console.log("Tokens page - Direct connection check result:", connected, address)
-        setAlephiumConnection({
-          isConnected: connected,
-          address: address || ""
-        })
-      } catch (error) {
-        console.error("Error checking direct connection:", error)
-        setAlephiumConnection({
-          isConnected: false,
-          address: ""
-        })
-      } finally {
-        setIsCheckingConnection(false)
-      }
-    }
-
-    checkConnection()
-
-    // Set up periodic checks and event listeners
-    const intervalId = setInterval(checkConnection, 5000)
-    
-    // Also listen for Alephium's account changes
-    const handleAccountsChanged = () => {
-      console.log("Accounts changed, rechecking Alephium connection")
-      checkConnection()
-    }
-    
-    if (typeof window !== "undefined" && window.alephium && window.alephium.on) {
-      try {
-        window.alephium.on("accountsChanged", handleAccountsChanged)
-      } catch (error) {
-        console.error("Error setting up Alephium event listener:", error)
-      }
-    }
-    
-    return () => {
-      clearInterval(intervalId)
-      if (typeof window !== "undefined" && window.alephium && window.alephium.off) {
-        try {
-          window.alephium.off("accountsChanged", handleAccountsChanged)
-        } catch (error) {
-          console.error("Error removing Alephium event listener:", error)
-        }
-      }
-    }
-  }, [])
+  const address = account?.address ?? null;
+  const isConnected = connectionStatus === 'connected' && !!address;
 
   useEffect(() => {
     const fetchTokens = async () => {
-      // Only fetch if we have an address
-      if (!alephiumConnection.address) {
+      setIsLoading(true);
+      if (!address) {
+        setTokens([]);
         setIsLoading(false)
         return
       }
 
       try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        const fetchedTokens: TokenBalance[] = [];
+        account?.tokenBalances?.forEach(tb => {
+            let name = `Token ${tb.id.substring(0,4)}...`;
+            let decimals = 18;
+            let symbol = `TKN_${tb.id.substring(0,4)}`;
+            
+            if (tb.id === config.alephium.acyumTokenId) {
+                name = "American Communist Youth Uprising Movement";
+                symbol = "ACYUM";
+                decimals = 7;
+            }
 
-        // Mock data
-        setTokens([
-          {
-            symbol: "ACYUM",
-            name: "American Communist Youth Uprising Movement",
-            balance: "1000.00",
-            value: "10.00",
-          },
-          {
-            symbol: "ALPH",
-            name: "Alephium",
-            balance: "25.50",
-            value: "25.50",
-          },
-        ])
+            fetchedTokens.push({
+                symbol: symbol,
+                name: name, 
+                balance: formatBigIntAmount(tb.amount, decimals, decimals),
+                value: "0.00"
+            });
+        });
+
+        setTokens(fetchedTokens)
       } catch (error) {
         console.error("Error fetching tokens:", error)
+        setTokens([]);
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchTokens()
-  }, [alephiumConnection.address])
-
-  // Debug information
-  console.log("Rendering TokensPage with state:", {
-    alephiumConnection,
-    isCheckingConnection,
-  })
+  }, [address, account?.tokenBalances])
 
   return (
     <ClientLayoutWrapper>
@@ -138,18 +102,7 @@ export default function TokensPage() {
             </CardHeader>
 
             <CardContent>
-              {/* Debug information */}
-              <div className="mb-4 p-2 bg-gray-800 text-xs text-white rounded overflow-auto">
-                <p>Debug: isConnected={String(alephiumConnection.isConnected)}</p>
-                <p>Debug: address={alephiumConnection.address || "null"}</p>
-              </div>
-
-              {isCheckingConnection ? (
-                <div className="text-center py-6">
-                  <Loader2 className="h-8 w-8 animate-spin text-[#FF6B35] mx-auto mb-4" />
-                  <p>Checking wallet connection...</p>
-                </div>
-              ) : !alephiumConnection.isConnected ? (
+              {!isConnected ? (
                 <div className="text-center py-6">
                   <p className="mb-4 text-amber-600">{t("viewYourTokens")}</p>
                   <WalletConnectDisplay />
@@ -177,12 +130,8 @@ export default function TokensPage() {
                       <TableRow key={token.symbol}>
                         <TableCell className="font-medium">{token.symbol}</TableCell>
                         <TableCell>{token.name}</TableCell>
-                        <TableCell className="text-right">
-                          {token.symbol === "ACYUM"
-                            ? formatAcyumBalance(token.balance)
-                            : formatAlphBalance(token.balance)}
-                        </TableCell>
-                        <TableCell className="text-right">{formatAlphBalance(token.value)}</TableCell>
+                        <TableCell className="text-right">{token.balance}</TableCell>
+                        <TableCell className="text-right">{token.value} ALPH</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

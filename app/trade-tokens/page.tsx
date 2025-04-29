@@ -11,16 +11,19 @@ import { ArrowLeftRight, Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
-import { useWallet } from "@/hooks/use-wallet"
+import { useWallet } from "@alephium/web3-react"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function TradeTokensPage() {
   const { t } = useLanguage()
   const { toast } = useToast()
   const { 
-    isConnected, 
-    address, 
+    account, 
+    connectionStatus,
   } = useWallet()
+  
+  const address = account?.address ?? null;
+  const isConnected = connectionStatus === 'connected' && !!address;
   
   const [buyAmount, setBuyAmount] = useState("")
   const [sellAmount, setSellAmount] = useState("")

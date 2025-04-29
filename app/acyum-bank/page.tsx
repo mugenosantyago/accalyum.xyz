@@ -18,11 +18,10 @@ import { useWallet, useBalance } from "@alephium/web3-react"
 import { logger } from "@/lib/logger"
 import { MakeDeposit, Withdraw } from "@/contracts/scripts"
 import { config } from "@/lib/config"
-import {
-  ONE_ALPH, 
-  ALPH_TOKEN_ID, 
-  DUST_AMOUNT
-} from "@alephium/web3"
+// Define constants manually as workaround for import issues
+const ONE_ALPH = 10n ** 18n;
+const ALPH_TOKEN_ID = "0000000000000000000000000000000000000000000000000000000000000000";
+const DUST_AMOUNT = 10000n;
 import { TokenFaucetInstance } from "@/artifacts/ts/TokenFaucet"
 
 function formatBigIntAmount(amount: bigint | undefined | null, decimals: number, displayDecimals: number = 4): string {

@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useLanguage } from "@/components/language-provider"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
-import { useWallet } from "@/hooks/use-wallet"
+import { useWallet } from "@alephium/web3-react"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 
 // Political parties array
@@ -36,7 +36,13 @@ const politicalParties = [
 export default function IDRegistrationPage() {
   const { toast } = useToast()
   const { t } = useLanguage()
-  const { isConnected, address } = useWallet()
+  const { 
+    account,
+    connectionStatus,
+  } = useWallet()
+
+  const address = account?.address ?? null;
+  const isConnected = connectionStatus === 'connected' && !!address;
 
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
@@ -109,6 +115,9 @@ export default function IDRegistrationPage() {
     setIsSubmitting(true)
 
     try {
+      // Pass correct address from hook to API
+      const apiAddress = address;
+
       // Submit registration to API
       const response = await fetch("/api/register", {
         method: "POST",
@@ -118,7 +127,7 @@ export default function IDRegistrationPage() {
         body: JSON.stringify({
           username,
           email,
-          address: address,
+          address: apiAddress,
           firstName,
           lastName,
           addressDigits,

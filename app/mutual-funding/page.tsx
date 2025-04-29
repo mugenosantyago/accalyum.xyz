@@ -15,9 +15,9 @@ import { formatAlphBalance } from "@/lib/alephium-utils"
 import { NodeProvider } from "@alephium/web3"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
-import { WalletAwareWrapper } from "@/components/wallet-aware-wrapper"
 import { ConnectionSuccessModal } from "@/components/connection-success-modal"
-import { checkAlephiumConnection } from "@/lib/wallet-utils"
+import { useWallet } from "@alephium/web3-react"
+import { logger } from "@/lib/logger"
 
 interface Initiative {
   id: string
@@ -30,6 +30,28 @@ interface Initiative {
   loading: boolean
 }
 
+// Define constants manually as workaround for import issues
+const ONE_ALPH = 10n ** 18n;
+const ALPH_TOKEN_ID = "0000000000000000000000000000000000000000000000000000000000000000";
+const DUST_AMOUNT = 10000n;
+
+// Re-use formatting helper from bank page (consider moving to utils)
+function formatBigIntAmount(amount: bigint | undefined | null, decimals: number, displayDecimals: number = 4): string {
+  const safeAmount = amount ?? 0n; 
+  if (typeof safeAmount !== 'bigint') return "Error";
+  let factor = 1n;
+  try {
+    if (decimals < 0 || decimals > 100) throw new Error("Invalid decimals value");
+    for (let i = 0; i < decimals; i++) { factor *= 10n; }
+  } catch (e) { return "Error"; }
+  const integerPart = safeAmount / factor; 
+  const fractionalPart = safeAmount % factor; 
+  if (fractionalPart === 0n) return integerPart.toString();
+  const fractionalString = fractionalPart.toString().padStart(decimals, '0');
+  const displayFractional = fractionalString.slice(0, displayDecimals).replace(/0+$/, '');
+  return `${integerPart}${displayFractional.length > 0 ? '.' + displayFractional : ''}`;
+}
+
 export default function MutualFundingPage() {
   const { t } = useLanguage()
   const [donationAmount, setDonationAmount] = useState("")
@@ -39,62 +61,15 @@ export default function MutualFundingPage() {
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
-  // Alephium connection state
-  const [directAlephiumConnection, setDirectAlephiumConnection] = useState({
-    connected: false,
-    address: ""
-  })
+  const {
+    account,
+    connectionStatus,
+    signer
+  } = useWallet();
 
-  // Force check connection when component mounts
-  useEffect(() => {
-    // Check Alephium extension
-    const checkAlephiumExtension = async () => {
-      try {
-        const { connected, address } = await checkAlephiumConnection()
-        if (connected && address) {
-          console.log("Direct Alephium extension connection found:", address)
-          setDirectAlephiumConnection({
-            connected: true,
-            address
-          })
-        }
-      } catch (error) {
-        console.error("Error checking Alephium extension:", error)
-      }
-    }
-    
-    checkAlephiumExtension()
-    
-    // Also listen for Alephium's account changes
-    const handleAccountsChanged = () => {
-      console.log("Accounts changed, rechecking Alephium connection")
-      checkAlephiumExtension()
-    }
-    
-    if (typeof window !== "undefined" && window.alephium && window.alephium.on) {
-      try {
-        window.alephium.on("accountsChanged", handleAccountsChanged)
-      } catch (error) {
-        console.error("Error setting up Alephium event listener:", error)
-      }
-    }
-    
-    return () => {
-      if (typeof window !== "undefined" && window.alephium && window.alephium.off) {
-        try {
-          window.alephium.off("accountsChanged", handleAccountsChanged)
-        } catch (error) {
-          console.error("Error removing Alephium event listener:", error)
-        }
-      }
-    }
-  }, [])
+  const effectiveAddress = account?.address ?? null;
+  const effectiveIsConnected = connectionStatus === 'connected' && !!effectiveAddress;
 
-  // Get the effective connected state
-  const effectiveIsConnected = directAlephiumConnection.connected
-  const effectiveAddress = directAlephiumConnection.address
-
-  // Initialize initiatives with loading state
   useEffect(() => {
     const initialInitiatives: Initiative[] = [
       {
@@ -134,29 +109,24 @@ export default function MutualFundingPage() {
     fetchTreasuryBalances(initialInitiatives)
   }, [])
 
-  // Fetch real balances from the blockchain
   const fetchTreasuryBalances = async (initiatives: Initiative[]) => {
     setIsLoading(true)
 
     try {
       const nodeProvider = new NodeProvider(config.alephium.providerUrl)
 
-      // Create a copy of initiatives to update
       const updatedInitiatives = [...initiatives]
 
-      // Fetch balances for each initiative
       for (let i = 0; i < updatedInitiatives.length; i++) {
         const initiative = updatedInitiatives[i]
 
         try {
-          console.log(`Fetching balance for ${initiative.name} at address ${initiative.treasuryAddress}`)
+          logger.info(`Fetching balance for ${initiative.name} at address ${initiative.treasuryAddress}`)
           const balanceInfo = await nodeProvider.addresses.getAddressesAddressBalance(initiative.treasuryAddress)
 
-          // Convert balance from wei to ALPH (1 ALPH = 10^18 wei)
-          const balanceInAlph = formatAlphBalance(balanceInfo.balance)
-          console.log(`Balance for ${initiative.name}: ${balanceInAlph} ALPH`)
+          const balanceInAlph = formatBigIntAmount(balanceInfo.balance, 18, 4)
+          logger.info(`Balance for ${initiative.name}: ${balanceInAlph} ALPH`)
 
-          // Update the initiative with the real balance
           updatedInitiatives[i] = {
             ...initiative,
             raised: balanceInAlph,
@@ -164,7 +134,6 @@ export default function MutualFundingPage() {
           }
         } catch (error) {
           console.error(`Error fetching balance for ${initiative.name}:`, error)
-          // Keep the initiative but mark as not loading
           updatedInitiatives[i] = {
             ...initiative,
             loading: false,
@@ -172,11 +141,9 @@ export default function MutualFundingPage() {
         }
       }
 
-      // Update state with the fetched balances
       setInitiatives(updatedInitiatives)
     } catch (error) {
       console.error("Error initializing node provider:", error)
-      // Mark all initiatives as not loading
       setInitiatives(
         initiatives.map((initiative) => ({
           ...initiative,
@@ -197,7 +164,7 @@ export default function MutualFundingPage() {
   const handleDonate = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!effectiveIsConnected) {
+    if (!effectiveIsConnected || !signer) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet first",
@@ -227,35 +194,21 @@ export default function MutualFundingPage() {
     setIsProcessing(true)
 
     try {
-      // Get the selected initiative
       const initiative = initiatives.find((i) => i.id === selectedInitiative)
+      if (!initiative) throw new Error("Initiative not found")
 
-      if (!initiative) {
-        throw new Error("Initiative not found")
-      }
+      logger.info(`Donating ${donationAmount} ALPH to ${initiative.name} (${initiative.treasuryAddress})`);
+      const amountAttoAlph = BigInt(Math.floor(Number.parseFloat(donationAmount) * Number(ONE_ALPH)));
+      
+      const result = await signer.signAndSubmitTransferTx({
+         signerAddress: effectiveAddress,
+         destinations: [{
+           address: initiative.treasuryAddress,
+           attoAlphAmount: amountAttoAlph
+         }]
+      });
 
-      // In a real implementation, this would call a server action to process the donation
-      // For now, we'll simulate a successful donation
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      // Record the transaction in the database
-      const response = await fetch("/api/transactions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: effectiveAddress,
-          to: initiative.treasuryAddress,
-          amount: donationAmount,
-          type: "donation",
-          initiative: initiative.id,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to record transaction")
-      }
+      logger.info(`Donation successful: Tx ID ${result.txId}`);
 
       setDonationAmount("")
       setSelectedInitiative(null)
@@ -266,7 +219,6 @@ export default function MutualFundingPage() {
         variant: "default",
       })
 
-      // Refresh balances after donation
       fetchTreasuryBalances(initiatives)
     } catch (error) {
       console.error("Donation error:", error)
@@ -280,7 +232,6 @@ export default function MutualFundingPage() {
     }
   }
 
-  // Debug information
   console.log("Rendering MutualFundingPage with state:", {
     effectiveIsConnected,
     effectiveAddress,
@@ -297,12 +248,6 @@ export default function MutualFundingPage() {
           <h1 className="text-3xl font-bold mb-8 text-center">{t("mutualFunding")}</h1>
 
           <ConnectionSuccessModal featureName="Mutual Funding" />
-
-          {/* Debug section */}
-          <div className="mb-4 p-2 bg-gray-800 text-xs text-white rounded overflow-auto">
-            <p>Debug: effectiveIsConnected={String(effectiveIsConnected)}</p>
-            <p>Debug: effectiveAddress={effectiveAddress || "null"}</p>
-          </div>
 
           {!effectiveIsConnected && (
             <div className="text-center py-6 mb-8">
@@ -373,65 +318,59 @@ export default function MutualFundingPage() {
               </CardHeader>
 
               <CardContent>
-                <WalletAwareWrapper
-                  fallback={
-                    <div className="text-center py-6">
-                      <p className="mb-4 text-amber-600">{t("accessDonationFeatures")}</p>
-                      <WalletConnectDisplay />
-                    </div>
-                  }
-                >
-                  {({ isConnected, address }) =>
-                    effectiveIsConnected && effectiveAddress ? (
-                      <form onSubmit={handleDonate} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="project">{t("selectedInitiative")}</Label>
-                          <div className="p-3 bg-gray-50 rounded-md">
-                            {selectedInitiative ? (
-                              <p className="font-medium">
-                                {initiatives.find((i) => i.id === selectedInitiative)?.name}
-                              </p>
-                            ) : (
-                              <p className="text-gray-500">{t("pleaseSelectInitiative")}</p>
-                            )}
-                          </div>
-                        </div>
+                {!effectiveIsConnected ? (
+                   <div className="text-center py-6">
+                     <p className="mb-4 text-amber-600">{t("accessDonationFeatures")}</p>
+                     <WalletConnectDisplay />
+                   </div>
+                ) : (
+                   <form onSubmit={handleDonate} className="space-y-4">
+                     <div className="space-y-2">
+                       <Label htmlFor="project">{t("selectedInitiative")}</Label>
+                       <div className="p-3 bg-gray-50 rounded-md">
+                         {selectedInitiative ? (
+                           <p className="font-medium">
+                             {initiatives.find((i) => i.id === selectedInitiative)?.name}
+                           </p>
+                         ) : (
+                           <p className="text-gray-500">{t("pleaseSelectInitiative")}</p>
+                         )}
+                       </div>
+                     </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="donationAmount">{t("donationAmount")} (ALPH)</Label>
-                          <Input
-                            id="donationAmount"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            value={donationAmount}
-                            onChange={(e) => setDonationAmount(e.target.value)}
-                            required
-                          />
-                        </div>
+                     <div className="space-y-2">
+                       <Label htmlFor="donationAmount">{t("donationAmount")} (ALPH)</Label>
+                       <Input
+                         id="donationAmount"
+                         type="number"
+                         step="0.01"
+                         min="0"
+                         placeholder="0.00"
+                         value={donationAmount}
+                         onChange={(e) => setDonationAmount(e.target.value)}
+                         required
+                       />
+                     </div>
 
-                        <Button
-                          type="submit"
-                          className="w-full bg-[#FF6B35] hover:bg-[#E85A2A]"
-                          disabled={isProcessing || !selectedInitiative}
-                        >
-                          {isProcessing ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              {t("processing")}
-                            </>
-                          ) : (
-                            <>
-                              <Heart className="mr-2 h-4 w-4" />
-                              {t("donate")}
-                            </>
-                          )}
-                        </Button>
-                      </form>
-                    ) : null
-                  }
-                </WalletAwareWrapper>
+                     <Button
+                       type="submit"
+                       className="w-full bg-[#FF6B35] hover:bg-[#E85A2A]"
+                       disabled={!effectiveIsConnected || isProcessing || !selectedInitiative}
+                     >
+                       {isProcessing ? (
+                         <>
+                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                           {t("processing")}
+                         </>
+                       ) : (
+                         <>
+                           <Heart className="mr-2 h-4 w-4" />
+                           {t("donate")}
+                         </>
+                       )}
+                     </Button>
+                   </form>
+                )}
               </CardContent>
             </Card>
           </div>
