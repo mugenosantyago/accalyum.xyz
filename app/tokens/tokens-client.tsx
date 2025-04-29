@@ -92,12 +92,15 @@ export default function TokensClient() {
         const candySwapData: CandySwapTokenData[] = await candySwapResponse.json();
         const marketDataMap: Record<string, CandySwapTokenData> = {};
         candySwapData.forEach(token => {
-          if (token.collectionTicker) { // Use collectionTicker as the key (assuming it's the token ID)
-            marketDataMap[token.collectionTicker] = token;
+          if (token.id) { // Use the 'id' field from CandySwap API as the key
+            marketDataMap[token.id] = token;
           }
         });
         setMarketData(marketDataMap);
-        logger.info("Fetched CandySwap market data for Tokens page.", Object.keys(marketDataMap).length);
+        // Log the keys we actually stored from the API response
+        logger.info(
+          `Stored CandySwap market data for Tokens page. Keys: [${Object.keys(marketDataMap).join(', ')}]`
+        );
 
         // Process CoinGecko Data
         if (!coingeckoResponse.ok) {
@@ -162,7 +165,13 @@ export default function TokensClient() {
       // Process other tokens
       userTokens.forEach((tb: { id: string; amount: bigint }) => {
         const tokenMarketInfo = marketData[tb.id];
-        const decimals = tokenMarketInfo?.decimals ?? (tb.id === config.alephium.acyumTokenId ? 7 : 18); 
+
+        // Log if market info is missing for this token
+        if (!tokenMarketInfo) {
+          logger.warn(`Market info not found for token ID: ${tb.id}`);
+        }
+
+        const decimals = tokenMarketInfo?.decimals ?? (tb.id === config.alephium.acyumTokenId ? 7 : 18);
         const name = tokenMarketInfo?.name ?? (tb.id === config.alephium.acyumTokenId ? "Acyum Token" : `Token ${tb.id.substring(0,4)}...`);
         const symbol = tokenMarketInfo?.slug?.toUpperCase() ?? (tb.id === config.alephium.acyumTokenId ? "ACYUM" : `TKN_${tb.id.substring(0,4)}`);
         
