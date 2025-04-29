@@ -243,6 +243,8 @@ export default function TokensClient() {
         <main className="flex-grow container mx-auto py-12 px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">{t("yourTokens")}</h1>
 
+          {/* Temporarily comment out the card content to debug navbar */}
+          {/*
           <Card>
             <CardHeader>
               <CardTitle>{t("tokenBalances")}</CardTitle>
@@ -293,6 +295,7 @@ export default function TokensClient() {
               )}
             </CardContent>
           </Card>
+          */}
         </main>
       </div>
     </ClientLayoutWrapper>
