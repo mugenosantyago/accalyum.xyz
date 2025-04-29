@@ -25,10 +25,31 @@ import {
 } from "@alephium/web3"
 import { TokenFaucetInstance } from "@/artifacts/ts/TokenFaucet"
 
-function formatBigIntAmount(amount: bigint, decimals: number, displayDecimals: number = 4): string {
-  const factor = 10n ** BigInt(decimals);
-  const integerPart = amount / factor;
-  const fractionalPart = amount % factor;
+function formatBigIntAmount(amount: bigint | undefined | null, decimals: number, displayDecimals: number = 4): string {
+  const safeAmount = amount ?? 0n; 
+  if (typeof safeAmount !== 'bigint') { 
+      console.error("Invalid amount type passed to formatBigIntAmount:", amount);
+      return "Error";
+  }
+
+  // Calculate factor using a loop instead of ** operator
+  let factor = 1n;
+  try {
+    // Add check for excessively large decimals to prevent infinite loops/performance issues
+    if (decimals < 0 || decimals > 100) { 
+      throw new Error("Invalid decimals value");
+    }
+    for (let i = 0; i < decimals; i++) {
+        factor *= 10n;
+    }
+  } catch (e) {
+    console.error("Error calculating factor:", e);
+    return "Error";
+  }
+  // const factor = 10n ** BigInt(decimals); // Original line causing error
+
+  const integerPart = safeAmount / factor; 
+  const fractionalPart = safeAmount % factor; 
   if (fractionalPart === 0n) {
     return integerPart.toString();
   }
