@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   Globe,
+  Scale,
 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
@@ -41,6 +42,7 @@ export function ModernNav() {
     { href: "/id-registration", icon: <IdCard size={20} />, label: t("idRegistration") },
     { href: "/acyum-bank", icon: <Landmark size={20} />, label: t("acyumBank") },
     { href: "/acyum-swap", icon: <BarChart3 size={20} />, label: t("tradeTokens") },
+    { href: "/swea", icon: <Scale size={20} />, label: "sWEA" },
     { href: "/mutual-funding", icon: <HeartHandshake size={20} />, label: t("mutualFunding") },
     { href: "/tokens", icon: <Coins size={20} />, label: t("tokens") },
     { href: "/transactions", icon: <History size={20} />, label: t("transactions") },
