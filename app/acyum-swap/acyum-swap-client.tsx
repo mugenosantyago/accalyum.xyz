@@ -45,7 +45,9 @@ export default function AcyumSwapClient() {
 
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const acyumTokenId = config.alephium.acyumTokenId;
+  // Use the contract address for CandySwap API lookup
+  const acyumContractAddressForAPI = config.alephium.acyumContractAddress;
+  const acyumTokenId = config.alephium.acyumTokenIdHex; // Keep hex ID if needed elsewhere
   const ACYUM_DECIMALS = 7; // Define decimals explicitly
 
   // Rename state to hold raw data
@@ -80,7 +82,8 @@ export default function AcyumSwapClient() {
            throw new Error(`CandySwap API error! status: ${tokenListRes.status}`);
         }
         const tokenListData: CandySwapTokenData[] = await tokenListRes.json();
-        const acyumData = tokenListData.find(token => token.id === acyumTokenId);
+        // Find ACYUM using the collectionTicker (which holds the Contract Address from the API)
+        const acyumData = tokenListData.find(token => token.collectionTicker === acyumContractAddressForAPI); 
         if (acyumData) {
           setRawAcyumMarketData(acyumData); // Store raw data
           logger.info("Fetched ACYUM market data for Swap page:", acyumData);
@@ -99,7 +102,7 @@ export default function AcyumSwapClient() {
           }
 
         } else {
-          logger.warn(`ACYUM token ID (${acyumTokenId}) not found in CandySwap API response.`);
+          logger.warn(`ACYUM contract address (${acyumContractAddressForAPI}) not found in CandySwap API response.`);
           setMarketDataError("ACYUM data not found on CandySwap."); 
         }
 
@@ -135,14 +138,14 @@ export default function AcyumSwapClient() {
         setIsMarketDataLoading(false);
       }
     };
-    if (acyumTokenId) {
+    if (acyumContractAddressForAPI) { // Check if address is configured
        fetchSwapData();
     } else {
        setIsMarketDataLoading(false);
-       setMarketDataError("ACYUM Token ID not configured.");
-       logger.warn("ACYUM Token ID not configured, skipping market data fetch.");
+       setMarketDataError("ACYUM Contract Address not configured.");
+       logger.warn("ACYUM Contract Address not configured, skipping market data fetch.");
     }
-  }, []);
+  }, [acyumContractAddressForAPI]);
 
   // Use calculated rates for output calculation
   useEffect(() => {
@@ -204,7 +207,7 @@ export default function AcyumSwapClient() {
           <div className="max-w-md mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle>Swap Tokens</CardTitle>
+                <CardTitle>Acyum Swapn</CardTitle>
                 <CardDescription>Exchange ALPH and ACYUM</CardDescription>
               </CardHeader>
 

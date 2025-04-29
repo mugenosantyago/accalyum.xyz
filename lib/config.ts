@@ -3,8 +3,10 @@ export const config = {
   alephium: {
     network: process.env.NEXT_PUBLIC_ALEPHIUM_NETWORK || "mainnet",
     providerUrl: process.env.NEXT_PUBLIC_ALEPHIUM_PROVIDER_URL || "https://node.alphaga.app",
-    contractAddress: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "",
-    acyumTokenId: process.env.NEXT_PUBLIC_ACYUM_TOKEN_ID || "",
+    // Renamed for clarity, holds the Contract Address (Base58) used by APIs like CandySwap
+    acyumContractAddress: process.env.NEXT_PUBLIC_ACYUM_CONTRACT_ADDRESS || "", 
+    // Added to store the actual Alephium Token ID (Hex)
+    acyumTokenIdHex: process.env.NEXT_PUBLIC_ACYUM_TOKEN_ID_HEX || "", 
     adminAddress: process.env.ADMIN_ALEPHIUM_ADDRESS || "",
     walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "31a36ede551882a3a3147483688a9978",
   },

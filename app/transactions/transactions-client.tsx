@@ -44,23 +44,19 @@ export default function TransactionsClient() {
 
       try {
         // Note: Actual API call would go here, fetching based on `address`
-        // Simulating fetch with placeholder data for now
-        logger.info(`Simulating transaction fetch for address: ${address}`)
-        await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate network delay
-        const mockTransactions: Transaction[] = [
-          { id: 'tx1', type: 'deposit', amount: '10.5', token: 'ALPH', timestamp: new Date(Date.now() - 86400000).toISOString(), status: 'completed' },
-          { id: 'tx2', type: 'withdraw', amount: '7.0', token: 'ACYUM', timestamp: new Date(Date.now() - 172800000).toISOString(), status: 'completed' },
-          { id: 'tx3', type: 'deposit', amount: '100.0', token: 'ACYUM', timestamp: new Date(Date.now() - 3600000).toISOString(), status: 'pending' },
-          { id: 'tx4', type: 'withdraw', amount: '1.2', token: 'ALPH', timestamp: new Date(Date.now() - 604800000).toISOString(), status: 'failed' },
-        ]
-        setTransactions(mockTransactions)
         // Replace with actual API call:
+        logger.info(`Fetching transactions for address: ${address}`); // Log actual attempt
         // const response = await fetch(`/api/transactions?address=${encodeURIComponent(address)}`)
         // if (!response.ok) {
         //   throw new Error("Failed to fetch transactions")
         // }
         // const data = await response.json()
         // setTransactions(data.transactions)
+
+        // Placeholder: Set empty array until real API is implemented
+        setTransactions([]); 
+        logger.warn("Transaction fetching not implemented yet. Displaying empty list.");
+
       } catch (error) {
         logger.error("Error fetching transactions:", error)
         setError(error instanceof Error ? error.message : "An unknown error occurred")
