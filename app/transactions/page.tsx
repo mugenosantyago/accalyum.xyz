@@ -7,7 +7,7 @@ import { ArrowDown, ArrowUp, Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
-import { checkAlephiumConnection } from "@/lib/wallet-utils"
+import { useWallet } from "@alephium/web3-react"
 import { ConnectionSuccessModal } from "@/components/connection-success-modal"
 
 interface Transaction {
@@ -21,124 +21,44 @@ interface Transaction {
 
 export default function TransactionsPage() {
   const { t } = useLanguage()
-  const [isLoading, setIsLoading] = useState(true)
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Alephium connection state
-  const [alephiumConnection, setAlephiumConnection] = useState({
-    isConnected: false,
-    address: ""
-  })
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true)
-
-  // Check direct connection on mount using Alephium's native methods
-  useEffect(() => {
-    const checkConnection = async () => {
-      setIsCheckingConnection(true)
-      try {
-        const { connected, address } = await checkAlephiumConnection()
-        console.log("Direct Alephium connection check result:", connected, address)
-        setAlephiumConnection({
-          isConnected: connected,
-          address: address || ""
-        })
-      } catch (error) {
-        console.error("Error checking direct connection:", error)
-        setAlephiumConnection({
-          isConnected: false,
-          address: ""
-        })
-      } finally {
-        setIsCheckingConnection(false)
-      }
-    }
-
-    checkConnection()
-
-    // Listen for Alephium's accountsChanged event
-    const handleAccountsChanged = () => {
-      console.log("Accounts changed event detected, rechecking connection")
-      checkConnection()
-    }
-
-    if (typeof window !== "undefined" && window.alephium && window.alephium.on) {
-      try {
-        window.alephium.on("accountsChanged", handleAccountsChanged)
-      } catch (error) {
-        console.error("Error setting up Alephium event listener:", error)
-      }
-    }
-
-    return () => {
-      if (typeof window !== "undefined" && window.alephium && window.alephium.off) {
-        try {
-          window.alephium.off("accountsChanged", handleAccountsChanged)
-        } catch (error) {
-          console.error("Error removing Alephium event listener:", error)
-        }
-      }
-    }
-  }, [])
+  const { account, connectionStatus } = useWallet();
+  const address = account?.address ?? null;
+  const isConnected = connectionStatus === 'connected' && !!address;
 
   useEffect(() => {
     const fetchTransactions = async () => {
-      // Only fetch if we have an address
-      if (!alephiumConnection.address) {
+      setIsLoading(true)
+      setError(null)
+      
+      if (!isConnected || !address) {
+        setTransactions([])
         setIsLoading(false)
         return
       }
 
       try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1500))
-
-        // Mock data
-        setTransactions([
-          {
-            id: "tx-001",
-            type: "deposit",
-            amount: "100.00",
-            token: "ACYUM",
-            timestamp: "2025-04-27T08:30:00Z",
-            status: "completed",
-          },
-          {
-            id: "tx-002",
-            type: "withdraw",
-            amount: "25.50",
-            token: "ACYUM",
-            timestamp: "2025-04-26T14:15:00Z",
-            status: "completed",
-          },
-          {
-            id: "tx-003",
-            type: "deposit",
-            amount: "5.00",
-            token: "ALPH",
-            timestamp: "2025-04-25T10:45:00Z",
-            status: "completed",
-          },
-        ])
+        const response = await fetch(`/api/transactions?address=${encodeURIComponent(address)}`)
+        // ... rest of fetch logic ...
       } catch (error) {
         console.error("Error fetching transactions:", error)
+        setError(error instanceof Error ? error.message : "An unknown error occurred")
+        setTransactions([])
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchTransactions()
-  }, [alephiumConnection.address])
+  }, [address, isConnected])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleString()
   }
-
-  // Debug information
-  console.log("Rendering TransactionsPage with state:", {
-    alephiumConnection,
-    isCheckingConnection,
-  })
 
   return (
     <ClientLayoutWrapper>
@@ -155,25 +75,18 @@ export default function TransactionsPage() {
             </CardHeader>
 
             <CardContent>
-              {/* Debug information */}
-              <div className="mb-4 p-2 bg-gray-800 text-xs text-white rounded overflow-auto">
-                <p>Debug: isConnected={String(alephiumConnection.isConnected)}</p>
-                <p>Debug: address={alephiumConnection.address || "null"}</p>
-              </div>
-
-              {isCheckingConnection ? (
+              {!isConnected ? (
                 <div className="text-center py-6">
-                  <Loader2 className="h-8 w-8 animate-spin text-[#FF6B35] mx-auto mb-4" />
-                  <p>Checking wallet connection...</p>
-                </div>
-              ) : !alephiumConnection.isConnected ? (
-                <div className="text-center py-6">
-                  <p className="mb-4 text-amber-600">{t("viewYourTransactions")}</p>
+                  <p className="mb-4 text-amber-600">{t("connectToViewHistory")}</p>
                   <WalletConnectDisplay />
                 </div>
               ) : isLoading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-[#FF6B35]" />
+                </div>
+              ) : error ? (
+                <div className="text-center py-6">
+                  <p className="text-red-500">{error}</p>
                 </div>
               ) : transactions.length === 0 ? (
                 <div className="text-center py-8">

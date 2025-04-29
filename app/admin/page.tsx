@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useWallet } from "@/hooks/use-wallet"
+import { useWallet } from "@alephium/web3-react"
 import { useToast } from "@/components/ui/use-toast"
 import { config } from "@/lib/config"
 import {
@@ -40,6 +40,7 @@ import {
   getTreasuryBalance,
   getFaucetBalance,
 } from "@/app/actions/treasury-actions"
+import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 
 interface User {
   _id: string
@@ -63,7 +64,7 @@ interface PendingApproval {
 }
 
 export default function AdminPage() {
-  const { isConnected, connect, address } = useWallet()
+  const { account, connectionStatus } = useWallet()
   const { toast } = useToast()
   const [isAdmin, setIsAdmin] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -90,44 +91,39 @@ export default function AdminPage() {
   const [faucetAmount, setFaucetAmount] = useState("")
   const [isTreasuryLoading, setIsTreasuryLoading] = useState(false)
 
+  const isConnected = connectionStatus === 'connected' && !!account?.address
+  const address = account?.address
+
   useEffect(() => {
     const checkAdminStatus = async () => {
+      setIsLoading(true)
       if (!isConnected || !address) {
         setIsAdmin(false)
         setIsLoading(false)
         return
       }
 
-      // Check if the connected address is the admin address
       if (address.toLowerCase() === config.alephium.adminAddress.toLowerCase()) {
         setIsAdmin(true)
         await fetchData()
-        await fetchTreasuryData()
       } else {
         setIsAdmin(false)
-        toast({
-          title: "Access Denied",
-          description: "You do not have permission to access the admin panel.",
-          variant: "destructive",
-        })
       }
-
       setIsLoading(false)
     }
 
     checkAdminStatus()
-  }, [isConnected, address, toast])
+  }, [isConnected, address, toast, fetchData])
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (!address) return
     setIsLoading(true)
     try {
-      // Add the wallet address to the headers for server-side verification
       const headers = {
         "Content-Type": "application/json",
-        "x-wallet-address": address || "",
+        "x-wallet-address": address,
       }
 
-      // Fetch users
       const usersResponse = await fetch("/api/admin/users", { headers })
       if (!usersResponse.ok) {
         throw new Error("Failed to fetch users")
@@ -135,7 +131,6 @@ export default function AdminPage() {
       const usersData = await usersResponse.json()
       setUsers(usersData.users)
 
-      // Fetch pending approvals
       const approvalsResponse = await fetch("/api/admin/pending-approvals", { headers })
       if (!approvalsResponse.ok) {
         throw new Error("Failed to fetch pending approvals")
@@ -152,18 +147,16 @@ export default function AdminPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [address, toast])
 
   const fetchTreasuryData = async () => {
     setIsTreasuryLoading(true)
     try {
-      // Fetch treasury balance
       const treasuryBalanceResult = await getTreasuryBalance()
       if (treasuryBalanceResult.success) {
         setTreasuryBalance(treasuryBalanceResult.balance)
       }
 
-      // Fetch faucet balance
       const faucetBalanceResult = await getFaucetBalance()
       if (faucetBalanceResult.success) {
         setFaucetBalance(faucetBalanceResult.balance)
@@ -310,7 +303,6 @@ export default function AdminPage() {
         variant: "default",
       })
 
-      // Refresh data
       await fetchData()
     } catch (error) {
       console.error("Error approving user:", error)
@@ -346,7 +338,6 @@ export default function AdminPage() {
         variant: "default",
       })
 
-      // Refresh data
       await fetchData()
     } catch (error) {
       console.error("Error rejecting user:", error)
@@ -497,7 +488,6 @@ export default function AdminPage() {
     }
   }
 
-  // Generate a unique ACYUM ID
   const generateAcyumId = () => {
     const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     let result = "ACYUM-"

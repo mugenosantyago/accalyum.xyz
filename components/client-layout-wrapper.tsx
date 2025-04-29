@@ -28,10 +28,10 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
   }
 
   return (
-    <ClientProviders>
+    <>
         <ModernNav />
         <main className="flex-grow pt-20">{children}</main>
         <Footer /> 
-    </ClientProviders>
+    </>
   )
 }
