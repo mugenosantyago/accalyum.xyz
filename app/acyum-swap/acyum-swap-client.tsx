@@ -80,7 +80,7 @@ export default function AcyumSwapClient() {
            throw new Error(`CandySwap API error! status: ${tokenListRes.status}`);
         }
         const tokenListData: CandySwapTokenData[] = await tokenListRes.json();
-        const acyumData = tokenListData.find(token => token.collectionTicker === acyumTokenId);
+        const acyumData = tokenListData.find(token => token.id === acyumTokenId);
         if (acyumData) {
           setRawAcyumMarketData(acyumData); // Store raw data
           logger.info("Fetched ACYUM market data for Swap page:", acyumData);
@@ -142,7 +142,7 @@ export default function AcyumSwapClient() {
        setMarketDataError("ACYUM Token ID not configured.");
        logger.warn("ACYUM Token ID not configured, skipping market data fetch.");
     }
-  }, [acyumTokenId]); // Dependency array is correct
+  }, []);
 
   // Use calculated rates for output calculation
   useEffect(() => {
