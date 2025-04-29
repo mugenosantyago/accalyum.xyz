@@ -18,9 +18,24 @@ import { useWallet, useBalance } from "@alephium/web3-react"
 import { logger } from "@/lib/logger"
 import { MakeDeposit, Withdraw } from "@/contracts/scripts"
 import { config } from "@/lib/config"
-import * as web3 from "@alephium/web3"
-import { formatAmount } from "@alephium/web3"
-import { transferAlph, transferToken, TokenFaucetInstance } from "@alephium/web3"
+import {
+  ONE_ALPH, 
+  ALPH_TOKEN_ID, 
+  DUST_AMOUNT
+} from "@alephium/web3"
+import { TokenFaucetInstance } from "@/artifacts/ts/TokenFaucet"
+
+function formatBigIntAmount(amount: bigint, decimals: number, displayDecimals: number = 4): string {
+  const factor = 10n ** BigInt(decimals);
+  const integerPart = amount / factor;
+  const fractionalPart = amount % factor;
+  if (fractionalPart === 0n) {
+    return integerPart.toString();
+  }
+  const fractionalString = fractionalPart.toString().padStart(decimals, '0');
+  const displayFractional = fractionalString.slice(0, displayDecimals).replace(/0+$/, '');
+  return `${integerPart}${displayFractional.length > 0 ? '.' + displayFractional : ''}`;
+}
 
 export default function AcyumBankPage() {
   const { t } = useLanguage()
@@ -36,12 +51,12 @@ export default function AcyumBankPage() {
   const isConnected = connectionStatus === 'connected' && !!address;
   
   const { balance: alphBalanceWei, updateBalanceForTx } = useBalance();
-  const displayAlphBalance = web3.formatAmount(alphBalanceWei ?? 0n, 18, 4);
+  const displayAlphBalance = formatBigIntAmount(alphBalanceWei ?? 0n, 18, 4);
 
   const acyumTokenId = config.alephium.acyumTokenId;
   const acyumBalanceInfo = account?.tokenBalances?.find(token => token.id === acyumTokenId);
   const acyumBalance = acyumBalanceInfo?.amount ?? 0n;
-  const displayAcyumBalance = web3.formatAmount(acyumBalance, 7, 2);
+  const displayAcyumBalance = formatBigIntAmount(acyumBalance, 7, 2);
 
   const [depositAmount, setDepositAmount] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
@@ -62,9 +77,10 @@ export default function AcyumBankPage() {
     setIsProcessing(true);
     try {
       logger.info(`Attempting ALPH deposit of ${depositAmount} to ${bankTreasuryAddress}...`);
-      const depositAmountAttoAlph = BigInt(Math.floor(depositAmountNum * Number(web3.ONE_ALPH)));
+      const depositAmountAttoAlph = BigInt(Math.floor(depositAmountNum * Number(ONE_ALPH)));
       
-      const result = await transferAlph(signer, {
+      const result = await signer.signAndSubmitTransferTx({
+        signerAddress: address,
         destinations: [{
           address: bankTreasuryAddress,
           attoAlphAmount: depositAmountAttoAlph
@@ -95,11 +111,12 @@ export default function AcyumBankPage() {
     try {
       const depositAmountSmallestUnit = BigInt(Math.floor(depositAmountNum * (10 ** 7)));
       
-      const result = await transferToken(signer, {
+      const result = await signer.signAndSubmitTransferTx({
+        signerAddress: address,
          destinations: [{
            address: bankTreasuryAddress,
-           tokenId: acyumTokenId,
-           amount: depositAmountSmallestUnit
+           attoAlphAmount: DUST_AMOUNT,
+           tokens: [{ id: acyumTokenId, amount: depositAmountSmallestUnit }]
          }]
       });
 
@@ -123,11 +140,11 @@ export default function AcyumBankPage() {
     setIsProcessing(true);
     try {
       logger.info(`Attempting ALPH withdrawal of ${withdrawAmount}...`);
-      const withdrawAmountAttoAlph = BigInt(Math.floor(withdrawAmountNum * Number(web3.ONE_ALPH)));
+      const withdrawAmountAttoAlph = BigInt(Math.floor(withdrawAmountNum * Number(ONE_ALPH)));
       
       const result = await Withdraw.execute(signer, {
         initialFields: {
-          token: web3.ALPH_TOKEN_ID, 
+          token: ALPH_TOKEN_ID,
           amount: withdrawAmountAttoAlph
         },
       });
@@ -205,7 +222,7 @@ export default function AcyumBankPage() {
       const result = await faucet.transact.withdraw({
         signer: signer,
         args: { amount: amountToClaim },
-        attoAlphAmount: web3.DUST_AMOUNT
+        attoAlphAmount: DUST_AMOUNT
       });
 
       logger.info(`Faucet claim successful: Tx ID ${result.txId}`);
