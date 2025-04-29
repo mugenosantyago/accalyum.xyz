@@ -43,12 +43,12 @@ export async function GET(request: Request, { params }: { params: { address: str
           _id: '$_id.token', // Group by token only now
           deposits: {
             $sum: {
-              $cond: [{ $eq: ['$_id.type', 'deposit'] }, '$totalAmount', 0n] // BigInt literal 0n
+              $cond: [{ $eq: ['$_id.type', 'deposit'] }, '$totalAmount', 0]
             }
           },
           withdrawals: {
             $sum: {
-              $cond: [{ $eq: ['$_id.type', 'withdraw'] }, '$totalAmount', 0n] // BigInt literal 0n
+              $cond: [{ $eq: ['$_id.type', 'withdraw'] }, '$totalAmount', 0]
             }
           }
         }

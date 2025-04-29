@@ -131,7 +131,14 @@ export default function TokensClient() {
   }, []); // Fetch market data only once on mount
 
   // Effect 2: Process User Tokens whenever they change or market data arrives
+  // Create a stable dependency based on token IDs and amounts
+  const userTokensKey = JSON.stringify(userTokens.map(t => ({ id: t.id, amount: t.amount.toString() })))
+
   useEffect(() => {
+    logger.debug("Token processing effect triggered. Dependencies:", {
+      isConnected, address, userTokensKey, marketDataKeys: Object.keys(marketData).length, alphUsdPrice, marketDataError
+    });
+
     if (!isConnected) {
       setTokenRows([]);
       setIsLoading(false); // Not connected, stop loading
@@ -187,8 +194,22 @@ export default function TokensClient() {
             const balanceNumber = Number(formatBigIntAmount(tb.amount, decimals, decimals)); // Get full precision number
             
             // Calculate ALPH per ThisToken rate
-            const alphPerTokenRate = (10 ** decimals) / rawOrderBookPrice;
+            // Ensure rawOrderBookPrice is not zero before dividing
+            if (rawOrderBookPrice === 0) throw new Error("Order book price is zero");
+            const alphPerTokenRate = (10 ** decimals) / rawOrderBookPrice; 
             const valueAlph = balanceNumber * alphPerTokenRate;
+            
+            // Log detailed calculation steps
+            logger.debug(`Token: ${symbol} (${tb.id}) Calculation Details:`, {
+              balanceRaw: tb.amount.toString(),
+              decimals,
+              balanceNumber, // Full precision balance
+              rawOrderBookPrice,
+              alphPerTokenRate,
+              valueAlph, // Unformatted ALPH value
+              alphUsdPrice // Current ALPH/USD price
+            });
+
             valueAlphFormatted = valueAlph.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 
             // Calculate USD value if ALPH price is available
@@ -234,7 +255,7 @@ export default function TokensClient() {
       setIsLoading(false); // Finished processing tokens
     }
 
-  }, [isConnected, address, userTokens, marketData, alphUsdPrice, marketDataError]); // Added userTokens dependency
+  }, [isConnected, address, userTokensKey, marketData, alphUsdPrice, marketDataError]); // Use the serialized key instead of the raw userTokens array
 
   // JSX Structure
   return (

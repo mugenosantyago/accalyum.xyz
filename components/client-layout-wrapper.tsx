@@ -9,23 +9,23 @@ import { useEffect, useState } from "react"
 import { config } from "@/lib/config"
 
 export function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
-  // const [mounted, setMounted] = useState(false) // Temporarily disable mount check
+  const [mounted, setMounted] = useState(false) // Temporarily disable mount check
   const networkId = process.env.NEXT_PUBLIC_ALEPHIUM_NETWORK || config.alephium.network
 
-  // useEffect(() => { // Temporarily disable mount check
-  //   setMounted(true)
-  // }, [])
+  useEffect(() => { // Temporarily disable mount check
+    setMounted(true)
+  }, [])
 
   // During SSR, just render children without any client-side logic
-  // if (!mounted) { // Temporarily disable mount check
-  //   return (
-  //     <>
-  //       <div className="h-16 bg-gray-900">{/* Placeholder for nav */}</div>
-  //       <main className="flex-grow pt-20">{children}</main>
-  //       <Footer />
-  //     </>
-  //   )
-  // }
+  if (!mounted) { // Temporarily disable mount check
+    return (
+      <>
+        <div className="h-16 bg-gray-900">{/* Placeholder for nav */}</div>
+        <main className="flex-grow pt-20">{children}</main>
+        <Footer />
+      </>
+    )
+  }
 
   // Always render the full layout for debugging
   return (
