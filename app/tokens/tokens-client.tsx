@@ -206,7 +206,7 @@ export default function TokensClient() {
       setIsLoading(false); // Finished processing tokens
     }
 
-  }, [isConnected, address, userTokens, marketData, alphUsdPrice, marketDataError]); // Re-run when connection, address, tokens, or market data changes
+  }, [isConnected, address, marketData, alphUsdPrice, marketDataError]); // Re-run when connection, address, tokens, or market data changes
 
   // JSX Structure
   return (
