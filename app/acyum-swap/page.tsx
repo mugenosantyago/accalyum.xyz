@@ -1,7 +1,7 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from 'react'
+import type { Metadata } from 'next'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,7 +15,6 @@ import { useWallet } from "@alephium/web3-react"
 import { useToast } from "@/components/ui/use-toast"
 import { logger } from "@/lib/logger"
 import { config } from "@/lib/config"
-import type { Metadata } from 'next'
 
 interface CandySwapTokenData {
   id: string;
@@ -35,7 +34,8 @@ export const metadata: Metadata = {
   keywords: ['Alephium', 'ACYUM', 'Swap', 'Exchange', 'Token', 'ALPH', 'DeFi', 'Crypto'],
 };
 
-export default function AcyumSwapPage() {
+// Client Component containing the page logic
+function AcyumSwapClient() {
   const { t } = useLanguage()
   const { toast } = useToast()
   const { 
@@ -271,4 +271,9 @@ export default function AcyumSwapPage() {
       </div>
     </ClientLayoutWrapper>
   )
+}
+
+// Default export Server Component that renders the Client Component
+export default function AcyumSwapPage() {
+  return <AcyumSwapClient />;
 }

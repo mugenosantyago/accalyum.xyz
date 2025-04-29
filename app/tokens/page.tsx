@@ -11,6 +11,7 @@ import { useWallet, useBalance } from "@alephium/web3-react"
 import { config } from "@/lib/config"
 import { logger } from "@/lib/logger"
 import type { Metadata } from 'next'
+import { useToast } from "@/components/ui/use-toast"
 
 interface CandySwapTokenData {
   id: string;
@@ -56,8 +57,9 @@ export const metadata: Metadata = {
   keywords: ['Alephium', 'ACYUM', 'Tokens', 'Balance', 'Wallet', 'Portfolio', 'Crypto'],
 };
 
-export default function TokensPage() {
+function TokensClient() {
   const { t } = useLanguage()
+  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [marketData, setMarketData] = useState<Record<string, CandySwapTokenData>>({})
   const [alphUsdPrice, setAlphUsdPrice] = useState<number | null>(null)
@@ -230,4 +232,8 @@ export default function TokensPage() {
       </div>
     </ClientLayoutWrapper>
   )
+}
+
+export default function TokensPage() {
+  return <TokensClient />;
 }

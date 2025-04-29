@@ -1,7 +1,7 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import React, { useState, useEffect } from 'react'
+import type { Metadata } from 'next'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +14,6 @@ import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { useWallet } from "@alephium/web3-react"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { logger } from "@/lib/logger"
-import type { Metadata } from 'next'
 
 // Add metadata for the ID Registration page
 export const metadata: Metadata = {
@@ -42,7 +41,8 @@ const politicalParties = [
   { label: "Japanese Communist Party (JCP)", value: "JCP" },
 ]
 
-export default function IDRegistrationPage() {
+// Client Component containing the page logic
+function IdRegistrationClient() {
   const { toast } = useToast()
   const { t } = useLanguage()
   const { 
@@ -379,4 +379,9 @@ export default function IDRegistrationPage() {
       </div>
     </ClientLayoutWrapper>
   )
+}
+
+// Default export Server Component that renders the Client Component
+export default function IdRegistrationPage() {
+  return <IdRegistrationClient />;
 }

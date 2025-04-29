@@ -79,7 +79,8 @@ function formatBigIntAmount(amount: bigint | undefined | null, decimals: number,
   return `${integerPart}${displayFractional.length > 0 ? '.' + displayFractional : ''}`;
 }
 
-export default function AcyumBankPage() {
+// Client Component containing the page logic
+function AcyumBankClient() {
   const { t } = useLanguage()
   const { toast } = useToast()
   
@@ -590,4 +591,9 @@ export default function AcyumBankPage() {
       </div>
     </ClientLayoutWrapper>
   )
+}
+
+// Default export Server Component that renders the Client Component
+export default function AcyumBankPage() {
+  return <AcyumBankClient />;
 }

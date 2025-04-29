@@ -60,7 +60,8 @@ export const metadata: Metadata = {
   keywords: ['Alephium', 'ACYUM', 'Mutual Funding', 'Pool', 'Contribute', 'DeFi', 'Crypto'],
 };
 
-export default function MutualFundingPage() {
+// Client Component containing the page logic
+function MutualFundingClient() {
   const { t } = useLanguage()
   const [donationAmount, setDonationAmount] = useState("")
   const [selectedInitiative, setSelectedInitiative] = useState<string | null>(null)
@@ -386,4 +387,9 @@ export default function MutualFundingPage() {
       </div>
     </ClientLayoutWrapper>
   )
+}
+
+// Default export Server Component that renders the Client Component
+export default function MutualFundingPage() {
+  return <MutualFundingClient />;
 }
