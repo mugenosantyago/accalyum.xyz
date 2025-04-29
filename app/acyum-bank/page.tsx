@@ -14,7 +14,7 @@ import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { WalletStatusDisplay } from "@/components/wallet-status-display"
 import { useToast } from "@/components/ui/use-toast"
-import { useWallet, useBalance, useAccount } from "@alephium/web3-react"
+import { useWallet, useBalance } from "@alephium/web3-react"
 import { logger } from "@/lib/logger"
 import { MakeDeposit, Withdraw } from "@/contracts/scripts"
 import { config } from "@/lib/config"
@@ -26,23 +26,22 @@ export default function AcyumBankPage() {
   const { t } = useLanguage()
   const { toast } = useToast()
   
-  const { 
-    account,
+  const {
     signer,
     connectionStatus,
+    account
   } = useWallet()
 
-  const { account: fullAccount } = useAccount()
-  const address = fullAccount?.address ?? null;
+  const address = account?.address ?? null;
   const isConnected = connectionStatus === 'connected' && !!address;
   
   const { balance: alphBalanceWei, updateBalanceForTx } = useBalance();
   const displayAlphBalance = web3.formatAmount(alphBalanceWei ?? 0n, 18, 4);
 
   const acyumTokenId = config.alephium.acyumTokenId;
-  const acyumBalanceInfo = fullAccount?.tokenBalances?.find(token => token.id === acyumTokenId);
+  const acyumBalanceInfo = account?.tokenBalances?.find(token => token.id === acyumTokenId);
   const acyumBalance = acyumBalanceInfo?.amount ?? 0n;
-  const displayAcyumBalance = formatAmount(acyumBalance, 7, 2);
+  const displayAcyumBalance = web3.formatAmount(acyumBalance, 7, 2);
 
   const [depositAmount, setDepositAmount] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
