@@ -58,6 +58,7 @@ interface User {
   email: string
   acyumId?: string
   createdAt: string
+  hasClaimedInitialSwea?: boolean
 }
 
 interface PendingApproval {
@@ -764,6 +765,7 @@ export default function AdminPage() {
                           <TableHead className="text-gray-400">Email</TableHead>
                           <TableHead className="text-gray-400">Wallet Address</TableHead>
                           <TableHead className="text-gray-400">ACYUM ID</TableHead>
+                          <TableHead className="text-gray-400">Claimed sWEA</TableHead>
                           <TableHead className="text-gray-400">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -774,6 +776,13 @@ export default function AdminPage() {
                             <TableCell className="text-gray-300">{user.email}</TableCell>
                             <TableCell className="font-mono text-xs text-gray-300">{user.address}</TableCell>
                             <TableCell className="text-gray-300">{user.acyumId || "Not assigned"}</TableCell>
+                            <TableCell className="text-gray-300">
+                              {user.hasClaimedInitialSwea ? (
+                                <span className="text-green-400">Yes</span>
+                              ) : (
+                                <span className="text-red-400">No</span>
+                              )}
+                            </TableCell>
                             <TableCell>
                               <div className="flex space-x-2">
                                 <Button

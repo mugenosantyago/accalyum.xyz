@@ -20,10 +20,11 @@ export const config = {
     // sWEA Configuration
     sweaTokenIdHex: process.env.NEXT_PUBLIC_SWEA_TOKEN_ID_HEX ?? "5d738e4fda3dab2c3edf175842df94f877f4be41b06bba553f61328b5c276300", // Updated with provided ID
     sweaDecimals: parseInt(process.env.NEXT_PUBLIC_SWEA_DECIMALS || "9", 10), // Updated to 9 decimals
+    sweaFaucetAddress: process.env.NEXT_PUBLIC_SWEA_FAUCET_ADDRESS || "1DjCZbKGATt82mxygUDuNr8yYxf786SNc7ek9ZEeY3CYC", // Added sWEA Faucet Address
     // Add contract addresses here when known
     // sweaClaimContractAddress: process.env.NEXT_PUBLIC_SWEA_CLAIM_CONTRACT_ADDRESS,
     // sweaPurchaseContractAddress: process.env.NEXT_PUBLIC_SWEA_PURCHASE_CONTRACT_ADDRESS,
-    adminAddress: process.env.ADMIN_ADDRESS || "", // Add Admin address
+    adminAddress: process.env.NEXT_PUBLIC_ADMIN_ADDRESS || "16Wr9KvdT31S99Yw3GCnsXciS9uB2vuxpnD75qQvAFmay", // Use ENV var or fallback to hardcoded address
   },
   treasury: {
     homelessness: process.env.NEXT_PUBLIC_TREASURY_HOMELESSNESS || "",

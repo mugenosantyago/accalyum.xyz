@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-// import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db"
 import { config } from "@/lib/config"
 
 // Define a simple User type
@@ -11,6 +11,7 @@ interface User {
   isAdmin: boolean;
   createdAt: Date;
   acyumId?: string;
+  hasClaimedInitialSwea?: boolean;
 }
 
 export async function GET(request: Request) {
@@ -23,16 +24,25 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Temporarily disabled for build
-    // const db = await getDb()
-    // const users = await db
-    //   .collection("users")
-    //   .find({ acyumId: { $exists: true } })
-    //   .sort({ createdAt: -1 })
-    //   .toArray()
+    // Temporarily disabled for build -> Re-enabled
+    const db = await getDb()
+    const users = await db
+      .collection<User>("users")
+      .find({ acyumId: { $exists: true } })
+      .sort({ createdAt: -1 })
+      .project({
+          _id: 1,
+          address: 1,
+          username: 1,
+          email: 1,
+          createdAt: 1,
+          acyumId: 1,
+          hasClaimedInitialSwea: 1
+      })
+      .toArray()
 
-    // Mock response for build
-    const users: User[] = []
+    // Mock response for build -> Removed
+    // const users: User[] = []
 
     return NextResponse.json({ users })
   } catch (error) {
