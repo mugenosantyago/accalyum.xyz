@@ -49,6 +49,7 @@ import {
   addSweaToTreasuryAction 
 } from "@/app/actions/swea-actions"
 import { logger } from "@/lib/logger"
+import { AlephiumConnectButton } from "@alephium/web3-react"
 
 interface User {
   _id: string
@@ -165,32 +166,8 @@ export default function AdminPage() {
     }
   }, [address, toast])
 
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      setIsLoading(true) // Set loading true at the start
-      if (!isConnected || !address) {
-        setIsAdmin(false)
-        setIsLoading(false)
-        return
-      }
-
-      // Check admin address from config
-      if (address.toLowerCase() === config.alephium.adminAddress.toLowerCase()) {
-        setIsAdmin(true)
-        // Fetch all data sequentially now
-        await fetchData() // Fetch users/approvals
-        await fetchTreasuryData() // Fetch ALPH treasury/faucet
-        await fetchSweaTreasuryData() // Fetch sWEA treasury
-      } else {
-        setIsAdmin(false)
-      }
-      setIsLoading(false) // Set loading false after all checks/fetches
-    }
-
-    checkAdminStatus()
-  }, [isConnected, address, toast, fetchData, fetchSweaTreasuryData, fetchTreasuryData]) // Keep fetchData in dependency array
-
-  const fetchTreasuryData = async () => {
+  // Define fetch functions *before* the main useEffect that uses them
+  const fetchTreasuryData = useCallback(async () => {
     setIsTreasuryLoading(true)
     try {
       const treasuryBalanceResult = await getTreasuryBalance()
@@ -212,7 +189,7 @@ export default function AdminPage() {
     } finally {
       setIsTreasuryLoading(false)
     }
-  }
+  }, [toast])
 
   const fetchSweaTreasuryData = useCallback(async () => {
     if (!sweaBankAddress || !sweaTokenId) {
@@ -242,6 +219,31 @@ export default function AdminPage() {
       setIsSweaTreasuryLoading(false)
     }
   }, [sweaBankAddress, sweaTokenId, toast]) // Added dependencies
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      setIsLoading(true) // Set loading true at the start
+      if (!isConnected || !address) {
+        setIsAdmin(false)
+        setIsLoading(false)
+        return
+      }
+
+      // Check admin address from config
+      if (address.toLowerCase() === config.alephium.adminAddress.toLowerCase()) {
+        setIsAdmin(true)
+        // Fetch all data sequentially now
+        await fetchData() // Fetch users/approvals
+        await fetchTreasuryData() // Fetch ALPH treasury/faucet
+        await fetchSweaTreasuryData() // Fetch sWEA treasury
+      } else {
+        setIsAdmin(false)
+      }
+      setIsLoading(false) // Set loading false after all checks/fetches
+    }
+
+    checkAdminStatus()
+  }, [isConnected, address, toast, fetchData, fetchSweaTreasuryData, fetchTreasuryData]) // Keep fetchData in dependency array
 
   const handleAddFundsToTreasury = useCallback(async () => {
     if (!depositAmount || Number.parseFloat(depositAmount) <= 0) {
@@ -673,9 +675,16 @@ export default function AdminPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
-              <Button className="bg-[#FF6B35] hover:bg-[#E85A2A]" onClick={() => connect()}>
-                Connect Wallet
-              </Button>
+              <AlephiumConnectButton.Custom>
+                {({ show }) => (
+                  <Button 
+                    className="bg-[#FF6B35] hover:bg-[#E85A2A]" 
+                    onClick={show}
+                  >
+                    Connect Wallet
+                  </Button>
+                )}
+              </AlephiumConnectButton.Custom>
             </CardContent>
           </Card>
         </main>
