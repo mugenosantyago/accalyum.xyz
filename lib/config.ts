@@ -15,6 +15,7 @@ export const config = {
 
     acyumTokenIdHex: process.env.NEXT_PUBLIC_ACYUM_TOKEN_ID_HEX ?? "", // Default to empty string if not set
     acyumDecimals: parseInt(process.env.NEXT_PUBLIC_ACYUM_DECIMALS || "7", 10),
+    acyumFaucetAddress: process.env.NEXT_PUBLIC_ACYUM_FAUCET_ADDRESS || "", // Added Faucet Address
     
     // sWEA Configuration
     sweaTokenIdHex: process.env.NEXT_PUBLIC_SWEA_TOKEN_ID_HEX ?? "5d738e4fda3dab2c3edf175842df94f877f4be41b06bba553f61328b5c276300", // Updated with provided ID
@@ -25,10 +26,10 @@ export const config = {
     adminAddress: process.env.ADMIN_ADDRESS || "", // Add Admin address
   },
   treasury: {
-    homelessness: process.env.TREASURY_HOMELESSNESS || "",
-    palestine: process.env.TREASURY_PALESTINE || "",
-    communist: process.env.TREASURY_COMMUNIST || "",
-    sweaBank: process.env.TREASURY_SWEA_BANK || "", // Added for sWEA Bank Treasury
+    homelessness: process.env.NEXT_PUBLIC_TREASURY_HOMELESSNESS || "",
+    palestine: process.env.NEXT_PUBLIC_TREASURY_PALESTINE || "",
+    communist: process.env.NEXT_PUBLIC_TREASURY_COMMUNIST || "",
+    sweaBank: process.env.NEXT_PUBLIC_TREASURY_SWEA_BANK || "",
   },
   database: {
     mongoUri: process.env.MONGODB_URI || "",

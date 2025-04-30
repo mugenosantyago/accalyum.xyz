@@ -681,8 +681,8 @@ export default function AdminPage() {
                     className="bg-[#FF6B35] hover:bg-[#E85A2A]" 
                     onClick={show}
                   >
-                    Connect Wallet
-                  </Button>
+                Connect Wallet
+              </Button>
                 )}
               </AlephiumConnectButton.Custom>
             </CardContent>

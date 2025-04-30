@@ -18,7 +18,7 @@ import { NodeProvider } from "@alephium/web3"
 import { logger } from "@/lib/logger"
 import { MakeDeposit, Withdraw } from "@/contracts/scripts"
 import { config } from "@/lib/config"
-import { TokenFaucetInstance } from "@/artifacts/ts/TokenFaucet"
+import { TokenFaucet } from "@/artifacts/ts"
 import Image from 'next/image'
 import { BankLedger } from '@/components/bank-ledger'
 
@@ -108,6 +108,7 @@ export default function AcyumBankClient() {
   interface TokenBalance { id: string; amount: bigint; }
 
   const acyumTokenId = config.alephium.acyumTokenIdHex;
+  const acyumDecimals = config.alephium.acyumDecimals; // Get decimals from config
   const acyumBalanceInfo = account?.tokenBalances?.find((token: TokenBalance) => token.id === acyumTokenId);
   const acyumBalance = acyumBalanceInfo?.amount ?? 0n;
   const displayAcyumBalance = formatBigIntAmount(acyumBalance, config.alephium.acyumDecimals, 2);
@@ -130,7 +131,7 @@ export default function AcyumBankClient() {
   const [isFaucetProcessing, setIsFaucetProcessing] = useState(false)
 
   const bankTreasuryAddress = config.treasury.communist;
-  const faucetContractAddress = config.treasury.communist;
+  const faucetContractAddress = config.alephium.acyumFaucetAddress; // Use new faucet address config
   const providerUrl = config.alephium.providerUrl;
 
   const [treasuryAlphBalance, setTreasuryAlphBalance] = useState<bigint | null>(null);
@@ -561,43 +562,35 @@ export default function AcyumBankClient() {
   }
 
   const handleFaucet = async () => {
-    if (!isConnected || !signer) return toast({ title: "Error", description: "Wallet not connected", variant: "destructive" });
+    if (!isConnected || !signer || !address ) return toast({ title: "Error", description: "Wallet not connected", variant: "destructive" });
     if (!acyumTokenId) return toast({ title: "Error", description: "ACYUM Token ID not configured", variant: "destructive" });
-    if (!faucetContractAddress) return toast({ title: "Error", description: "Faucet address not configured", variant: "destructive" });
+    if (!faucetContractAddress) return toast({ title: "Error", description: "ACYUM Faucet address not configured", variant: "destructive" });
 
     setIsFaucetProcessing(true);
-    logger.info("Attempting to use ACYUM faucet...");
+    logger.info(`Attempting to call 'withdraw' on faucet contract ${faucetContractAddress}...`);
     try {
-      //const faucet = new TokenFaucetInstance(faucetContractAddress); // Instantiate needs web3
-      const amountToClaim = BigInt(7 * (10 ** 7)); // 7 ACYUM
+      // Calculate the amount to claim (7 ACYUM)
+      const amountToClaim = BigInt(7 * (10 ** acyumDecimals));
 
-      // Assuming the faucet contract is deployed and its address is known
-      // We might need a script call if direct instantiation isn't straightforward
-      // For now, let's assume a hypothetical 'FaucetClaim' script or similar interaction pattern
-      
-      // Placeholder: Replace with actual faucet claim logic using signer
-      // This might involve calling a specific script or interacting directly
-      // if the TokenFaucetInstance can be properly initialized here.
-      
-      // Example using a hypothetical script (if TokenFaucetInstance isn't directly usable)
-      /*
-      const result = await FaucetClaimScript.execute(signer, {
-          initialFields: { 
-              faucet: faucetContractAddress, 
-              amount: amountToClaim 
-          },
-          attoAlphAmount: DUST_AMOUNT 
+      // Get the contract instance
+      const faucetInstance = TokenFaucet.at(faucetContractAddress);
+
+      // Call the 'withdraw' method via the transact interface
+      const result = await faucetInstance.transact.withdraw({
+        signer: signer, // Pass the signer
+        args: {
+          amount: amountToClaim // Pass the amount to withdraw
+        },
+        attoAlphAmount: DUST_AMOUNT // Attach required dust
       });
-      */
 
-      // Temporary simulation until faucet logic is finalized
-      await new Promise(resolve => setTimeout(resolve, 1000)); 
-      const result = { txId: "simulated_faucet_tx_" + Date.now() }; 
+      logger.info(`Faucet 'withdraw' call successful: Tx ID ${result.txId}`);
+      toast({ title: "Faucet Claim Submitted", description: `Tx ID: ${result.txId}` });
+      // Optionally update balance using useBalance hook if needed
+      // updateBalanceForTx(result.txId) 
 
-      logger.info(`Faucet claim successful: Tx ID ${result.txId}`);
-      toast({ title: "Faucet Claim Submitted (Simulated)", description: `Tx ID: ${result.txId}` });
     } catch (error) {
-      logger.error("Faucet failed", error);
+      logger.error("Faucet 'withdraw' call failed", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       toast({ title: "Faucet Failed", description: message, variant: "destructive" });
     } finally {
