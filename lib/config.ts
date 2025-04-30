@@ -22,11 +22,13 @@ export const config = {
     // Add contract addresses here when known
     // sweaClaimContractAddress: process.env.NEXT_PUBLIC_SWEA_CLAIM_CONTRACT_ADDRESS,
     // sweaPurchaseContractAddress: process.env.NEXT_PUBLIC_SWEA_PURCHASE_CONTRACT_ADDRESS,
+    adminAddress: process.env.ADMIN_ADDRESS || "", // Add Admin address
   },
   treasury: {
     homelessness: process.env.TREASURY_HOMELESSNESS || "",
     palestine: process.env.TREASURY_PALESTINE || "",
     communist: process.env.TREASURY_COMMUNIST || "",
+    sweaBank: process.env.TREASURY_SWEA_BANK || "", // Added for sWEA Bank Treasury
   },
   database: {
     mongoUri: process.env.MONGODB_URI || "",

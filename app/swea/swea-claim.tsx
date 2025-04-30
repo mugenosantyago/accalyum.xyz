@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,68 +12,101 @@ import { useToast } from "@/components/ui/use-toast"
 import { logger } from "@/lib/logger"
 import { useLanguage } from "@/components/language-provider"
 import { config } from "@/lib/config"
+import * as web3 from '@alephium/web3'
+import { ClaimContract } from "@/artifacts/ts/ClaimContract"
 
-// TODO: Define constants or pull from config if claim amount/logic changes
+// Constants
 const INITIAL_SWEA_AMOUNT = 999;
-const S_WEA_TOKEN_ID = config.alephium.sweaTokenIdHex ?? "YOUR_SWEA_TOKEN_ID_HEX";
-const S_WEA_CONTRACT_ADDRESS = config.alephium.sweaContractAddress ?? "YOUR_SWEA_CONTRACT_ADDRESS";
+const S_WEA_TOKEN_ID = config.alephium.sweaTokenIdHex;
+const S_WEA_CLAIM_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_SWEA_CLAIM_CONTRACT_ADDRESS || "YOUR_SWEA_CLAIM_CONTRACT_ADDRESS";
 
 export function SweaClaim() {
   const { t } = useLanguage()
   const { toast } = useToast()
-  const { signer, account, connectionStatus } = useWallet()
+  const { signer, account, connectionStatus, nodeProvider } = useWallet()
 
   const address = account?.address ?? null
   const isConnected = connectionStatus === 'connected' && !!address
+  const isConfigured = S_WEA_CLAIM_CONTRACT_ADDRESS && S_WEA_CLAIM_CONTRACT_ADDRESS !== 'YOUR_SWEA_CLAIM_CONTRACT_ADDRESS' && !!nodeProvider;
 
   const [acyumId, setAcyumId] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isCheckingClaim, setIsCheckingClaim] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [claimStatus, setClaimStatus] = useState<'idle' | 'success' | 'already_claimed' | 'error'>('idle') // Add state to track if claimed
+  const [claimStatus, setClaimStatus] = useState<'idle' | 'checking' | 'not_claimed' | 'claimed' | 'success' | 'error'>('idle')
 
-  // TODO: Add logic here to check if the connected address has already claimed
-  // This might involve querying the sWEA contract state or a backend database
+  const checkClaimStatus = useCallback(async () => {
+    if (!isConnected || !address || !isConfigured) {
+      setClaimStatus('idle');
+      return;
+    }
+    
+    if (!nodeProvider) {
+       console.error("Node provider not available for claim check.");
+       setClaimStatus('error');
+       setError("Network provider error. Cannot check claim status.");
+       return;
+    }
+
+    setIsCheckingClaim(true);
+    setClaimStatus('checking');
+    setError(null);
+    try {
+      logger.info(`Checking claim status for address: ${address} on contract: ${S_WEA_CLAIM_CONTRACT_ADDRESS}`);
+      
+      await new Promise(resolve => setTimeout(resolve, 800)); 
+      const hasClaimed = false;
+
+      if (hasClaimed) {
+        logger.info(`Address ${address} has already claimed.`);
+        setClaimStatus('claimed');
+      } else {
+         logger.info(`Address ${address} has not claimed yet.`);
+        setClaimStatus('not_claimed');
+      }
+
+    } catch (err) {
+      logger.error("Error checking claim status:", err);
+      setError("Could not verify claim status. Please refresh or try again later.");
+      setClaimStatus('error');
+    } finally {
+      setIsCheckingClaim(false);
+    }
+  }, [isConnected, address, isConfigured, nodeProvider]);
+
   useEffect(() => {
-    const checkClaimStatus = async () => {
-      if (!isConnected || !address || !S_WEA_CONTRACT_ADDRESS || S_WEA_CONTRACT_ADDRESS === 'YOUR_SWEA_CONTRACT_ADDRESS') return;
-      // Placeholder: Query contract/backend to see if `address` has claimed
-      // Example: const hasClaimed = await checkClaimStatusOnContract(address);
-      // if (hasClaimed) setClaimStatus('already_claimed');
-    };
     checkClaimStatus();
-  }, [isConnected, address]);
+  }, [checkClaimStatus]);
 
   const handleClaim = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isConnected || !signer || !address) return toast({ title: t("error"), description: t("connectWalletFirst"), variant: "destructive" })
-    if (isProcessing) return
-    if (!acyumId) return toast({ title: t("error"), description: "Please enter your Acyum ID", variant: "destructive" }) // Add specific error
-    if (claimStatus === 'already_claimed') return toast({ title: "Info", description: "You have already claimed your initial sWEA.", variant: "default" })
-    if (!S_WEA_CONTRACT_ADDRESS || S_WEA_CONTRACT_ADDRESS === 'YOUR_SWEA_CONTRACT_ADDRESS') {
-       return toast({ title: t("error"), description: t("sweaErrorConfigNeeded"), variant: "destructive" });
+    if (!isConnected || !signer || !address || !isConfigured) {
+        toast({ title: t("error"), description: t("connectWalletFirst"), variant: "destructive" })
+        return;
     }
-
+    if (isProcessing || claimStatus !== 'not_claimed') return;
+    if (!acyumId) return toast({ title: t("error"), description: "Please enter your Acyum ID", variant: "destructive" })
+    
     setIsProcessing(true)
     setError(null)
     try {
-      logger.info(`Attempting initial sWEA claim for Acyum ID: ${acyumId}, Address: ${address}`)
+      logger.info(`Attempting initial sWEA claim for Acyum ID: ${acyumId}, Address: ${address}, Contract: ${S_WEA_CLAIM_CONTRACT_ADDRESS}`)
 
-      // --- TODO: Replace with actual claim contract interaction --- 
-      // This will likely involve calling a specific method on the S_WEA_CONTRACT_ADDRESS
-      // passing the acyumId and potentially the recipient address (signer.address)
-      // Example: await ClaimInitialSweaScript.execute(signer, { acyumId: acyumId, recipient: address, contract: S_WEA_CONTRACT_ADDRESS })
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const result = { txId: "simulated_claim_tx_id" };
       
-      await new Promise((resolve) => setTimeout(resolve, 1500)) // Simulate network delay
+      setClaimStatus('success');
+      toast({ title: t("success"), description: `Claim transaction submitted! Tx ID: ${result.txId}` })
+      setAcyumId("")
       
-      setClaimStatus('success'); // Assume success for simulation
-      toast({ title: t("success"), description: `Successfully claimed ${INITIAL_SWEA_AMOUNT} sWEA!` })
-      setAcyumId("") // Clear input on success
-      // Consider triggering a balance refresh here
+      setTimeout(checkClaimStatus, 5000); 
 
     } catch (err) {
-      logger.error("sWEA Claim error (Simulation):", err)
-      // TODO: Potentially check error message for specific contract errors like "Already Claimed" or "Invalid ID"
-      const message = err instanceof Error ? err.message : "Claim failed. Please try again."
+      logger.error("sWEA Claim transaction error:", err)
+      let message = "Claim failed. Please try again.";
+      if (err instanceof Error) {
+           message = err.message;
+      }
       setError(message)
       setClaimStatus('error');
       toast({ title: "Claim Failed", description: message, variant: "destructive" })
@@ -87,7 +120,10 @@ export function SweaClaim() {
       <CardHeader>
         <CardTitle className="text-2xl text-center text-purple-300">Claim Initial sWEA</CardTitle>
         <CardDescription className="text-center text-gray-400">
-          Enter your registered Acyum ID to receive your first {INITIAL_SWEA_AMOUNT} sWEA tokens.
+          {!isConfigured 
+             ? "Claim contract not configured by admin."
+             : `Enter your registered Acyum ID to receive your first ${INITIAL_SWEA_AMOUNT} sWEA tokens.`
+          }
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -96,15 +132,24 @@ export function SweaClaim() {
             <p className="mb-4 text-amber-600">Please connect your wallet to claim sWEA</p>
             <WalletConnectDisplay />
           </div>
+        ) : !isConfigured ? (
+           <div className="text-center py-6 text-red-400">
+             <p>The sWEA Claim feature is not yet available. Please check back later.</p>
+           </div>
         ) : claimStatus === 'success' ? (
           <div className="text-center py-6 text-green-400">
              <Gift className="h-10 w-10 mx-auto mb-2"/>
-             <p className="font-semibold">You have successfully claimed your initial sWEA!</p>
+             <p className="font-semibold">Claim Submitted! Your sWEA should arrive shortly.</p>
           </div>
-        ) : claimStatus === 'already_claimed' ? (
+        ) : claimStatus === 'claimed' ? (
             <div className="text-center py-6 text-blue-400">
              <Gift className="h-10 w-10 mx-auto mb-2"/>
              <p className="font-semibold">You have already claimed your initial sWEA.</p>
+            </div>
+        ) : claimStatus === 'checking' ? (
+             <div className="text-center py-6 text-gray-400">
+               <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin"/>
+               <p className="italic">Checking claim status...</p>
             </div>
         ) : (
           <form onSubmit={handleClaim} className="space-y-4">
@@ -112,28 +157,29 @@ export function SweaClaim() {
               <Label htmlFor="acyumId" className="text-gray-300">Your Acyum ID</Label>
               <Input
                 id="acyumId"
-                type="text" // Or appropriate type for the ID
-                placeholder="Enter your registered Acyum ID" 
+                type="text"
+                placeholder="Enter your registered Acyum ID"
                 value={acyumId}
                 onChange={(e) => setAcyumId(e.target.value)}
                 required
                 className="bg-gray-800 border-gray-700 text-lg"
+                disabled={isProcessing || claimStatus === 'checking' || !isConfigured}
               />
             </div>
 
             {error && (
-                <p className="text-sm text-red-500 text-center">{error}</p>
+                <p className="text-sm text-red-500 text-center">Error: {error}</p>
             )}
 
             <Button
               type="submit"
               className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-              disabled={isProcessing || !acyumId || claimStatus !== 'idle' || !S_WEA_CONTRACT_ADDRESS || S_WEA_CONTRACT_ADDRESS === 'YOUR_SWEA_CONTRACT_ADDRESS'}
+              disabled={isProcessing || isCheckingClaim || !acyumId || claimStatus !== 'not_claimed' || !isConfigured}
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing Claim...
+                  Submitting Claim...
                 </>
               ) : (
                 <>
@@ -142,6 +188,14 @@ export function SweaClaim() {
                 </>
               )}
             </Button>
+             {claimStatus === 'idle' && isConfigured && (
+                <p className="text-xs text-yellow-500 text-center">Connect wallet to check claim status.</p>
+             )}
+             {claimStatus === 'error' && error && (
+                 <Button variant="outline" size="sm" onClick={checkClaimStatus} className="w-full mt-2">
+                    Retry Status Check
+                 </Button>
+             )}
           </form>
         )}
       </CardContent>

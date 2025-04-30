@@ -627,44 +627,8 @@ export default function AcyumBankClient() {
                     </div>
                   ) : (
                     <>
-                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md mb-6">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t("yourWallet")}</p>
-                        <p className="font-mono text-sm break-all">{address}</p>
-                        <div className="mt-2 grid grid-cols-2 gap-4">
-                           <div>
-                             <p className="text-sm text-gray-500 dark:text-gray-400">ALPH {t("balance")}</p>
-                             <p className="text-xl font-bold">{displayAlphBalance} ALPH</p>
-                           </div>
-                           <div>
-                             <p className="text-sm text-gray-500 dark:text-gray-400">ACYUM {t("balance")}</p>
-                             <p className="text-xl font-bold">{displayAcyumBalance} ACYUM</p>
-                             {/* Display CandySwap/CoinGecko Market Data */}
-                             {isMarketDataLoading ? (
-                               <p className="text-xs text-gray-400">Loading market price...</p>
-                             ) : marketDataError ? (
-                               <p className="text-xs text-red-500">Error: {marketDataError}</p>
-                             ) : acyumMarketData?.orderBookPrice !== undefined && alphUsdPrice !== null ? (
-                               <>
-                                 <p className="text-xs text-gray-400">
-                                   ≈ {(Number(displayAcyumBalance.replace(/,/g, '')) * acyumMarketData.orderBookPrice).toFixed(2)} ALPH 
-                                   (@ {acyumMarketData.orderBookPrice.toPrecision(3)} ALPH/ACYUM)
-                                 </p>
-                                 {acyumUsdPrice !== null && (
-                                  <p className="text-xs text-gray-400">
-                                    ≈ ${(Number(displayAcyumBalance.replace(/,/g, '')) * acyumUsdPrice).toFixed(2)} USD 
-                                    (@ ${acyumUsdPrice.toFixed(4)} / ACYUM)
-                                  </p>
-                                 )}
-                               </>
-                             ) : (
-                               <p className="text-xs text-gray-400">Market price unavailable.</p>
-                             )}
-                           </div>
-                        </div>
-                        <div className="mt-2">
-                          <WalletStatusDisplay />
-                        </div>
-                      </div>
+                      {/* Removed redundant wallet info display from this column */}
+                      {/* <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md mb-6"> ... </div> */}
 
                       {/* ACYUM Faucet Card - This stays here */} 
                        <Card className="mb-6 bg-gray-850 border-gray-700">
