@@ -41,7 +41,6 @@ export function ModernNav() {
     { href: "/", icon: <Home size={20} />, label: t("home") },
     { href: "/id-registration", icon: <IdCard size={20} />, label: t("idRegistration") },
     { href: "/acyum-bank", icon: <Landmark size={20} />, label: t("acyumBank") },
-    { href: "/swea-bank", icon: <Landmark size={20} />, label: t("sweaBank") },
     { href: "/acyum-swap", icon: <BarChart3 size={20} />, label: t("tradeTokens") },
     { href: "/swea", icon: <Scale size={20} />, label: "sWEA" },
     { href: "/mutual-funding", icon: <HeartHandshake size={20} />, label: t("mutualFunding") },

@@ -45,10 +45,10 @@ export default function AcyumSwapClient() {
 
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // Use the contract address for CandySwap API lookup
-  const acyumContractAddressForAPI = config.alephium.acyumContractAddress;
+  // Use the token ID for CandySwap API lookup
+  const acyumTokenIdHexForAPI = config.alephium.acyumTokenIdHex; // Changed from acyumContractAddress
   const acyumTokenId = config.alephium.acyumTokenIdHex; // Keep hex ID if needed elsewhere
-  const ACYUM_DECIMALS = 7; // Define decimals explicitly
+  const ACYUM_DECIMALS = config.alephium.acyumDecimals; // Use decimals from config
 
   // Rename state to hold raw data
   const [rawAcyumMarketData, setRawAcyumMarketData] = useState<CandySwapTokenData | null>(null); 
@@ -86,14 +86,14 @@ export default function AcyumSwapClient() {
            setMarketDataError(`CandySwap API error! status: ${tokenListRes.status}`); 
         } else {
             const tokenListData: CandySwapTokenData[] = await tokenListRes.json();
-            // Find ACYUM using the collectionTicker
-            const acyumData = tokenListData.find(token => token.collectionTicker === acyumContractAddressForAPI); 
+            // Find ACYUM using the token ID hex as the lookup key
+            const acyumData = tokenListData.find(token => token.id === acyumTokenIdHexForAPI); 
             if (acyumData) {
               setRawAcyumMarketData(acyumData); // Store raw data for volume etc.
               logger.info("Fetched ACYUM market metadata/volume for Swap page:", acyumData);
               // No longer calculating rate from acyumData.orderBookPrice
             } else {
-              logger.warn(`ACYUM contract address (${acyumContractAddressForAPI}) not found in CandySwap API response.`);
+              logger.warn(`ACYUM Token ID (${acyumTokenIdHexForAPI}) not found in CandySwap API response.`);
               // Don't necessarily set an error, metadata/volume might just be unavailable
             }
         }
@@ -131,17 +131,17 @@ export default function AcyumSwapClient() {
       }
     };
 
-    if (acyumContractAddressForAPI) { // Check if address is configured
+    if (acyumTokenIdHexForAPI) { // Check if token ID is configured
        fetchExternalData();
     } else {
        setIsMarketDataLoading(false);
-       setMarketDataError("ACYUM Contract Address not configured.");
-       logger.warn("ACYUM Contract Address not configured, skipping external data fetch.");
+       setMarketDataError("ACYUM Token ID not configured."); // Updated error message
+       logger.warn("ACYUM Token ID not configured, skipping external data fetch.");
        // Still log the fixed rates being used
        logger.info(`Using FIXED rates: ${fixedAcyumPerAlphRate.toFixed(2)} ACYUM/ALPH, ${fixedAlphPerAcyumRate.toFixed(1)} ALPH/ACYUM`);
     }
-    // Dependency array only needs acyumContractAddressForAPI for the fetch trigger.
-  }, [acyumContractAddressForAPI]);
+    // Dependency array uses token ID now
+  }, [acyumTokenIdHexForAPI]);
 
   // Use calculated rates for output calculation
   useEffect(() => {
