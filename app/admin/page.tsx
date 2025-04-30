@@ -50,16 +50,7 @@ import {
 } from "@/app/actions/swea-actions"
 import { logger } from "@/lib/logger"
 import { AlephiumConnectButton } from "@alephium/web3-react"
-
-interface User {
-  _id: string
-  address: string
-  username: string
-  email: string
-  acyumId?: string
-  createdAt: string
-  hasClaimedInitialSwea?: boolean
-}
+import { User } from "@/lib/types/user"
 
 interface PendingApproval {
   _id: string

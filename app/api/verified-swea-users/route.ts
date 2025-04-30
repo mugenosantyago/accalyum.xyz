@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-// import connectDB from '@/lib/db'; // Incorrect import/usage
-import User, { IUser } from '@/models/User'; // Try path relative to root alias '@'
+import { getDb } from '@/lib/db'; // Import getDb
+import { User } from '@/lib/types/user'; // Import the shared User type
 import { logger } from '@/lib/logger'; // Optional: for logging
 // We likely don't need explicit connection management here if Mongoose uses the global promise
 // from lib/db.ts. If User.find fails, we might need to revisit this.
@@ -27,24 +27,25 @@ export async function GET(request: Request) {
   logger.info("GET /api/verified-swea-users: API Key validated successfully");
 
   try {
-    // 2. Connect to Database - REMOVED, assuming connection is managed elsewhere
-    // await connectDB();
-    // logger.info("GET /api/verified-swea-users: Database connected");
+    // Get DB instance
+    const db = await getDb();
+    const usersCollection = db.collection<User>('users');
 
-    // 3. Query Users with Assigned acyumId
+    // 3. Query Users with Assigned acyumId and walletAddress using MongoDB driver syntax
     const query = {
       acyumId: { $exists: true, $ne: null, $ne: "" },
-      walletAddress: { $exists: true, $ne: null, $ne: "" }
+      address: { $exists: true, $ne: null, $ne: "" } // Check 'address' field
     };
-    const projection = { walletAddress: 1, _id: 0 };
 
-    const verifiedUsers = await User.find(query, projection)
-                                    .lean<Pick<IUser, 'walletAddress'>[]>();
+    // Chain the projection method
+    const verifiedUsers = await usersCollection.find(query)
+      .project({ address: 1, _id: 0 }) // Project only the 'address' field
+      .toArray();
 
     // 4. Extract Wallet Addresses
     const walletAddresses = verifiedUsers
-                                .map((user: Pick<IUser, 'walletAddress'>) => user.walletAddress)
-                                .filter((addr: string | null | undefined): addr is string => !!addr);
+                                .map(user => user.address) // Directly map the address
+                                .filter((addr): addr is string => !!addr); // Filter out any potential null/undefined if necessary
 
     logger.info(`GET /api/verified-swea-users: Found ${walletAddresses.length} verified users with wallet addresses.`);
 

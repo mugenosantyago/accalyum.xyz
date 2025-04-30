@@ -2,20 +2,21 @@ import { NextResponse } from 'next/server';
 import { config } from '@/lib/config';
 import { getDb } from "@/lib/db"; // Assuming getDb provides MongoDB access
 import { logger } from '@/lib/logger';
+import { User } from '@/lib/types/user'; // Import the shared User type
 
 // --- Configuration & Type Definition --- (Removed unused constants/types)
 
 // Define User type matching the one in admin route (ideally import from central location)
-interface User {
-  _id?: string;
-  address: string;
-  username: string;
-  email: string;
-  isAdmin: boolean;
-  createdAt: Date;
-  acyumId?: string;
-  hasClaimedInitialSwea?: boolean;
-}
+// interface User {
+//   _id?: string;
+//   address: string;
+//   username: string;
+//   email: string;
+//   isAdmin: boolean;
+//   createdAt: Date;
+//   acyumId?: string;
+//   hasClaimedInitialSwea?: boolean;
+// }
 
 // --- API Handler --- (No longer needs SENDER_PRIVATE_KEY)
 export async function POST(request: Request) {

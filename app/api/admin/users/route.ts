@@ -1,18 +1,19 @@
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { config } from "@/lib/config"
+import { User } from "@/lib/types/user"
 
 // Define a simple User type
-interface User {
-  _id?: string;
-  address: string;
-  username: string;
-  email: string;
-  isAdmin: boolean;
-  createdAt: Date;
-  acyumId?: string;
-  hasClaimedInitialSwea?: boolean;
-}
+// interface User {
+//   _id?: string;
+//   address: string;
+//   username: string;
+//   email: string;
+//   isAdmin: boolean;
+//   createdAt: Date;
+//   acyumId?: string;
+//   hasClaimedInitialSwea?: boolean;
+// }
 
 export async function GET(request: Request) {
   try {
