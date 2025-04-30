@@ -2,56 +2,45 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Sparkles } from "lucide-react"
+import { useLanguage } from "@/components/language-provider" // Import useLanguage
 
 export function SweaInfo() {
+  const { t } = useLanguage() // Get translation function
+
+  // Map feature keys to translation keys
   const features = [
-    { 
-      title: "Equal Distribution", 
-      description: "Everyone who joins the sWEA community receives an equal allocation of tokens, ensuring fair initial access." 
-    },
-    { 
-      title: "Prevention of Wealth Concentration", 
-      description: "To maintain fairness, no single wallet address is permitted to hold more than 1% of the total sWEA token supply." 
-    },
-    { 
-      title: "Collective Ownership & Community Treasury", 
-      description: "A significant portion, 30% of the total sWEA tokens, is held securely in a community-controlled treasury." 
-    },
-    { 
-      title: "Wealth Redistribution Mechanism", 
-      description: "Funds held within the community treasury can be redistributed equally amongst all token holders, based on community decisions." 
-    },
-    { 
-      title: "Community Governance Potential", 
-      description: "The underlying smart contract can be extended to include voting mechanisms, empowering the community to make collective decisions about the token's future and treasury usage." 
-    },
+    { key: "EqualDistribution", title: t("sweaFeatureEqualDistribution"), description: t("sweaDescEqualDistribution") },
+    { key: "WealthConcentration", title: t("sweaFeatureWealthConcentration"), description: t("sweaDescWealthConcentration") },
+    { key: "CollectiveOwnership", title: t("sweaFeatureCollectiveOwnership"), description: t("sweaDescCollectiveOwnership") },
+    { key: "Redistribution", title: t("sweaFeatureRedistribution"), description: t("sweaDescRedistribution") },
+    { key: "Governance", title: t("sweaFeatureGovernance"), description: t("sweaDescGovernance") },
   ];
 
   return (
     <div className="max-w-3xl mx-auto">
       <h1 className="text-3xl md:text-4xl font-bold mb-4 text-center text-[#FF6B35]">
-        sWEA (Sacagawea Coin) Mechanics
+        {t("sweaMechanicsTitle")} {/* Use translation */}
       </h1>
       <p className="text-lg text-center text-gray-300 mb-8">
-        sWEA is designed with unique principles focused on fairness, community ownership, and equitable distribution on the Alephium blockchain.
+        {t("sweaTagline")} {/* Use translation */}
       </p>
 
-      <Card className="bg-gray-850 border-gray-700">
+      <Card className="bg-gray-850 border-gray-700"> 
         <CardHeader>
           <CardTitle className="text-xl text-[#FF6B35]">
-            Core Principles
+            {t("sweaCorePrinciples")} {/* Use translation */}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="space-y-4">
-            {features.map((feature, index) => (
-              <div key={index}>
+            {features.map((feature) => (
+              <div key={feature.key}> {/* Use key from mapping */}
                 <dt className="font-semibold text-gray-100 flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-[#FF6B35]/80" />
-                  {feature.title}
+                  {feature.title} {/* Already translated */}
                 </dt>
                 <dd className="ml-7 text-gray-400">
-                  {feature.description}
+                  {feature.description} {/* Already translated */}
                 </dd>
               </div>
             ))}
@@ -60,7 +49,7 @@ export function SweaInfo() {
       </Card>
 
       <div className="mt-8 text-center text-gray-500 text-sm">
-          <p>Note: The specific implementation details (e.g., joining process, treasury management, governance activation) depend on the deployed smart contract.</p>
+          <p>{t("sweaNote")}</p> {/* Use translation */}
       </div>
     </div>
   )

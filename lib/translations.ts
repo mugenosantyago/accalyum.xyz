@@ -4,6 +4,7 @@ export const translations = {
     home: "Home",
     idRegistration: "ID Registration",
     acyumBank: "Acyum Bank",
+    sweaBank: "sWEA Bank",
     tradeTokens: "acyumSwap",
     mutualFunding: "Mutual Funding",
     tokens: "Tokens",
@@ -140,12 +141,52 @@ export const translations = {
     wallet: "Wallet",
     earn: "Earn",
     liquidity: "Liquidity",
+
+    // --- sWEA Page --- 
+    sweaMechanicsTitle: "sWEA (Sacagawea Coin) Mechanics",
+    sweaTagline: "sWEA is designed with unique principles focused on fairness, community ownership, and equitable distribution on the Alephium blockchain.",
+    sweaCorePrinciples: "Core Principles",
+    // Feature Titles (sweaInfo)
+    sweaFeatureEqualDistribution: "Equal Distribution",
+    sweaFeatureWealthConcentration: "Prevention of Wealth Concentration",
+    sweaFeatureCollectiveOwnership: "Collective Ownership & Community Treasury",
+    sweaFeatureRedistribution: "Wealth Redistribution Mechanism",
+    sweaFeatureGovernance: "Community Governance Potential",
+    // Feature Descriptions (sweaInfo)
+    sweaDescEqualDistribution: "Everyone who joins the sWEA community receives an equal allocation of tokens, ensuring fair initial access.",
+    sweaDescWealthConcentration: "To maintain fairness, no single wallet address is permitted to hold more than 1% of the total sWEA token supply.",
+    sweaDescCollectiveOwnership: "A significant portion, 30% of the total sWEA tokens, is held securely in a community-controlled treasury.",
+    sweaDescRedistribution: "Funds held within the community treasury can be redistributed equally amongst all token holders, based on community decisions.",
+    sweaDescGovernance: "The underlying smart contract can be extended to include voting mechanisms, empowering the community to make collective decisions about the token\'s future and treasury usage.",
+    sweaNote: "Note: The specific implementation details (e.g., joining process, treasury management, governance activation) depend on the deployed smart contract.",
+    // Swap Component (sweaSwap)
+    sweaPurchaseTitle: "Purchase sWEA",
+    sweaPurchaseDescription: "Acquire sWEA using ALPH or ACYUM. Price is community-governed.",
+    sweaConnectWalletPrompt: "Please connect your wallet to purchase sWEA",
+    sweaYourBalances: "Your Balances:",
+    sweaConfigurePrompt: " (Configure sWEA)",
+    sweaPayWithLabel: "You Pay With",
+    sweaSelectPayToken: "Select payment token",
+    sweaAmountToPayLabel: "Amount to Pay",
+    sweaYouReceiveLabel: "You Receive (sWEA)",
+    sweaCurrentRateLabel: "Current Rate (Community Governed):",
+    sweaAcyumRateNote: "(ACYUM rate not yet determined)",
+    sweaPriceInfo: "Price set initially, adjustable by community vote.",
+    sweaPurchaseButton: "Purchase sWEA",
+    sweaProcessing: "Processing...",
+    // Error Messages
+    sweaErrorRateNotSet: "ACYUM swap rate not set.",
+    sweaErrorConfigNeeded: "sWEA token details not configured.",
+    sweaErrorInsufficientBalance: "Insufficient ${token} balance", // Placeholder
+    sweaErrorInvalidAmount: "Invalid amount",
+    sweaErrorPurchaseFailed: "Purchase failed. Please try again.",
   },
   ja: {
     // Navigation
     home: "ホーム",
     idRegistration: "ID登録",
     acyumBank: "Acyum銀行",
+    sweaBank: "sWEAバンク",
     tradeTokens: "acyumSwap",
     mutualFunding: "相互資金",
     tokens: "トークン",
@@ -319,5 +360,44 @@ export const translations = {
     system: "システム",
     search: "検索",
     noResults: "結果なし",
+
+    // --- sWEA Page --- 
+    sweaMechanicsTitle: "sWEA（サカガウィアコイン）の仕組み", // Title on page
+    sweaTagline: "Alephiumブロックチェーン上で公平性、コミュニティ所有権、公平な分配に焦点を当てて設計されたユニークな原則を持つsWEA。", // Tagline
+    sweaCorePrinciples: "コア原則", // Card title in info
+    // Feature Titles (sweaInfo)
+    sweaFeatureEqualDistribution: "平等な分配",
+    sweaFeatureWealthConcentration: "富の集中防止",
+    sweaFeatureCollectiveOwnership: "共同所有権とコミュニティ財務",
+    sweaFeatureRedistribution: "富の再分配メカニズム",
+    sweaFeatureGovernance: "コミュニティガバナンスの可能性",
+    // Feature Descriptions (sweaInfo) - Using placeholders for brevity, replace with full translations
+    sweaDescEqualDistribution: "sWEAコミュニティに参加するすべての人がトークンの均等な割り当てを受け、公正な初期アクセスを保証します。",
+    sweaDescWealthConcentration: "公平性を維持するため、単一のウォレットアドレスが総sWEAトークン供給量の1％以上を保持することは許可されていません。",
+    sweaDescCollectiveOwnership: "総sWEAトークンの大部分である30％が、コミュニティ管理の財務で安全に保持されます。",
+    sweaDescRedistribution: "コミュニティ財務内で保持されている資金は、コミュニティの決定に基づき、すべてのトークン保有者に均等に再分配できます。",
+    sweaDescGovernance: "基礎となるスマートコントラクトは、投票メカニズムを含むように拡張でき、コミュニティがトークンの将来と財務の使用について集合的な決定を下せるようにします。",
+    sweaNote: "注意：具体的な実装詳細（参加プロセス、財務管理、ガバナンスの有効化など）は、展開されたスマートコントラクトに依存します。",
+    // Swap Component (sweaSwap)
+    sweaPurchaseTitle: "sWEAを購入",
+    sweaPurchaseDescription: "ALPHまたはACYUMを使用してsWEAを取得します。価格はコミュニティによって管理されます。",
+    sweaConnectWalletPrompt: "sWEAを購入するにはウォレットを接続してください",
+    sweaYourBalances: "あなたの残高:",
+    sweaConfigurePrompt: " (sWEAを設定してください)",
+    sweaPayWithLabel: "支払い方法",
+    sweaSelectPayToken: "支払いトークンを選択",
+    sweaAmountToPayLabel: "支払う金額",
+    sweaYouReceiveLabel: "受け取る金額 (sWEA)",
+    sweaCurrentRateLabel: "現在のレート（コミュニティ管理）:",
+    sweaAcyumRateNote: "（ACYUMレートは未定）",
+    sweaPriceInfo: "価格は最初に設定され、コミュニティ投票により調整可能です。",
+    sweaPurchaseButton: "sWEAを購入",
+    sweaProcessing: "処理中...",
+    // Error Messages (example)
+    sweaErrorRateNotSet: "ACYUMスワップレートが設定されていません。",
+    sweaErrorConfigNeeded: "sWEAトークンの詳細が設定されていません。",
+    sweaErrorInsufficientBalance: "${token}の残高が不足しています", // Placeholder for dynamic token
+    sweaErrorInvalidAmount: "無効な金額",
+    sweaErrorPurchaseFailed: "購入に失敗しました。もう一度お試しください。",
   },
 }

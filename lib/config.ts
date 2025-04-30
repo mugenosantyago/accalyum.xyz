@@ -1,19 +1,27 @@
 // Environment variables configuration
 export const config = {
+  siteName: "ACYUM",
+  siteDescription: "ACYUM - Community Driven Token on Alephium",
+  siteUrl: "https://your-app-url.com", // Replace with your actual URL
+  githubUrl: "https://github.com/your-repo", // Replace with your repo URL
+  twitterUrl: "https://twitter.com/your-profile", // Replace with your profile URL
+
   alephium: {
-    network: process.env.NEXT_PUBLIC_ALEPHIUM_NETWORK || "mainnet",
-    providerUrl: process.env.NEXT_PUBLIC_ALEPHIUM_PROVIDER_URL || (process.env.NEXT_PUBLIC_ALEPHIUM_NETWORK === "testnet" ? "https://wallet.testnet.alephium.org" : "https://wallet.mainnet.alephium.org"),
-    // Renamed for clarity, holds the Contract Address (Base58) used by APIs like CandySwap
-    acyumContractAddress: process.env.NEXT_PUBLIC_ACYUM_CONTRACT_ADDRESS || "", 
-    // Added to store the actual Alephium Token ID (Hex)
-    acyumTokenIdHex: process.env.NEXT_PUBLIC_ACYUM_TOKEN_ID_HEX || "", 
-    acyumDecimals: parseInt(process.env.NEXT_PUBLIC_ACYUM_DECIMALS || "7"), // Add decimals, default to 7
-    adminAddress: process.env.ADMIN_ADDRESS || "",
-    walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "",
-    // Add sWEA config 
-    sweaTokenIdHex: process.env.NEXT_PUBLIC_SWEA_TOKEN_ID_HEX || undefined, // Default to undefined if not set
-    sweaDecimals: parseInt(process.env.NEXT_PUBLIC_SWEA_DECIMALS || "18"), // Default 18?
-    sweaContractAddress: process.env.NEXT_PUBLIC_SWEA_CONTRACT_ADDRESS || undefined, // Default to undefined if not set
+    network: (process.env.NEXT_PUBLIC_ALEPHIUM_NETWORK || "testnet") as "mainnet" | "testnet" | "devnet",
+    nodeUrl: process.env.NEXT_PUBLIC_NODE_URL,
+    providerUrl: process.env.NEXT_PUBLIC_NODE_PROVIDER_URL, // Separate provider URL if needed
+    explorerApiUrl: process.env.NEXT_PUBLIC_EXPLORER_API_URL,
+    walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+
+    acyumTokenIdHex: process.env.NEXT_PUBLIC_ACYUM_TOKEN_ID_HEX ?? "", // Default to empty string if not set
+    acyumDecimals: parseInt(process.env.NEXT_PUBLIC_ACYUM_DECIMALS || "7", 10),
+    
+    // sWEA Configuration
+    sweaTokenIdHex: process.env.NEXT_PUBLIC_SWEA_TOKEN_ID_HEX ?? "5d738e4fda3dab2c3edf175842df94f877f4be41b06bba553f61328b5c276300", // Updated with provided ID
+    sweaDecimals: parseInt(process.env.NEXT_PUBLIC_SWEA_DECIMALS || "9", 10), // Updated to 9 decimals
+    // Add contract addresses here when known
+    // sweaClaimContractAddress: process.env.NEXT_PUBLIC_SWEA_CLAIM_CONTRACT_ADDRESS,
+    // sweaPurchaseContractAddress: process.env.NEXT_PUBLIC_SWEA_PURCHASE_CONTRACT_ADDRESS,
   },
   treasury: {
     homelessness: process.env.TREASURY_HOMELESSNESS || "",

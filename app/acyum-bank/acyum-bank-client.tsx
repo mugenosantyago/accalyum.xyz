@@ -20,6 +20,7 @@ import { MakeDeposit, Withdraw } from "@/contracts/scripts"
 import { config } from "@/lib/config"
 import { TokenFaucetInstance } from "@/artifacts/ts/TokenFaucet"
 import Image from 'next/image'
+import { BankLedger } from '@/components/bank-ledger'
 
 // Constants and Interfaces (copied from original page.tsx)
 const ONE_ALPH = 10n ** 18n;
@@ -140,6 +141,7 @@ export default function AcyumBankClient() {
   // State for User's Net Deposited Bank Balance
   const [userBankAlphBalance, setUserBankAlphBalance] = useState<bigint | null>(null);
   const [userBankAcyumBalance, setUserBankAcyumBalance] = useState<bigint | null>(null);
+  const [userBankSweaBalance, setUserBankSweaBalance] = useState<bigint | null>(null);
   const [isUserBankBalanceLoading, setIsUserBankBalanceLoading] = useState(false);
   const [userBankBalanceError, setUserBankBalanceError] = useState<string | null>(null);
 
@@ -273,23 +275,23 @@ export default function AcyumBankClient() {
       if (!address || !isConnected) {
         setUserBankAlphBalance(null);
         setUserBankAcyumBalance(null);
+        setUserBankSweaBalance(null);
         return;
       }
       setIsUserBankBalanceLoading(true);
       setUserBankBalanceError(null);
       logger.info(`Fetching bank balance ledger for user: ${address}`);
       try {
-        // --- Call the actual API endpoint --- 
         const response = await fetch(`/api/bank/balance/${address}`);
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || `Failed to fetch user bank balance: ${response.statusText}`);
         }
         const data = await response.json();
-        // API returns balances as strings, convert to BigInt
         setUserBankAlphBalance(BigInt(data.alphBalance ?? '0'));
         setUserBankAcyumBalance(BigInt(data.acyumBalance ?? '0'));
-        logger.info(`User bank balance fetched: ALPH=${data.alphBalance}, ACYUM=${data.acyumBalance}`);
+        setUserBankSweaBalance(BigInt(data.sweaBalance ?? '0'));
+        logger.info(`User bank balance fetched: ALPH=${data.alphBalance}, ACYUM=${data.acyumBalance}, sWEA=${data.sweaBalance}`);
 
       } catch (error) {
         logger.error("Failed to fetch user bank balance:", error);
@@ -297,6 +299,7 @@ export default function AcyumBankClient() {
         setUserBankBalanceError(message);
         setUserBankAlphBalance(null);
         setUserBankAcyumBalance(null);
+        setUserBankSweaBalance(null);
       } finally {
         setIsUserBankBalanceLoading(false);
       }
@@ -321,7 +324,6 @@ export default function AcyumBankClient() {
         throw new Error(errorData.error || `API Error (${response.status})`);
       }
       logger.info("Transaction recorded successfully.");
-      // TODO: Update balance re-fetch logic to include sWEA once API supports it
       const fetchUserBankBalance = async () => {
         if (!address || !isConnected) return;
         logger.info(`Re-fetching bank balance ledger for user after ${type}: ${address}`);
@@ -331,8 +333,8 @@ export default function AcyumBankClient() {
           const data = await response.json();
           setUserBankAlphBalance(BigInt(data.alphBalance ?? '0'));
           setUserBankAcyumBalance(BigInt(data.acyumBalance ?? '0'));
-          // setUserBankSweaBalance(BigInt(data.sweaBalance ?? '0')); // Needs API update
-          logger.info(`User bank balance re-fetched: ALPH=${data.alphBalance}, ACYUM=${data.acyumBalance}`); // Add sWEA log
+          setUserBankSweaBalance(BigInt(data.sweaBalance ?? '0'));
+          logger.info(`User bank balance re-fetched: ALPH=${data.alphBalance}, ACYUM=${data.acyumBalance}, sWEA=${data.sweaBalance}`);
         } catch (err) {
           logger.error("Failed to re-fetch user bank balance after recording tx:", err);
         }
@@ -609,13 +611,133 @@ export default function AcyumBankClient() {
       <div className="min-h-screen flex flex-col">
         <main className="flex-grow container mx-auto py-12 px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">{t("acyumBank")}</h1>
-          <div className="max-w-md mx-auto">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("acyumBanking")}</CardTitle>
-                <CardDescription>{t("depositWithdrawSecurely")}</CardDescription>
-              </CardHeader>
-              <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Treasury Info Column */} 
+            <div className="md:col-span-1 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t("acyumBanking")}</CardTitle>
+                  <CardDescription>{t("depositWithdrawSecurely")}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {!isConnected ? (
+                    <div className="text-center py-6">
+                      <p className="mb-4 text-amber-600">{t("pleaseConnectWallet")}</p>
+                      <WalletConnectDisplay />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md mb-6">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t("yourWallet")}</p>
+                        <p className="font-mono text-sm break-all">{address}</p>
+                        <div className="mt-2 grid grid-cols-2 gap-4">
+                           <div>
+                             <p className="text-sm text-gray-500 dark:text-gray-400">ALPH {t("balance")}</p>
+                             <p className="text-xl font-bold">{displayAlphBalance} ALPH</p>
+                           </div>
+                           <div>
+                             <p className="text-sm text-gray-500 dark:text-gray-400">ACYUM {t("balance")}</p>
+                             <p className="text-xl font-bold">{displayAcyumBalance} ACYUM</p>
+                             {/* Display CandySwap/CoinGecko Market Data */}
+                             {isMarketDataLoading ? (
+                               <p className="text-xs text-gray-400">Loading market price...</p>
+                             ) : marketDataError ? (
+                               <p className="text-xs text-red-500">Error: {marketDataError}</p>
+                             ) : acyumMarketData?.orderBookPrice !== undefined && alphUsdPrice !== null ? (
+                               <>
+                                 <p className="text-xs text-gray-400">
+                                   ≈ {(Number(displayAcyumBalance.replace(/,/g, '')) * acyumMarketData.orderBookPrice).toFixed(2)} ALPH 
+                                   (@ {acyumMarketData.orderBookPrice.toPrecision(3)} ALPH/ACYUM)
+                                 </p>
+                                 {acyumUsdPrice !== null && (
+                                  <p className="text-xs text-gray-400">
+                                    ≈ ${(Number(displayAcyumBalance.replace(/,/g, '')) * acyumUsdPrice).toFixed(2)} USD 
+                                    (@ ${acyumUsdPrice.toFixed(4)} / ACYUM)
+                                  </p>
+                                 )}
+                               </>
+                             ) : (
+                               <p className="text-xs text-gray-400">Market price unavailable.</p>
+                             )}
+                           </div>
+                        </div>
+                        <div className="mt-2">
+                          <WalletStatusDisplay />
+                        </div>
+                      </div>
+
+                      {/* ACYUM Faucet Card - This stays here */} 
+                       <Card className="mb-6 bg-gray-850 border-gray-700">
+                        <CardHeader className="pb-2">
+                           <CardTitle className="text-lg">ACYUM Faucet</CardTitle>
+                           <CardDescription>Get 7 free ACYUM tokens daily.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           <Button 
+                             onClick={handleFaucet} 
+                             disabled={isFaucetProcessing}
+                             className="w-full bg-blue-600 hover:bg-blue-700"
+                           >
+                             {isFaucetProcessing ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                             ) : null}
+                             Claim 7 ACYUM
+                           </Button>
+                        </CardContent>
+                      </Card>
+
+                      {/* Display Market Info Card */} 
+                      {!isMarketDataLoading && !marketDataError && (acyumMarketData || alphUsdPrice) && (
+                        <Card className="mb-6 bg-gray-850 border-gray-700">
+                          <CardHeader className="pb-2">
+                             <CardTitle className="text-lg">Market Info</CardTitle>
+                          </CardHeader>
+                          <CardContent className="grid grid-cols-2 gap-2 text-sm">
+                             {acyumMarketData && (
+                               <>
+                                 <p>ACYUM/ALPH Price:</p> 
+                                 <p className="text-right">{acyumMarketData.orderBookPrice?.toPrecision(4) ?? 'N/A'}</p>
+                               </>
+                             )}
+                             {acyumUsdPrice !== null && (
+                              <>
+                                <p>ACYUM/USD Price:</p> 
+                                <p className="text-right">${acyumUsdPrice.toFixed(4)}</p>
+                              </>
+                             )}
+                             {alphUsdPrice !== null && (
+                              <>
+                                <p>ALPH/USD Price:</p> 
+                                <p className="text-right">${alphUsdPrice.toFixed(4)}</p>
+                              </>
+                             )}
+                             {acyumMarketData && (
+                               <>
+                                 <p>Total Volume (ACYUM):</p> 
+                                 <p className="text-right">{acyumMarketData.totalVolume?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? 'N/A'}</p>
+                                 <p>24h Volume (ACYUM):</p> 
+                                 <p className="text-right">{acyumMarketData.dailyVolume?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? 'N/A'}</p>
+                               </>
+                             )}
+                             <p className="text-xs col-span-2 text-gray-400 pt-2">
+                               {acyumMarketData && (
+                                 <>Data from <a href={`https://candyswap.gg/token/${acyumMarketData.slug}`} target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400">CandySwap</a> {alphUsdPrice && "&"} </> 
+                               )}
+                               {alphUsdPrice && (
+                                <> <a href="https://www.coingecko.com/en/coins/alephium" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400">CoinGecko</a></>
+                               )}
+                             </p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+            {/* Main Content Column */} 
+             <div className="md:col-span-2 space-y-6">
+                {/* User Wallet/Connection Card */}
                 {!isConnected ? (
                   <div className="text-center py-6">
                     <p className="mb-4 text-amber-600">{t("pleaseConnectWallet")}</p>
@@ -661,71 +783,6 @@ export default function AcyumBankClient() {
                         <WalletStatusDisplay />
                       </div>
                     </div>
-
-                    {/* ACYUM Faucet Card - This stays here */} 
-                     <Card className="mb-6 bg-gray-850 border-gray-700">
-                      <CardHeader className="pb-2">
-                         <CardTitle className="text-lg">ACYUM Faucet</CardTitle>
-                         <CardDescription>Get 7 free ACYUM tokens daily.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                         <Button 
-                           onClick={handleFaucet} 
-                           disabled={isFaucetProcessing}
-                           className="w-full bg-blue-600 hover:bg-blue-700"
-                         >
-                           {isFaucetProcessing ? (
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                           ) : null}
-                           Claim 7 ACYUM
-                         </Button>
-                      </CardContent>
-                    </Card>
-
-                    {/* Display Market Info Card */} 
-                    {!isMarketDataLoading && !marketDataError && (acyumMarketData || alphUsdPrice) && (
-                      <Card className="mb-6 bg-gray-850 border-gray-700">
-                        <CardHeader className="pb-2">
-                           <CardTitle className="text-lg">Market Info</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-2 text-sm">
-                           {acyumMarketData && (
-                             <>
-                               <p>ACYUM/ALPH Price:</p> 
-                               <p className="text-right">{acyumMarketData.orderBookPrice?.toPrecision(4) ?? 'N/A'}</p>
-                             </>
-                           )}
-                           {acyumUsdPrice !== null && (
-                            <>
-                              <p>ACYUM/USD Price:</p> 
-                              <p className="text-right">${acyumUsdPrice.toFixed(4)}</p>
-                            </>
-                           )}
-                           {alphUsdPrice !== null && (
-                            <>
-                              <p>ALPH/USD Price:</p> 
-                              <p className="text-right">${alphUsdPrice.toFixed(4)}</p>
-                            </>
-                           )}
-                           {acyumMarketData && (
-                             <>
-                               <p>Total Volume (ACYUM):</p> 
-                               <p className="text-right">{acyumMarketData.totalVolume?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? 'N/A'}</p>
-                               <p>24h Volume (ACYUM):</p> 
-                               <p className="text-right">{acyumMarketData.dailyVolume?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? 'N/A'}</p>
-                             </>
-                           )}
-                           <p className="text-xs col-span-2 text-gray-400 pt-2">
-                             {acyumMarketData && (
-                               <>Data from <a href={`https://candyswap.gg/token/${acyumMarketData.slug}`} target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400">CandySwap</a> {alphUsdPrice && "&"} </> 
-                             )}
-                             {alphUsdPrice && (
-                              <> <a href="https://www.coingecko.com/en/coins/alephium" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400">CoinGecko</a></>
-                             )}
-                           </p>
-                        </CardContent>
-                      </Card>
-                    )}
 
                     {/* Deposit/Withdraw Tabs - This starts here */} 
                     <Tabs defaultValue="deposit">
@@ -867,9 +924,13 @@ export default function AcyumBankClient() {
                     </Tabs>
                   </>
                 )}
-              </CardContent>
-            </Card>
-          </div>
+
+                {/* Add Bank Ledger Component */}
+                {isConnected && address && (
+                  <BankLedger address={address} bankName="ACYUM Bank" />
+                )}
+             </div>
+          </div> 
         </main>
       </div>
     </ClientLayoutWrapper>

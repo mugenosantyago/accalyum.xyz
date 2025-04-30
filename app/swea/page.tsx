@@ -1,14 +1,16 @@
 import type { Metadata } from 'next'
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { SweaInfo } from './swea-info'
-import { SweaSwap } from './swea-swap'
+import { SweaClaim } from './swea-claim'
+import { SweaPurchase } from './swea-purchase'
 import { Separator } from '@/components/ui/separator'
+import Image from 'next/image'
 
 // Add metadata for the sWEA page
 export const metadata: Metadata = {
-  title: 'sWEA Mechanics',
-  description: 'Learn about the unique principles and mechanics of the sWEA (Sacagawea Coin) token on Alephium, focusing on fair distribution and community ownership.',
-  keywords: ['Alephium', 'sWEA', 'Sacagawea Coin', 'Tokenomics', 'Fair Distribution', 'Community Treasury', 'Governance', 'Crypto', 'DeFi'],
+  title: 'sWEA Mechanics & Claim',
+  description: 'Learn about sWEA mechanics, claim your initial distribution, and purchase more using ALPH.',
+  keywords: ['Alephium', 'sWEA', 'Sacagawea Coin', 'Tokenomics', 'Claim', 'Purchase', 'Fair Distribution', 'Community Treasury', 'Governance', 'Crypto', 'DeFi'],
 };
 
 // Server Component Page
@@ -17,11 +19,29 @@ export default function SweaPage() {
     <ClientLayoutWrapper> 
       <div className="min-h-screen flex flex-col">
         <main className="flex-grow container mx-auto py-12 px-4">
+          <div className="flex justify-center mb-10">
+            <Image 
+              src="/IMG_5086_Original.jpg" 
+              alt="sWEA Logo Large"
+              width={128}
+              height={128}
+              className="rounded-full border-2 border-[#FF6B35]/50 shadow-lg"
+              priority
+            />
+          </div>
+
           <SweaInfo />
           
-          <Separator className="my-12 bg-gray-700" />
+          <Separator className="my-12 bg-gradient-to-r from-transparent via-purple-600/50 to-transparent h-[1px]" />
           
-          <SweaSwap />
+          <SweaClaim />
+
+          <Separator className="my-12 bg-gradient-to-r from-transparent via-orange-600/50 to-transparent h-[1px]" />
+
+          <SweaPurchase />
+
+          {/* TODO: Add sWEA Bank section later */}
+
         </main>
       </div>
     </ClientLayoutWrapper>
