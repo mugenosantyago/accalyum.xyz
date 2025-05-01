@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +13,10 @@ import { logger } from "@/lib/logger"
 import { config } from "@/lib/config" 
 import Image from 'next/image'
 import { useLanguage } from "@/components/language-provider"
+import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Terminal } from "lucide-react"
+import { NodeProvider } from '@alephium/web3'
 
 // Helper function copied from other components
 function formatBigIntAmount(amount: bigint | undefined | null, decimals: number, displayDecimals: number = 4): string {
@@ -61,207 +65,390 @@ function formatBigIntAmount(amount: bigint | undefined | null, decimals: number,
 // TODO: Replace with actual sWEA details from config once provided
 const S_WEA_TOKEN_ID = config.alephium.sweaTokenIdHex ?? "YOUR_SWEA_TOKEN_ID_HEX"; // Use config if available
 const S_WEA_DECIMALS = config.alephium.sweaDecimals ?? 18; // Use config if available, default 18
-const S_WEA_CONTRACT_ADDRESS = config.alephium.sweaContractAddress ?? "YOUR_SWEA_CONTRACT_ADDRESS"; // Use config if available
 
-export function SweaPurchase() {
+// Local formatter for atto ALPH
+function formatAttoAlph(amount: string | undefined): string {
+  if (amount === undefined) return '0.00';
+  try {
+    const amountBigInt = BigInt(amount);
+    const oneAlph = 10n ** 18n;
+    const integerPart = amountBigInt / oneAlph;
+    const fractionalPart = amountBigInt % oneAlph;
+    const formattedInteger = integerPart.toLocaleString('en-US');
+    const formattedFractional = fractionalPart.toString().padStart(18, '0').substring(0, 4);
+    return `${formattedInteger}.${formattedFractional}`;
+  } catch (e) {
+    logger.error("Error formatting atto ALPH:", e);
+    return '0.00';
+  }
+}
+
+// Interface for address balance response (simplified)
+interface AddressBalanceResponse {
+    balance: string; // ALPH balance
+    tokenBalances?: { id: string; amount: string }[];
+}
+
+// Interface for our faucet swap state (copied from acyum-swap)
+interface FaucetSwapState {
+  swapId: string | null;
+  depositAddress: string | null;
+  expectedAmountAlph: number | null;
+  status: 'IDLE' | 'PENDING_DEPOSIT' | 'PROCESSING' | 'COMPLETE' | 'FAILED';
+  depositTxId?: string;
+  faucetTxId: string | null;
+  amountTargetToken: string | null; // Will be sWEA amount
+  failureReason: string | null;
+  lastChecked: number;
+}
+
+export default function SweaSwapClient() {
   const { t } = useLanguage()
   const { toast } = useToast()
-  const { signer, account, connectionStatus } = useWallet()
-  const { balance: alphBalanceWei } = useBalance() // Gets ALPH balance by default
+  const { 
+    account, 
+    connectionStatus,
+  } = useWallet()
+  
+  const address = account?.address ?? null;
+  const isConnected = connectionStatus === 'connected' && !!address;
+  
+  // Config values
+  const sweaTokenId = config.alephium.sweaTokenIdHex;
+  const SWEA_DECIMALS = config.alephium.sweaDecimals;
+  const providerUrl = config.alephium.providerUrl;
 
-  const address = account?.address ?? null
-  const isConnected = connectionStatus === 'connected' && !!address
+  // --- State for Wallet Balances ---
+  const { balance: alphRawBalance } = useBalance(); // string | undefined
+  const [sweaBalance, setSweaBalance] = useState<bigint | null>(null);
+  const [isBalanceLoading, setIsBalanceLoading] = useState(false);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+  // --- End Wallet Balance State ---
 
-  // Specify TokenBalance type
-  interface TokenBalance { id: string; amount: bigint; }
+  // --- State for ALPH -> sWEA Faucet Swap ---
+  const [alphToSwapFaucet, setAlphToSwapFaucet] = useState("");
+  const [faucetSwapState, setFaucetSwapState] = useState<FaucetSwapState>({
+    swapId: null,
+    depositAddress: null,
+    expectedAmountAlph: null,
+    status: 'IDLE',
+    depositTxId: null,
+    faucetTxId: null,
+    amountTargetToken: null,
+    failureReason: null,
+    lastChecked: 0
+  });
+  const [isFaucetSwapProcessing, setIsFaucetSwapProcessing] = useState(false);
+  const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
+  // --- End Faucet Swap State ---
 
-  // Get sWEA balance once ID is known
-  const sweaBalanceInfo = account?.tokenBalances?.find((token: TokenBalance) => token.id === S_WEA_TOKEN_ID)
-  const sweaBalanceWei = sweaBalanceInfo?.amount ?? 0n
+  // --- Fetch User Token Balance (sWEA) ---
+  useEffect(() => {
+    const fetchSweaBalance = async () => {
+      if (!address || !sweaTokenId || !providerUrl) return;
 
-  // Format balances for display
-  const displayAlphBalance = formatBigIntAmount(alphBalanceWei ?? 0n, 18, 4)
-  const displaySweaBalance = formatBigIntAmount(sweaBalanceWei, S_WEA_DECIMALS, 2)
+      setIsBalanceLoading(true);
+      setBalanceError(null);
+      setSweaBalance(null);
+      logger.debug(`Fetching sWEA balance for ${address}`);
 
-  const [payAmount, setPayAmount] = useState("")
-  const [receiveAmount, setReceiveAmount] = useState("")
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+      try {
+        const nodeProvider = new NodeProvider(providerUrl);
+        const balanceResult = await nodeProvider.addresses.getAddressesAddressBalance(address) as AddressBalanceResponse;
+        const sweaInfo = balanceResult.tokenBalances?.find(token => token.id === sweaTokenId);
+        
+        if (sweaInfo) {
+            setSweaBalance(BigInt(sweaInfo.amount));
+            logger.info(`sWEA balance for ${address}: ${sweaInfo.amount}`);
+        } else {
+            setSweaBalance(0n);
+            logger.info(`sWEA balance for ${address}: 0 (token not found in balances)`);
+        }
+      } catch (error) {
+        logger.error(`Failed to fetch sWEA balance for ${address}:`, error);
+        setBalanceError("Failed to fetch sWEA balance.");
+        setSweaBalance(null);
+      } finally {
+        setIsBalanceLoading(false);
+      }
+    };
 
-  // --- Fixed Price Logic ---
-  const SWEA_PER_ALPH = 1 
+    if (isConnected && address) {
+      fetchSweaBalance();
+    }
+    // Refetch if address or token ID changes (though token ID is constant here)
+  }, [isConnected, address, sweaTokenId, providerUrl]); 
+  // --- End Token Balance Fetch ---
 
-  const payTokenDecimals = 18; // Always ALPH
-  const rate = SWEA_PER_ALPH; // Always ALPH rate
+  // --- Faucet Swap Logic (Adapted) ---
+  const clearFaucetSwapState = useCallback(() => {
+    if (pollingIntervalId) clearInterval(pollingIntervalId);
+    setPollingIntervalId(null);
+    setFaucetSwapState({
+        swapId: null,
+        depositAddress: null,
+        expectedAmountAlph: null,
+        status: 'IDLE',
+        depositTxId: null,
+        faucetTxId: null,
+        amountTargetToken: null,
+        failureReason: null,
+        lastChecked: 0
+    });
+    setAlphToSwapFaucet("");
+  }, [pollingIntervalId]);
+
+  const handlePollStatus = useCallback((swapId: string) => {
+      if (pollingIntervalId) {
+        clearInterval(pollingIntervalId);
+        logger.debug("Cleared previous polling interval.");
+      }
+      logger.info(`Starting status polling for swapId: ${swapId}`);
+      const intervalId = setInterval(async () => {
+        logger.debug(`Polling status for swap ${swapId}...`);
+        try {
+          const response = await fetch(`/api/swap/status/${swapId}`);
+          if (!response.ok) {
+            if (response.status === 404) {
+                logger.warn(`Swap ID ${swapId} not found during polling. Stopping polling.`);
+                clearFaucetSwapState();
+            } else {
+                logger.error(`API error fetching status for ${swapId}: ${response.status}`);
+            }
+            return;
+          }
+          const statusResult: FaucetSwapState = await response.json();
+          logger.debug(`Received status for ${swapId}:`, statusResult);
+          setFaucetSwapState({
+            ...statusResult,
+            lastChecked: Date.now(),
+            depositAddress: statusResult.depositAddress ?? faucetSwapState.depositAddress,
+            expectedAmountAlph: statusResult.expectedAmountAlph ?? faucetSwapState.expectedAmountAlph,
+          });
+          if (statusResult.status === 'COMPLETE' || statusResult.status === 'FAILED') {
+            logger.info(`Swap ${swapId} reached terminal state (${statusResult.status}). Stopping polling.`);
+            if (pollingIntervalId) clearInterval(pollingIntervalId);
+            setPollingIntervalId(null);
+          }
+        } catch (error) {
+          logger.error(`Error during status polling for swap ${swapId}:`, error);
+        }
+      }, 5000);
+      setPollingIntervalId(intervalId);
+  }, [pollingIntervalId, clearFaucetSwapState, faucetSwapState.depositAddress, faucetSwapState.expectedAmountAlph]);
+
+  const handleInitiateFaucetSwap = useCallback(async () => {
+      if (!isConnected || !address) {
+        toast({ title: "Wallet Not Connected", description: "Please connect your wallet first.", variant: "destructive" });
+        return;
+      }
+      const amountNum = parseFloat(alphToSwapFaucet);
+      if (isNaN(amountNum) || amountNum <= 0) {
+        toast({ title: "Invalid Amount", description: "Please enter a positive ALPH amount to swap.", variant: "destructive" });
+        return;
+      }
+
+      setIsFaucetSwapProcessing(true);
+      setFaucetSwapState(prev => ({ ...prev, status: 'IDLE', failureReason: null }));
+      logger.info(`Initiating sWEA faucet swap: ${amountNum} ALPH by ${address}`);
+
+      try {
+        const response = await fetch('/api/swap/initiate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amountAlph: amountNum,
+                targetToken: 'sWEA', // Hardcoded to sWEA
+                userAddress: address,
+            }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            logger.error('Failed to initiate sWEA swap API call:', result);
+            throw new Error(result.message || `API Error: ${response.status}`);
+        }
+        logger.info('sWEA swap initiation successful:', result);
+        toast({ title: "Swap Initiated", description: "Please follow the ALPH deposit instructions." });
+        setFaucetSwapState({
+            swapId: result.swapId,
+            depositAddress: result.depositAddress,
+            expectedAmountAlph: result.expectedAmountAlph,
+            status: 'PENDING_DEPOSIT',
+            depositTxId: null,
+            faucetTxId: null,
+            amountTargetToken: null,
+            failureReason: null,
+            lastChecked: Date.now()
+        });
+        handlePollStatus(result.swapId);
+      } catch (error) {
+        logger.error("Error initiating sWEA faucet swap:", error);
+        const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        toast({ title: "Initiation Failed", description: message, variant: "destructive" });
+        clearFaucetSwapState();
+      } finally {
+        setIsFaucetSwapProcessing(false);
+      }
+  }, [address, isConnected, alphToSwapFaucet, toast, handlePollStatus, clearFaucetSwapState]);
 
   useEffect(() => {
-    const inputNum = parseFloat(payAmount)
-    // Simplified effect, rate is always defined number (1)
-    if (!isNaN(inputNum) && inputNum > 0) { 
-      const calculatedOutput = inputNum * rate * (10 ** S_WEA_DECIMALS / 10 ** payTokenDecimals)
-      setReceiveAmount(calculatedOutput.toFixed(S_WEA_DECIMALS > 0 ? 2 : 0))
-      setError(null)
-    } else {
-      setReceiveAmount("")
-      setError(null)
-    }
-    // Only depends on payAmount now (and constants)
-  }, [payAmount])
+    return () => {
+      if (pollingIntervalId) {
+        clearInterval(pollingIntervalId);
+      }
+    };
+  }, [pollingIntervalId]);
+  // --- End Faucet Swap Logic ---
 
-  const handlePurchase = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!isConnected || !signer || !address) return toast({ title: t("error"), description: t("connectWalletFirst"), variant: "destructive" })
-    if (isProcessing) return
-    if (!payAmount || parseFloat(payAmount) <= 0) return toast({ title: t("error"), description: t("sweaErrorInvalidAmount"), variant: "destructive" })
-    
-    if (S_WEA_TOKEN_ID === "YOUR_SWEA_TOKEN_ID_HEX" || S_WEA_CONTRACT_ADDRESS === "YOUR_SWEA_CONTRACT_ADDRESS") {
-       return toast({ title: t("error"), description: t("sweaErrorConfigNeeded"), variant: "destructive" });
-    }
-    
-    let payAmountBigInt: bigint;
-    try {
-        // Parsing ALPH amount (always 18 decimals)
-        const parts = payAmount.split('.');
-        const integerPart = parts[0];
-        const fractionalPart = (parts[1] || '').padEnd(18, '0').slice(0, 18);
-        payAmountBigInt = BigInt(integerPart + fractionalPart);
-    } catch (parseError) {
-        logger.error("Error parsing ALPH pay amount to BigInt:", parseError, { payAmount });
-        return toast({ title: t("error"), description: t("sweaErrorInvalidAmount"), variant: "destructive" });
-    }
-    
-    // Check ALPH balance
-    if ((alphBalanceWei ?? 0n) < payAmountBigInt) {
-        const description = t("sweaErrorInsufficientBalance").replace('${token}', 'ALPH');
-        return toast({ title: t("error"), description: description, variant: "destructive" })
-    }
-
-    setIsProcessing(true)
-    setError(null)
-    try {
-      logger.info(`Simulating sWEA purchase: ${payAmount} ALPH for ${receiveAmount} sWEA`)
-      // --- TODO: Replace with actual purchase contract interaction --- 
-      // Should likely send ALPH to the S_WEA_CONTRACT_ADDRESS via a script/method call
-      // that handles the price check and sWEA transfer.
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      toast({ title: t("success"), description: `Purchased ${receiveAmount} sWEA with ${payAmount} ALPH` })
-      setPayAmount("")
-      setReceiveAmount("")
-    } catch (err) {
-      logger.error("sWEA Purchase error (Simulation):", err)
-      const message = err instanceof Error ? err.message : t("sweaErrorPurchaseFailed")
-      setError(message)
-      toast({ title: t("error"), description: message, variant: "destructive" })
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  const displayRateAlph = SWEA_PER_ALPH !== null ? SWEA_PER_ALPH.toFixed(S_WEA_DECIMALS > 0 ? 2: 0) : "N/A";
+  // --- Format Balances ---
+  // @ts-ignore - Suppress persistent incorrect linter error for alphRawBalance
+  const displayAlphBalance = formatAttoAlph(alphRawBalance);
+  const displaySweaBalance = sweaBalance !== null 
+    ? (Number(sweaBalance) / (10 ** SWEA_DECIMALS)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: SWEA_DECIMALS })
+    : '...';
+  // --- End Format Balances ---
 
   return (
-    <Card className="w-full max-w-md mx-auto mt-10 bg-gray-850 border-gray-700">
-      <CardHeader>
-        <CardTitle className="text-2xl text-center gradient-text">{t("sweaPurchaseTitle")}</CardTitle>
-        <CardDescription className="text-center text-gray-400">
-          {t("sweaPurchaseDescription").replace(' or ACYUM','')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {!isConnected ? (
-          <div className="text-center py-6">
-            <p className="mb-4 text-amber-600">{t("sweaConnectWalletPrompt")}</p>
-            <WalletConnectDisplay />
-          </div>
-        ) : (
-          <form onSubmit={handlePurchase} className="space-y-5">
-            {/* Balance Display */}
-            <div className="text-xs text-gray-400 space-y-1 border border-gray-700 p-3 rounded-md bg-gray-900">
-              <p>{t("sweaYourBalances")}</p>
-              <div className="flex justify-between items-center">
-                <span>ALPH:</span> 
-                <span>{displayAlphBalance}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1.5">
-                  <Image 
-                    src="/IMG_5086_Original.jpg"
-                    alt="sWEA logo" 
-                    width={16}
-                    height={16} 
-                    className="rounded-full"
-                  />
-                  sWEA:
-                </span> 
-                {S_WEA_TOKEN_ID === "YOUR_SWEA_TOKEN_ID_HEX" 
-                    ? <span className="italic text-amber-500">{t("sweaConfigurePrompt")}</span> 
-                    : <span>{displaySweaBalance}</span>
-                }
-              </div>
-            </div>
+    <ClientLayoutWrapper>
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-grow container mx-auto py-12 px-4">
+          {/* Keep title relevant to sWEA or make generic */}
+          <h1 className="text-3xl font-bold mb-8 text-center">Swap ALPH for sWEA</h1> 
 
-            {/* Inputs */}
-            <div className="space-y-2">
-              <Label htmlFor="payAmount">{t("sweaAmountToPayLabel")} (ALPH)</Label>
-              <Input
-                id="payAmount"
-                type="number"
-                step="any"
-                min="0"
-                placeholder="0.00"
-                value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value)}
-                required
-                className="bg-gray-800 border-gray-700 text-lg"
-              />
-            </div>
-
-            <div className="flex justify-center items-center text-gray-400">
-              &darr; {/* Down Arrow */}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="receiveAmount">{t("sweaYouReceiveLabel")}</Label>
-              <Input
-                id="receiveAmount"
-                type="number"
-                placeholder="0.00"
-                value={receiveAmount}
-                readOnly
-                className="bg-gray-700 border-gray-600 text-lg text-gray-300"
-              />
-            </div>
-
-            {/* Price Display */}
-            <div className="text-xs text-gray-400 text-center space-y-1 pt-2 pb-2">
-              <p className="font-medium text-gray-300">{t("sweaCurrentRateLabel")}</p>
-              <p>1 ALPH ≈ {displayRateAlph} sWEA</p>
-              <p className="flex items-center justify-center gap-1 text-blue-400">
-                 <Info size={14}/> {t("sweaPriceInfo")}
-              </p>
-            </div>
-
-            {error && (
-                <p className="text-sm text-red-500 text-center">{error}</p>
+          <div className="max-w-md mx-auto space-y-6">
+            {/* Wallet Info Card - Display ALPH and sWEA */} 
+            {isConnected && address && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your Wallet</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Connected Address</p>
+                    <p className="font-mono text-sm break-all">{address}</p>
+                    <div className="mt-4 grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">ALPH Balance</p>
+                        <p className="text-lg font-bold">{displayAlphBalance} ALPH</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">sWEA Balance</p>
+                        {isBalanceLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : balanceError ? (
+                          <p className="text-xs text-red-500">Error</p>
+                        ) : (
+                          <p className="text-lg font-bold">{displaySweaBalance} sWEA</p>
+                        )}
+                        {balanceError && !isBalanceLoading && (
+                            <p className="text-xs text-red-500 mt-1">{balanceError}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
-            <Button
-              type="submit"
-              className="w-full bg-[#FF6B35] hover:bg-[#E85A2A]"
-              disabled={isProcessing || !payAmount || !receiveAmount || S_WEA_TOKEN_ID === "YOUR_SWEA_TOKEN_ID_HEX"}
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("sweaProcessing")}
-                </>
-              ) : (
-                t("sweaPurchaseButton")
-              )}
-            </Button>
-          </form>
-        )}
-      </CardContent>
-    </Card>
+            {/* Faucet Swap Card - Specific to sWEA */} 
+            <Card>
+              <CardHeader>
+                <CardTitle>Swap ALPH for sWEA</CardTitle>
+                <CardDescription>
+                  Use the secure deposit & faucet mechanism. (1 ALPH = 1 sWEA)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!isConnected ? (
+                  <div className="text-center py-6">
+                    <p className="mb-4 text-amber-600">Connect wallet to swap</p>
+                    <WalletConnectDisplay />
+                  </div>
+                ) : faucetSwapState.status === 'IDLE' ? (
+                  <form onSubmit={(e) => { e.preventDefault(); handleInitiateFaucetSwap(); }} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="alphAmountFaucet">ALPH to Swap</Label>
+                      <Input
+                        id="alphAmountFaucet"
+                        type="number"
+                        step="any"
+                        min="0.000001"
+                        placeholder="1.0"
+                        value={alphToSwapFaucet}
+                        onChange={(e) => setAlphToSwapFaucet(e.target.value)}
+                        required
+                        className="bg-gray-800 border-gray-700 text-lg"
+                      />
+                    </div>
+                    {/* Removed RadioGroup for target token */}
+                    <Button
+                      type="submit"
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      disabled={isFaucetSwapProcessing || !alphToSwapFaucet || parseFloat(alphToSwapFaucet) <= 0}
+                    >
+                      {isFaucetSwapProcessing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
+                      Initiate sWEA Swap
+                    </Button>
+                  </form>
+                ) : faucetSwapState.status === 'PENDING_DEPOSIT' ? (
+                  <Alert>
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>Deposit Required</AlertTitle>
+                    <AlertDescription className="space-y-2">
+                      <p>Swap initiated (ID: <code className="text-xs bg-gray-700 p-1 rounded">{faucetSwapState.swapId}</code>).</p>
+                      <p>Please send exactly <strong className="text-orange-400">{faucetSwapState.expectedAmountAlph} ALPH</strong> to the following address:</p>
+                      <code className="block break-all bg-gray-700 p-2 rounded text-sm">
+                        {faucetSwapState.depositAddress}
+                      </code>
+                      <p className="text-xs text-gray-400">The system will automatically send sWEA to your wallet ({address?.substring(0, 6)}...).</p>
+                      <Button onClick={clearFaucetSwapState} variant="outline" size="sm" className="mt-3">
+                        Cancel / Start New Swap
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                ) : faucetSwapState.status === 'PROCESSING' ? (
+                  <Alert variant="default">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <AlertTitle>Processing Deposit</AlertTitle>
+                    <AlertDescription>
+                      Deposit detected (Tx: {faucetSwapState.depositTxId?.substring(0,10)}...). 
+                      Processing sWEA faucet transaction. Please wait...
+                      (Swap ID: <code className="text-xs bg-gray-700 p-1 rounded">{faucetSwapState.swapId}</code>)
+                    </AlertDescription>
+                  </Alert>
+                ) : faucetSwapState.status === 'COMPLETE' ? (
+                  <Alert variant="default">
+                    <Terminal className="h-4 w-4 text-green-500" />
+                    <AlertTitle className="text-green-600">Swap Complete!</AlertTitle>
+                    <AlertDescription className="space-y-2">
+                      {/* Display received sWEA amount */}
+                      <p>Successfully received {faucetSwapState.amountTargetToken ? `${BigInt(faucetSwapState.amountTargetToken) / BigInt(10 ** SWEA_DECIMALS)} sWEA` : 'sWEA'}.</p>
+                      <p>Faucet Tx ID: <code className="block break-all bg-gray-700 p-1 rounded text-xs">{faucetSwapState.faucetTxId}</code></p>
+                      <Button onClick={clearFaucetSwapState} variant="outline" size="sm" className="mt-3">
+                        Start New Swap
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                ) : faucetSwapState.status === 'FAILED' ? (
+                  <Alert variant="destructive">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>Swap Failed</AlertTitle>
+                    <AlertDescription className="space-y-2">
+                      <p>Reason: {faucetSwapState.failureReason || "An unknown error occurred."}</p>
+                      <p>(Swap ID: <code className="text-xs bg-gray-700 p-1 rounded">{faucetSwapState.swapId}</code>)</p>
+                      <Button onClick={clearFaucetSwapState} variant="outline" size="sm" className="mt-3">
+                        Try Again / Start New Swap
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                ) : null }
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    </ClientLayoutWrapper>
   )
 } 
