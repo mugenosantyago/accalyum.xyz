@@ -123,14 +123,22 @@ export default function MutualFundingClient() {
         }
         
         try {
-          logger.info(`Fetching balance for ${initiative.name} at address ${initiative.treasuryAddress}`)
-          const balanceInfo = await nodeProvider.addresses.getAddressesAddressBalance(initiative.treasuryAddress)
-          const balanceInAlph = formatBigIntAmount(BigInt(balanceInfo.balance), 18, 4)
-          logger.info(`Balance for ${initiative.name}: ${balanceInAlph} ALPH`)
-          updatedInitiatives[i] = { ...initiative, raised: balanceInAlph, loading: false }
+           // Explicit check right before use, even if redundant
+           if (initiative.treasuryAddress) { 
+             logger.info(`Fetching balance for ${initiative.name} at address ${initiative.treasuryAddress}`)
+             const balanceInfo = await nodeProvider.addresses.getAddressesAddressBalance(initiative.treasuryAddress)
+             const balanceInAlph = formatBigIntAmount(BigInt(balanceInfo.balance), 18, 4)
+             logger.info(`Balance for ${initiative.name}: ${balanceInAlph} ALPH`)
+             updatedInitiatives[i] = { ...initiative, raised: balanceInAlph, loading: false }
+           } else {
+              // This case should ideally not be hit due to the earlier check, but handle defensively
+              logger.warn(`Treasury address was unexpectedly undefined for ${initiative.name} inside try block.`);
+              updatedInitiatives[i] = { ...initiative, loading: false }; 
+           }
         } catch (error) {
           logger.error(`Error fetching balance for ${initiative.name}:`, error)
-          updatedInitiatives[i] = { ...initiative, loading: false } // Still set loading false on error
+          // Ensure loading is set to false even if the address check above somehow failed
+          updatedInitiatives[i] = { ...initiative, loading: false } 
         }
       }
       setInitiatives(updatedInitiatives)
@@ -293,11 +301,11 @@ export default function MutualFundingClient() {
                        <Label htmlFor="project">{t("selectedInitiative")}</Label>
                        <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700 min-h-[40px]">
                          {selectedInitiative ? (
-                           <p className="font-medium">
+                           <p className="font-medium text-gray-900 dark:text-white"> 
                              {initiatives.find((i) => i.id === selectedInitiative)?.name ?? "Unknown Initiative"}
                            </p>
                          ) : (
-                           <p className="text-gray-500 italic">{t("pleaseSelectInitiative")}</p>
+                           <p className="text-gray-500 dark:text-gray-400 italic">{t("pleaseSelectInitiative")}</p> 
                          )}
                        </div>
                      </div>

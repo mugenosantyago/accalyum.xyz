@@ -8,7 +8,7 @@ import { NodeProvider } from '@alephium/web3';
 import { config } from '@/lib/config';
 import { logger } from '@/lib/logger';
 // Import the generated wrapper for the token contract
-import { PostManager } from '../artifacts/ts/PostManager'; 
+// import { PostManager } from '../artifacts/ts/PostManager'; // Keep commented if not directly used for balance
 
 // Helper function to format balances (similar to ethers/viem formatUnits)
 function formatBalance(value: bigint, decimals: number): string {
@@ -28,6 +28,14 @@ function formatBalance(value: bigint, decimals: number): string {
   return `${integerPart}.${trimmedFractional}`;
 }
 
+// Define an interface for the expected balance response shape
+interface AddressBalanceResponse {
+    balance: string;
+    lockedBalance?: string; // Optional
+    tokenBalances?: { id: string; amount: string; lockedAmount?: string }[]; // Optional array
+    utxoCount?: number; // Optional
+}
+
 interface TokenBalance {
     id: string;
     amount: string;
@@ -36,6 +44,7 @@ interface TokenBalance {
 interface BalanceContextType {
   alphBalance: string | null;
   acyumBalance: string | null;
+  sweaBalance: string | null; // Add sWEA balance
   isLoadingBalances: boolean;
   balanceError: string | null;
   refetchBalances: () => void;
@@ -44,6 +53,7 @@ interface BalanceContextType {
 const BalanceContext = createContext<BalanceContextType>({
   alphBalance: null,
   acyumBalance: null,
+  sweaBalance: null, // Add sWEA balance
   isLoadingBalances: true,
   balanceError: null,
   refetchBalances: () => {},
@@ -56,12 +66,16 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
 
   const [alphBalance, setAlphBalance] = useState<string | null>(null);
   const [acyumBalance, setAcyumBalance] = useState<string | null>(null);
+  const [sweaBalance, setSweaBalance] = useState<string | null>(null); // Add sWEA state
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);
   const [fetchTrigger, setFetchTrigger] = useState(0);
 
-  const acyumContractAddress = config.alephium.acyumContractAddress;
-  const ACYUM_DECIMALS = 7;
+  // Token IDs and Decimals from config
+  const acyumTokenId = config.alephium.acyumTokenIdHex; // Corrected: Use acyumTokenIdHex
+  const sweaTokenId = config.alephium.sweaTokenIdHex;
+  const ACYUM_DECIMALS = config.alephium.acyumDecimals; // Use config
+  const SWEA_DECIMALS = config.alephium.sweaDecimals; // Use config
   const ALPH_DECIMALS = 18;
 
   const refetchBalances = () => {
@@ -73,6 +87,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       if (!isConnected || !address || !nodeProvider) {
         setAlphBalance(null);
         setAcyumBalance(null);
+        setSweaBalance(null); // Reset sWEA
         setIsLoadingBalances(false);
         setBalanceError(null);
         return;
@@ -82,57 +97,77 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       setBalanceError(null);
       setAlphBalance(null);
       setAcyumBalance(null);
+      setSweaBalance(null); // Reset sWEA
       logger.info(`Fetching balances for address: ${address}`);
 
       try {
-        // Fetch ALPH Balance (and potentially tokens?)
-        const balanceResult = await nodeProvider.addresses.getAddressesAddressBalance(address);
-        
-        // --- Log the raw result to inspect its structure ---
-        logger.info("Raw balanceResult:", JSON.stringify(balanceResult, null, 2)); 
-        // ----------------------------------------------------
-        
-        // Format ALPH Balance 
+        // Fetch ALPH and Token Balances together
+        // Explicitly cast the result to include tokenBalances
+        const balanceResult = await nodeProvider.addresses.getAddressesAddressBalance(address) as AddressBalanceResponse;
+
+        logger.info("Raw balanceResult:", JSON.stringify(balanceResult, null, 2));
+
+        // Format ALPH Balance
         const formattedAlph = formatBalance(BigInt(balanceResult.balance ?? '0'), ALPH_DECIMALS);
         setAlphBalance(formattedAlph);
         logger.info(`Fetched ALPH balance: ${formattedAlph}`);
 
-        // --- Keep ACYUM logic commented out for now ---
-        /*
-        if (acyumContractAddress) {
-          try {
-            // ... contract call logic ...
-          } catch (tokenError: any) {
-            // ... error handling ...
-          }
+        // Find and Format ACYUM Balance from token balances
+        if (acyumTokenId && ACYUM_DECIMALS !== undefined) {
+            // Type for token should now be inferred correctly
+            const acyumInfo = balanceResult.tokenBalances?.find(token => token.id === acyumTokenId);
+            if (acyumInfo) {
+                const formattedAcyum = formatBalance(BigInt(acyumInfo.amount), ACYUM_DECIMALS);
+                setAcyumBalance(formattedAcyum);
+                logger.info(`Fetched ACYUM balance: ${formattedAcyum}`);
+            } else {
+                setAcyumBalance('0'); // Set to 0 if token not found
+                logger.info(`ACYUM token (${acyumTokenId}) not found for address ${address}.`);
+            }
         } else {
-          setAcyumBalance(null); 
-          logger.warn("ACYUM Contract Address not configured, cannot fetch ACYUM balance.");
+          setAcyumBalance(null); // Set to null if config is missing
+          logger.warn("ACYUM Token ID or Decimals not configured, cannot fetch ACYUM balance.");
         }
-        */
-        // --- Temporarily set ACYUM to null --- 
-        setAcyumBalance(null);
+
+        // Find and Format sWEA Balance from token balances
+        if (sweaTokenId && SWEA_DECIMALS !== undefined) {
+             // Type for token should now be inferred correctly
+            const sweaInfo = balanceResult.tokenBalances?.find(token => token.id === sweaTokenId);
+            if (sweaInfo) {
+                const formattedSwea = formatBalance(BigInt(sweaInfo.amount), SWEA_DECIMALS);
+                setSweaBalance(formattedSwea);
+                logger.info(`Fetched sWEA balance: ${formattedSwea}`);
+            } else {
+                setSweaBalance('0'); // Set to 0 if token not found
+                logger.info(`sWEA token (${sweaTokenId}) not found for address ${address}.`);
+            }
+        } else {
+          setSweaBalance(null); // Set to null if config is missing
+          logger.warn("sWEA Token ID or Decimals not configured, cannot fetch sWEA balance.");
+        }
 
       } catch (error) {
         logger.error("Error fetching balances:", error);
         setBalanceError(error instanceof Error ? error.message : "Failed to fetch balances");
         setAlphBalance(null);
         setAcyumBalance(null);
+        setSweaBalance(null); // Reset sWEA on error
       } finally {
         setIsLoadingBalances(false);
       }
     };
 
     fetchBalances();
-  }, [address, isConnected, nodeProvider, acyumContractAddress, fetchTrigger]); 
+  }, [address, isConnected, nodeProvider, acyumTokenId, sweaTokenId, ACYUM_DECIMALS, SWEA_DECIMALS, fetchTrigger]); // Add dependencies
 
   const contextValue = useMemo(() => ({
     alphBalance,
     acyumBalance,
+    sweaBalance, // Add sWEA to context
     isLoadingBalances,
     balanceError,
     refetchBalances,
-  }), [alphBalance, acyumBalance, isLoadingBalances, balanceError]);
+  }), [alphBalance, acyumBalance, sweaBalance, isLoadingBalances, balanceError]); // Add sWEA dependency
 
   return (
     <BalanceContext.Provider value={contextValue}>

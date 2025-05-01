@@ -13,7 +13,8 @@ import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { WalletStatusDisplay } from "@/components/wallet-status-display"
 import { useToast } from "@/components/ui/use-toast"
-import { useWallet, useBalance } from "@alephium/web3-react"
+import { useWallet } from "@alephium/web3-react"
+import { useBalance } from "@/components/balance-provider"
 import { NodeProvider } from "@alephium/web3"
 import { logger } from "@/lib/logger"
 import { MakeDeposit, Withdraw } from "@/contracts/scripts"
@@ -31,6 +32,9 @@ const ACYUM_DECIMALS = 7; // Define decimals explicitly
 // Add sWEA constants, pulling from config or using placeholders
 const S_WEA_TOKEN_ID = config.alephium.sweaTokenIdHex ?? "YOUR_SWEA_TOKEN_ID_HEX";
 const S_WEA_DECIMALS = config.alephium.sweaDecimals ?? 18;
+
+// Re-declare acyumTokenId constant for use throughout the component
+const acyumTokenId = config.alephium.acyumTokenIdHex;
 
 interface CandySwapTokenData {
   id: string; 
@@ -101,22 +105,13 @@ export default function AcyumBankClient() {
   const address = account?.address ?? null;
   const isConnected = connectionStatus === 'connected' && !!address;
   
-  const { balance: alphBalanceWei, updateBalanceForTx } = useBalance();
-  const displayAlphBalance = formatBigIntAmount(alphBalanceWei ?? 0n, 18, 4);
-
-  // Specify TokenBalance type
-  interface TokenBalance { id: string; amount: bigint; }
-
-  const acyumTokenId = config.alephium.acyumTokenIdHex;
-  const acyumDecimals = config.alephium.acyumDecimals; // Get decimals from config
-  const acyumBalanceInfo = account?.tokenBalances?.find((token: TokenBalance) => token.id === acyumTokenId);
-  const acyumBalance = acyumBalanceInfo?.amount ?? 0n;
-  const displayAcyumBalance = formatBigIntAmount(acyumBalance, config.alephium.acyumDecimals, 2);
-
-  // Get and format sWEA balance
-  const sweaBalanceInfo = account?.tokenBalances?.find((token: TokenBalance) => token.id === S_WEA_TOKEN_ID);
-  const sweaBalance = sweaBalanceInfo?.amount ?? 0n;
-  const displaySweaBalance = formatBigIntAmount(sweaBalance, S_WEA_DECIMALS, 2);
+  const { 
+    alphBalance: displayAlphBalance,
+    acyumBalance: displayAcyumBalance,
+    sweaBalance: displaySweaBalance,
+    isLoadingBalances,
+    balanceError
+  } = useBalance();
 
   const [acyumMarketData, setAcyumMarketData] = useState<CandySwapTokenData | null>(null);
   const [alphUsdPrice, setAlphUsdPrice] = useState<number | null>(null);
@@ -570,7 +565,7 @@ export default function AcyumBankClient() {
     logger.info(`Attempting to call 'withdraw' on faucet contract ${faucetContractAddress}...`);
     try {
       // Calculate the amount to claim (7 ACYUM)
-      const amountToClaim = BigInt(7 * (10 ** acyumDecimals));
+      const amountToClaim = BigInt(7 * (10 ** config.alephium.acyumDecimals));
 
       // Get the contract instance
       const faucetInstance = TokenFaucet.at(faucetContractAddress);
@@ -702,44 +697,64 @@ export default function AcyumBankClient() {
                   </div>
                 ) : (
                   <>
-                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md mb-6">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{t("yourWallet")}</p>
-                      <p className="font-mono text-sm break-all">{address}</p>
-                      <div className="mt-2 grid grid-cols-2 gap-4">
-                         <div>
-                           <p className="text-sm text-gray-500 dark:text-gray-400">ALPH {t("balance")}</p>
-                           <p className="text-xl font-bold">{displayAlphBalance} ALPH</p>
-                         </div>
-                         <div>
-                           <p className="text-sm text-gray-500 dark:text-gray-400">ACYUM {t("balance")}</p>
-                           <p className="text-xl font-bold">{displayAcyumBalance} ACYUM</p>
-                           {/* Display CandySwap/CoinGecko Market Data */}
-                           {isMarketDataLoading ? (
-                             <p className="text-xs text-gray-400">Loading market price...</p>
-                           ) : marketDataError ? (
-                             <p className="text-xs text-red-500">Error: {marketDataError}</p>
-                           ) : acyumMarketData?.orderBookPrice !== undefined && alphUsdPrice !== null ? (
-                             <>
-                               <p className="text-xs text-gray-400">
-                                 ≈ {(Number(displayAcyumBalance.replace(/,/g, '')) * acyumMarketData.orderBookPrice).toFixed(2)} ALPH 
-                                 (@ {acyumMarketData.orderBookPrice.toPrecision(3)} ALPH/ACYUM)
-                               </p>
-                               {acyumUsdPrice !== null && (
-                                <p className="text-xs text-gray-400">
-                                  ≈ ${(Number(displayAcyumBalance.replace(/,/g, '')) * acyumUsdPrice).toFixed(2)} USD 
-                                  (@ ${acyumUsdPrice.toFixed(4)} / ACYUM)
-                                </p>
-                               )}
-                             </>
-                           ) : (
-                             <p className="text-xs text-gray-400">Market price unavailable.</p>
-                           )}
-                         </div>
-                      </div>
-                      <div className="mt-2">
-                        <WalletStatusDisplay />
-                      </div>
-                    </div>
+                    {/* Wallet Info Card with improved styling and all balances */}
+                    <Card className="mb-6 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg text-gray-900 dark:text-white">{t("yourWallet")}</CardTitle>
+                        <CardDescription className="font-mono text-xs break-all text-gray-600 dark:text-gray-400">{address}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {isLoadingBalances ? (
+                          <div className="flex items-center justify-center h-20 text-gray-500 dark:text-gray-400">
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Loading balances...
+                          </div>
+                        ) : balanceError ? (
+                          <div className="text-red-600 dark:text-red-500 p-3 bg-red-100 dark:bg-red-900/30 rounded-md">
+                            Error loading balances: {balanceError}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {/* ALPH Balance */}
+                            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
+                              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">ALPH Balance</p>
+                              <p className="text-xl font-bold text-gray-900 dark:text-white">{displayAlphBalance ?? '0'} ALPH</p>
+                            </div>
+                            {/* ACYUM Balance */}
+                            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
+                              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">ACYUM Balance</p>
+                              <p className="text-xl font-bold text-gray-900 dark:text-white">{displayAcyumBalance ?? '0'} ACYUM</p>
+                              {/* Display ACYUM Market Value */}
+                              {acyumMarketData?.orderBookPrice !== undefined && alphUsdPrice !== null && displayAcyumBalance && (
+                                <>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    ≈ {(Number(displayAcyumBalance.replace(/,/g, '')) * acyumMarketData.orderBookPrice).toFixed(2)} ALPH
+                                  </p>
+                                  {acyumUsdPrice !== null && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                      ≈ ${(Number(displayAcyumBalance.replace(/,/g, '')) * acyumUsdPrice).toFixed(2)} USD
+                                    </p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                            {/* sWEA Balance */}
+                            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
+                              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                                <span className="flex items-center gap-1">
+                                   <Image src="/IMG_5086_Original.jpg" alt="sWEA" width={14} height={14} className="rounded-full inline-block"/> sWEA Balance
+                                </span>
+                              </p>
+                              <p className="text-xl font-bold text-gray-900 dark:text-white">{displaySweaBalance ?? '0'} sWEA</p>
+                              {/* Potential placeholder for sWEA market value if needed later */}
+                            </div>
+                          </div>
+                        )}
+                        <div className="mt-4">
+                          <WalletStatusDisplay />
+                        </div>
+                      </CardContent>
+                    </Card>
 
                     {/* Deposit/Withdraw Tabs - This starts here */} 
                     <Tabs defaultValue="deposit">
@@ -811,29 +826,37 @@ export default function AcyumBankClient() {
 
                       <TabsContent value="withdraw">
                         {/* >> Add Display for Available Withdrawal Balance << */}
-                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
-                           <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-1">Available for Withdrawal:</h4>
-                           {isUserBankBalanceLoading ? (
-                              <span className="italic">Loading...</span>
-                           ) : userBankBalanceError ? (
-                              <span className="text-red-500">Error: {userBankBalanceError}</span>
-                           ) : (
-                              <>
-                                <div className="flex justify-between items-center">
-                                   <span>ALPH:</span>
-                                   {/* Ensure null check for display */}
-                                   <span className="font-mono">{userBankAlphBalance !== null ? formatBigIntAmount(userBankAlphBalance, 18, 4) : '-'}</span>
-                                </div>
-                                <div className="flex justify-between items-center mt-1">
-                                   <span>ACYUM:</span>
-                                   {/* Ensure null check for display */}
-                                   <span className="font-mono">{userBankAcyumBalance !== null ? formatBigIntAmount(userBankAcyumBalance, ACYUM_DECIMALS, 2) : '-'}</span>
-                                </div>
-                              </>
-                           )}
-                        </div>
+                        {/* Withdrawal balance display with improved styling */}
+                        <div className="mb-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600">
+                           <h4 className="font-medium text-gray-700 dark:text-gray-200 mb-1">Available for Withdrawal:</h4>
+                            {isUserBankBalanceLoading ? (
+                              <span className="italic text-gray-600 dark:text-gray-400">Loading...</span>
+                            ) : userBankBalanceError ? (
+                              <span className="text-red-600 dark:text-red-500">Error: {userBankBalanceError}</span>
+                            ) : (
+                               <>
+                                 <div className="flex justify-between items-center">
+                                    <span className="text-sm text-gray-600 dark:text-gray-300">ALPH:</span>
+                                    {/* Ensure null check for display */}
+                                    <span className="font-mono text-sm text-gray-900 dark:text-white">{userBankAlphBalance !== null ? formatBigIntAmount(userBankAlphBalance, 18, 4) : '-'}</span>
+                                 </div>
+                                 <div className="flex justify-between items-center mt-1">
+                                    <span className="text-sm text-gray-600 dark:text-gray-300">ACYUM:</span>
+                                    {/* Ensure null check for display */}
+                                    <span className="font-mono text-sm text-gray-900 dark:text-white">{userBankAcyumBalance !== null ? formatBigIntAmount(userBankAcyumBalance, ACYUM_DECIMALS, 2) : '-'}</span>
+                                 </div>
+                                 {/* Add sWEA deposited balance display */}
+                                 <div className="flex justify-between items-center mt-1">
+                                    <span className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1">
+                                        <Image src="/IMG_5086_Original.jpg" alt="sWEA" width={12} height={12} className="rounded-full inline-block"/> sWEA:
+                                    </span>
+                                    <span className="font-mono text-sm text-gray-900 dark:text-white">{userBankSweaBalance !== null ? formatBigIntAmount(userBankSweaBalance, S_WEA_DECIMALS, 2) : '-'}</span>
+                                 </div>
+                               </>
+                            )}
+                         </div>
 
-                        <form onSubmit={handleWithdrawSubmit} className="space-y-4">
+                         <form onSubmit={handleWithdrawSubmit} className="space-y-4">
                           <div className="flex space-x-4 mb-2">
                              <Label>Token:</Label>
                              <div className="flex items-center space-x-2">
