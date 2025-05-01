@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
-import { useWallet, useBalance } from "@alephium/web3-react"
+import { useWallet } from "@alephium/web3-react"
 import { useToast } from "@/components/ui/use-toast"
 import { logger } from "@/lib/logger"
 import { config } from "@/lib/config"
@@ -18,6 +18,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Terminal } from "lucide-react"
 import { Types } from 'mongoose';
 import { NodeProvider } from '@alephium/web3'
+import { useBalance } from '@/components/balance-provider'
+import { formatBalance } from '@/lib/utils'
 
 interface CandySwapTokenData {
   id: string;
@@ -35,8 +37,8 @@ interface FaucetSwapState {
   depositAddress: string | null;
   expectedAmountAlph: number | null;
   status: 'IDLE' | 'PENDING_DEPOSIT' | 'PROCESSING' | 'COMPLETE' | 'FAILED';
-  depositTxId?: string;
-  faucetTxId: string | null;
+  depositTxId?: string | undefined;
+  faucetTxId?: string | undefined;
   amountTargetToken: string | null;
   failureReason: string | null;
   lastChecked: number;
@@ -57,23 +59,6 @@ interface TokenBalanceItem {
     // Potentially other fields like lockedAmount
 }
 
-// Local replacement for prettifyAttoAlphAmount
-function formatAttoAlph(amount: string | undefined): string {
-  if (amount === undefined) return '0.00';
-  try {
-    const amountBigInt = BigInt(amount);
-    const oneAlph = 10n ** 18n;
-    const integerPart = amountBigInt / oneAlph;
-    const fractionalPart = amountBigInt % oneAlph;
-    const formattedInteger = integerPart.toLocaleString('en-US');
-    const formattedFractional = fractionalPart.toString().padStart(18, '0').substring(0, 4);
-    return `${formattedInteger}.${formattedFractional}`;
-  } catch (e) {
-    logger.error("Error formatting atto ALPH:", e);
-    return '0.00';
-  }
-}
-
 export default function AcyumSwapClient() {
   const { t } = useLanguage()
   const { toast } = useToast()
@@ -86,6 +71,17 @@ export default function AcyumSwapClient() {
   const address = account?.address ?? null;
   const isConnected = connectionStatus === 'connected' && !!address;
 
+  const {
+    alphBalance: formattedAlphBalance,
+    acyumBalance: formattedAcyumBalance,
+    sweaBalance: formattedSweaBalance,
+    alphUsdValue,
+    acyumUsdValue,
+    sweaUsdValue,
+    isLoadingBalances,
+    balanceError
+  } = useBalance();
+
   const acyumTokenIdHexForAPI = config.alephium.acyumTokenIdHex;
   const acyumTokenId = config.alephium.acyumTokenIdHex;
   const ACYUM_DECIMALS = config.alephium.acyumDecimals;
@@ -93,17 +89,11 @@ export default function AcyumSwapClient() {
   const SWEA_DECIMALS = config.alephium.sweaDecimals;
 
   const [rawAcyumMarketData, setRawAcyumMarketData] = useState<CandySwapTokenData | null>(null);
-  const [alphUsdPrice, setAlphUsdPrice] = useState<number | null>(null);
   const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
   const [marketDataError, setMarketDataError] = useState<string | null>(null);
 
   const fixedAlphPerAcyumRate = 0.7;
   const fixedAcyumPerAlphRate = 1 / fixedAlphPerAcyumRate;
-
-  const { balance: alphRawBalance } = useBalance();
-  const [acyumBalance, setAcyumBalance] = useState<bigint | null>(null);
-  const [isBalanceLoading, setIsBalanceLoading] = useState(false);
-  const [balanceError, setBalanceError] = useState<string | null>(null);
 
   const [alphToSwapFaucet, setAlphToSwapFaucet] = useState("");
   const [targetFaucetToken, setTargetFaucetToken] = useState<'ACYUM' | 'sWEA'>('ACYUM');
@@ -112,8 +102,8 @@ export default function AcyumSwapClient() {
     depositAddress: null,
     expectedAmountAlph: null,
     status: 'IDLE',
-    depositTxId: null,
-    faucetTxId: null,
+    depositTxId: undefined,
+    faucetTxId: undefined,
     amountTargetToken: null,
     failureReason: null,
     lastChecked: 0
@@ -122,46 +112,10 @@ export default function AcyumSwapClient() {
   const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const fetchAcyumBalance = async () => {
-      if (!address || !acyumTokenId || !config.alephium.providerUrl) return;
-
-      setIsBalanceLoading(true);
-      setBalanceError(null);
-      setAcyumBalance(null);
-      logger.debug(`Fetching ACYUM balance for ${address}`);
-
-      try {
-        const nodeProvider = new NodeProvider(config.alephium.providerUrl);
-        const balanceResult = await nodeProvider.addresses.getAddressesAddressBalance(address) as AddressBalanceResponse;
-        const acyumInfo = balanceResult.tokenBalances?.find((token: TokenBalanceItem) => token.id === acyumTokenId);
-        
-        if (acyumInfo) {
-            setAcyumBalance(BigInt(acyumInfo.amount));
-            logger.info(`ACYUM balance for ${address}: ${acyumInfo.amount}`);
-        } else {
-            setAcyumBalance(0n);
-            logger.info(`ACYUM balance for ${address}: 0 (token not found in balances)`);
-        }
-      } catch (error) {
-        logger.error(`Failed to fetch ACYUM balance for ${address}:`, error);
-        setBalanceError("Failed to fetch ACYUM balance.");
-        setAcyumBalance(null);
-      } finally {
-        setIsBalanceLoading(false);
-      }
-    };
-
-    if (isConnected && address) {
-      fetchAcyumBalance();
-    }
-  }, [isConnected, address, acyumTokenId]);
-
-  useEffect(() => {
     async function fetchExternalData() { 
       setIsMarketDataLoading(true); 
       setMarketDataError(null); 
       setRawAcyumMarketData(null);
-      setAlphUsdPrice(null);
 
       try {
         const [tokenListRes, coingeckoRes] = await Promise.all([
@@ -192,7 +146,6 @@ export default function AcyumSwapClient() {
             const coingeckoData = await coingeckoRes.json();
             const price = coingeckoData?.alephium?.usd;
             if (typeof price === 'number') {
-               setAlphUsdPrice(price);
                logger.info(`Fetched ALPH/USD price for Swap page: ${price}`);
             } else {
                logger.error('Invalid data format from CoinGecko API', coingeckoData);
@@ -229,8 +182,8 @@ export default function AcyumSwapClient() {
         depositAddress: null,
         expectedAmountAlph: null,
         status: 'IDLE',
-        depositTxId: null,
-        faucetTxId: null,
+        depositTxId: undefined,
+        faucetTxId: undefined,
         amountTargetToken: null,
         failureReason: null,
         lastChecked: 0
@@ -312,8 +265,8 @@ export default function AcyumSwapClient() {
             depositAddress: result.depositAddress,
             expectedAmountAlph: result.expectedAmountAlph,
             status: 'PENDING_DEPOSIT',
-            depositTxId: null,
-            faucetTxId: null,
+            depositTxId: undefined,
+            faucetTxId: undefined,
             amountTargetToken: null,
             failureReason: null,
             lastChecked: Date.now()
@@ -337,28 +290,6 @@ export default function AcyumSwapClient() {
     };
   }, [pollingIntervalId]);
 
-  const displayAlphBalance = formatAttoAlph(alphRawBalance);
-  const displayAcyumBalance = acyumBalance !== null 
-    ? (Number(acyumBalance) / (10 ** ACYUM_DECIMALS)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: ACYUM_DECIMALS })
-    : '...';
-
-  const acyumUsdValue = (acyumBalance !== null && alphUsdPrice !== null) 
-    ? (Number(acyumBalance) / (10 ** ACYUM_DECIMALS)) * fixedAlphPerAcyumRate * alphUsdPrice
-    : null;
-
-  let alphUsdValueString: string | null = null;
-  if (alphUsdPrice !== null && alphRawBalance !== undefined) {
-    try {
-      const alphAmount = parseFloat(formatAttoAlph(alphRawBalance as string).replace(/,/g, ''));
-      if (alphAmount > 0) {
-        // @ts-ignore - Suppress persistent incorrect linter error for alphRawBalance
-        alphUsdValueString = `≈ $${(alphAmount * alphUsdPrice).toFixed(2)} USD`;
-      }
-    } catch (e) {
-        logger.error("Error calculating ALPH USD value:", e);
-    }
-  }
-
   return (
     <ClientLayoutWrapper>
       <div className="min-h-screen flex flex-col">
@@ -373,32 +304,43 @@ export default function AcyumSwapClient() {
               <CardContent>
                 <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md">
                   <p className="text-sm text-gray-500 dark:text-gray-400">Connected Address</p>
-                  <p className="font-mono text-sm break-all">{address}</p>
-                  <div className="mt-4 grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">ALPH Balance</p>
-                      <p className="text-lg font-bold">{displayAlphBalance} ALPH</p>
-                      {alphUsdValueString && (
-                        <p className="text-xs text-gray-400">{alphUsdValueString}</p>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">ACYUM Balance</p>
-                      {isBalanceLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : balanceError ? (
-                        <p className="text-xs text-red-500">Error</p>
-                      ) : (
-                        <p className="text-lg font-bold">{displayAcyumBalance} ACYUM</p>
-                      )}
-                       {acyumUsdValue !== null && !isBalanceLoading && !balanceError && (
-                          <p className="text-xs text-gray-400">≈ ${acyumUsdValue.toFixed(2)} USD</p>
-                      )}
-                      {balanceError && !isBalanceLoading && (
-                          <p className="text-xs text-red-500 mt-1">{balanceError}</p>
-                      )}
-                    </div>
-                  </div>
+                  <p className="font-mono text-sm break-all mb-4">{address}</p>
+                  {isLoadingBalances ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-6 w-6 animate-spin text-gray-500 dark:text-gray-400" />
+                        <p className="ml-2 text-sm text-gray-500 dark:text-gray-400">Loading balances...</p>
+                      </div>
+                  ) : balanceError ? (
+                     <Alert variant="destructive" className="mb-4">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>Balance Error</AlertTitle>
+                        <AlertDescription>{balanceError}</AlertDescription>
+                      </Alert>
+                  ) : (
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">ALPH Balance</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{formattedAlphBalance} ALPH</p>
+                          {alphUsdValue && (
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{alphUsdValue}</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">ACYUM Balance</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{formattedAcyumBalance} ACYUM</p>
+                          {acyumUsdValue && (
+                             <p className="text-xs text-gray-400 dark:text-gray-500">{acyumUsdValue}</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">sWEA Balance</p>
+                           <p className="text-lg font-bold text-gray-900 dark:text-white">{formattedSweaBalance} sWEA</p>
+                           {sweaUsdValue && (
+                             <p className="text-xs text-gray-400 dark:text-gray-500">{sweaUsdValue}</p>
+                           )}
+                        </div>
+                      </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -492,8 +434,8 @@ export default function AcyumSwapClient() {
                   <Terminal className="h-4 w-4 text-green-500" />
                   <AlertTitle className="text-green-600">Swap Complete!</AlertTitle>
                   <AlertDescription className="space-y-2">
-                    <p>Successfully received {faucetSwapState.amountTargetToken ? `${BigInt(faucetSwapState.amountTargetToken) / BigInt(10 ** (targetFaucetToken === 'ACYUM' ? ACYUM_DECIMALS : SWEA_DECIMALS))} ${targetFaucetToken}` : targetFaucetToken}.</p>
-                    <p>Faucet Tx ID: <code className="block break-all bg-gray-700 p-1 rounded text-xs">{faucetSwapState.faucetTxId}</code></p>
+                    <p>Successfully received {faucetSwapState.amountTargetToken ? `${formatBalance(faucetSwapState.amountTargetToken, targetFaucetToken === 'ACYUM' ? config.alephium.acyumDecimals : config.alephium.sweaDecimals)} ${targetFaucetToken}` : targetFaucetToken}.</p>
+                    <p>Faucet Tx ID: <code className="block break-all bg-gray-700 p-1 rounded text-xs">{faucetSwapState.faucetTxId || 'N/A'}</code></p>
                     <Button onClick={clearFaucetSwapState} variant="outline" size="sm" className="mt-3">
                       Start New Swap
                     </Button>
@@ -506,6 +448,7 @@ export default function AcyumSwapClient() {
                   <AlertDescription className="space-y-2">
                     <p>Reason: {faucetSwapState.failureReason || "An unknown error occurred."}</p>
                     <p>(Swap ID: <code className="text-xs bg-gray-700 p-1 rounded">{faucetSwapState.swapId}</code>)</p>
+                    <p>Deposit Tx ID: <code className="text-xs bg-gray-700 p-1 rounded">{faucetSwapState.depositTxId || 'N/A'}</code></p>
                     <Button onClick={clearFaucetSwapState} variant="outline" size="sm" className="mt-3">
                       Try Again / Start New Swap
                     </Button>

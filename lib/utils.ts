@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { logger } from '@/lib/logger';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -23,4 +24,34 @@ export function formatBigIntAmount(amount: bigint | undefined | null, decimals: 
 
   const displayedFractional = fractionalPart.slice(0, displayDecimals);
   return `${integerPart}.${displayedFractional}`;
+}
+
+// Helper function to format balances (needs decimals)
+export function formatBalance(value: bigint | string | undefined, decimals: number): string {
+  if (value === undefined || value === null) return '0';
+  try {
+    const valueBigInt = BigInt(value);
+    const divisor = BigInt(10) ** BigInt(decimals);
+    const integerPart = valueBigInt / divisor;
+    const fractionalPart = valueBigInt % divisor;
+    
+    if (fractionalPart === BigInt(0)) {
+      // Return just the integer part if there's no fractional component
+      return integerPart.toLocaleString('en-US'); 
+    }
+    
+    const fractionalString = fractionalPart.toString().padStart(decimals, '0');
+    // Remove trailing zeros efficiently
+    let endIndex = fractionalString.length - 1;
+    while (endIndex >= 0 && fractionalString[endIndex] === '0') {
+      endIndex--;
+    }
+    // If all were zeros, the trimmed is empty, should show at least one zero if decimals > 0
+    const trimmedFractional = endIndex < 0 && decimals > 0 ? '0' : fractionalString.substring(0, endIndex + 1);
+
+    return `${integerPart.toLocaleString('en-US')}.${trimmedFractional}`;
+  } catch (e) {
+    logger.error("Error formatting balance:", e, { value, decimals });
+    return '0'; // Return '0' on error
+  }
 }
