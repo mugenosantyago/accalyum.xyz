@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, Info } from "lucide-react"
-import { useWallet, useBalance } from "@alephium/web3-react"
+import { useWallet, useBalance as useAlphBalanceHook } from "@alephium/web3-react"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { useToast } from "@/components/ui/use-toast"
 import { logger } from "@/lib/logger"
@@ -17,6 +17,8 @@ import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Terminal } from "lucide-react"
 import { NodeProvider } from '@alephium/web3'
+import { useBalance } from '@/components/balance-provider'
+import { formatBalance } from '@/lib/utils'
 
 // Helper function copied from other components
 function formatBigIntAmount(amount: bigint | undefined | null, decimals: number, displayDecimals: number = 4): string {
@@ -95,8 +97,8 @@ interface FaucetSwapState {
   depositAddress: string | null;
   expectedAmountAlph: number | null;
   status: 'IDLE' | 'PENDING_DEPOSIT' | 'PROCESSING' | 'COMPLETE' | 'FAILED';
-  depositTxId?: string;
-  faucetTxId: string | null;
+  depositTxId?: string | undefined;
+  faucetTxId?: string | undefined;
   amountTargetToken: string | null; // Will be sWEA amount
   failureReason: string | null;
   lastChecked: number;
@@ -119,11 +121,14 @@ export default function SweaSwapClient() {
   const providerUrl = config.alephium.providerUrl;
 
   // --- State for Wallet Balances ---
-  const { balance: alphRawBalance } = useBalance(); // string | undefined
-  const [sweaBalance, setSweaBalance] = useState<bigint | null>(null);
-  const [isBalanceLoading, setIsBalanceLoading] = useState(false);
-  const [balanceError, setBalanceError] = useState<string | null>(null);
-  // --- End Wallet Balance State ---
+  const {
+    alphBalance: formattedAlphBalance,
+    sweaBalance: formattedSweaBalance,
+    alphUsdValue,
+    sweaUsdValue,
+    isLoadingBalances,
+    balanceError
+  } = useBalance();
 
   // --- State for ALPH -> sWEA Faucet Swap ---
   const [alphToSwapFaucet, setAlphToSwapFaucet] = useState("");
@@ -132,8 +137,8 @@ export default function SweaSwapClient() {
     depositAddress: null,
     expectedAmountAlph: null,
     status: 'IDLE',
-    depositTxId: null,
-    faucetTxId: null,
+    depositTxId: undefined,
+    faucetTxId: undefined,
     amountTargetToken: null,
     failureReason: null,
     lastChecked: 0
@@ -147,9 +152,6 @@ export default function SweaSwapClient() {
     const fetchSweaBalance = async () => {
       if (!address || !sweaTokenId || !providerUrl) return;
 
-      setIsBalanceLoading(true);
-      setBalanceError(null);
-      setSweaBalance(null);
       logger.debug(`Fetching sWEA balance for ${address}`);
 
       try {
@@ -158,18 +160,24 @@ export default function SweaSwapClient() {
         const sweaInfo = balanceResult.tokenBalances?.find(token => token.id === sweaTokenId);
         
         if (sweaInfo) {
-            setSweaBalance(BigInt(sweaInfo.amount));
+            setFaucetSwapState({
+                ...faucetSwapState,
+                amountTargetToken: sweaInfo.amount
+            });
             logger.info(`sWEA balance for ${address}: ${sweaInfo.amount}`);
         } else {
-            setSweaBalance(0n);
+            setFaucetSwapState({
+                ...faucetSwapState,
+                amountTargetToken: '0'
+            });
             logger.info(`sWEA balance for ${address}: 0 (token not found in balances)`);
         }
       } catch (error) {
         logger.error(`Failed to fetch sWEA balance for ${address}:`, error);
-        setBalanceError("Failed to fetch sWEA balance.");
-        setSweaBalance(null);
-      } finally {
-        setIsBalanceLoading(false);
+        setFaucetSwapState({
+            ...faucetSwapState,
+            failureReason: error instanceof Error ? error.message : "An unknown error occurred."
+        });
       }
     };
 
@@ -189,8 +197,8 @@ export default function SweaSwapClient() {
         depositAddress: null,
         expectedAmountAlph: null,
         status: 'IDLE',
-        depositTxId: null,
-        faucetTxId: null,
+        depositTxId: undefined,
+        faucetTxId: undefined,
         amountTargetToken: null,
         failureReason: null,
         lastChecked: 0
@@ -224,6 +232,8 @@ export default function SweaSwapClient() {
             lastChecked: Date.now(),
             depositAddress: statusResult.depositAddress ?? faucetSwapState.depositAddress,
             expectedAmountAlph: statusResult.expectedAmountAlph ?? faucetSwapState.expectedAmountAlph,
+            depositTxId: statusResult.depositTxId ?? undefined,
+            faucetTxId: statusResult.faucetTxId ?? undefined,
           });
           if (statusResult.status === 'COMPLETE' || statusResult.status === 'FAILED') {
             logger.info(`Swap ${swapId} reached terminal state (${statusResult.status}). Stopping polling.`);
@@ -274,8 +284,8 @@ export default function SweaSwapClient() {
             depositAddress: result.depositAddress,
             expectedAmountAlph: result.expectedAmountAlph,
             status: 'PENDING_DEPOSIT',
-            depositTxId: null,
-            faucetTxId: null,
+            depositTxId: undefined,
+            faucetTxId: undefined,
             amountTargetToken: null,
             failureReason: null,
             lastChecked: Date.now()
@@ -301,11 +311,11 @@ export default function SweaSwapClient() {
   // --- End Faucet Swap Logic ---
 
   // --- Format Balances ---
-  // @ts-ignore - Suppress persistent incorrect linter error for alphRawBalance
-  const displayAlphBalance = formatAttoAlph(alphRawBalance);
-  const displaySweaBalance = sweaBalance !== null 
-    ? (Number(sweaBalance) / (10 ** SWEA_DECIMALS)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: SWEA_DECIMALS })
-    : '...';
+  // Remove old formatting logic - now handled by hook
+  // const displayAlphBalance = formatAttoAlph(alphRawBalance);
+  // const displaySweaBalance = sweaBalance !== null 
+  //   ? (Number(sweaBalance) / (10 ** SWEA_DECIMALS)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: SWEA_DECIMALS })
+  //   : '...';
   // --- End Format Balances ---
 
   return (
@@ -325,26 +335,36 @@ export default function SweaSwapClient() {
                 <CardContent>
                   <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md">
                     <p className="text-sm text-gray-500 dark:text-gray-400">Connected Address</p>
-                    <p className="font-mono text-sm break-all">{address}</p>
-                    <div className="mt-4 grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">ALPH Balance</p>
-                        <p className="text-lg font-bold">{displayAlphBalance} ALPH</p>
+                    <p className="font-mono text-sm break-all mb-4">{address}</p>
+                    {isLoadingBalances ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-6 w-6 animate-spin text-gray-500 dark:text-gray-400" />
+                        <p className="ml-2 text-sm text-gray-500 dark:text-gray-400">Loading balances...</p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">sWEA Balance</p>
-                        {isBalanceLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : balanceError ? (
-                          <p className="text-xs text-red-500">Error</p>
-                        ) : (
-                          <p className="text-lg font-bold">{displaySweaBalance} sWEA</p>
-                        )}
-                        {balanceError && !isBalanceLoading && (
-                            <p className="text-xs text-red-500 mt-1">{balanceError}</p>
-                        )}
+                    ) : balanceError ? (
+                      <Alert variant="destructive" className="mb-4">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>Balance Error</AlertTitle>
+                        <AlertDescription>{balanceError}</AlertDescription>
+                      </Alert>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">ALPH Balance</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{formattedAlphBalance} ALPH</p>
+                          {alphUsdValue && (
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{alphUsdValue}</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">sWEA Balance</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{formattedSweaBalance} sWEA</p>
+                          {sweaUsdValue && (
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{sweaUsdValue}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -423,9 +443,8 @@ export default function SweaSwapClient() {
                     <Terminal className="h-4 w-4 text-green-500" />
                     <AlertTitle className="text-green-600">Swap Complete!</AlertTitle>
                     <AlertDescription className="space-y-2">
-                      {/* Display received sWEA amount */}
-                      <p>Successfully received {faucetSwapState.amountTargetToken ? `${BigInt(faucetSwapState.amountTargetToken) / BigInt(10 ** SWEA_DECIMALS)} sWEA` : 'sWEA'}.</p>
-                      <p>Faucet Tx ID: <code className="block break-all bg-gray-700 p-1 rounded text-xs">{faucetSwapState.faucetTxId}</code></p>
+                      <p>Successfully received {faucetSwapState.amountTargetToken ? `${formatBalance(faucetSwapState.amountTargetToken, SWEA_DECIMALS)} sWEA` : 'sWEA'}.</p>
+                      <p>Faucet Tx ID: <code className="block break-all bg-gray-700 p-1 rounded text-xs">{faucetSwapState.faucetTxId || 'N/A'}</code></p>
                       <Button onClick={clearFaucetSwapState} variant="outline" size="sm" className="mt-3">
                         Start New Swap
                       </Button>
@@ -438,6 +457,7 @@ export default function SweaSwapClient() {
                     <AlertDescription className="space-y-2">
                       <p>Reason: {faucetSwapState.failureReason || "An unknown error occurred."}</p>
                       <p>(Swap ID: <code className="text-xs bg-gray-700 p-1 rounded">{faucetSwapState.swapId}</code>)</p>
+                      <p>Deposit Tx ID: <code className="text-xs bg-gray-700 p-1 rounded">{faucetSwapState.depositTxId || 'N/A'}</code></p>
                       <Button onClick={clearFaucetSwapState} variant="outline" size="sm" className="mt-3">
                         Try Again / Start New Swap
                       </Button>
