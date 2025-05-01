@@ -21,6 +21,13 @@ export const config = {
     sweaTokenIdHex: process.env.NEXT_PUBLIC_SWEA_TOKEN_ID_HEX ?? "5d738e4fda3dab2c3edf175842df94f877f4be41b06bba553f61328b5c276300", // Updated with provided ID
     sweaDecimals: parseInt(process.env.NEXT_PUBLIC_SWEA_DECIMALS || "9", 10), // Updated to 9 decimals
     sweaFaucetAddress: process.env.NEXT_PUBLIC_SWEA_FAUCET_ADDRESS || "1DjCZbKGATt82mxygUDuNr8yYxf786SNc7ek9ZEeY3CYC", // Added sWEA Faucet Address
+
+    // Deposit Contract
+    depositContractAddress: process.env.NEXT_PUBLIC_DEPOSIT_CONTRACT_ADDRESS || "", // Added Deposit Contract Address
+
+    // Backend Wallet for Faucet Operations
+    backendWalletPrivateKey: process.env.BACKEND_WALLET_PRIVATE_KEY || "", // !! KEEP SECRET !!
+
     // Add contract addresses here when known
     // sweaClaimContractAddress: process.env.NEXT_PUBLIC_SWEA_CLAIM_CONTRACT_ADDRESS,
     // sweaPurchaseContractAddress: process.env.NEXT_PUBLIC_SWEA_PURCHASE_CONTRACT_ADDRESS,
