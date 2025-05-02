@@ -260,6 +260,9 @@ export default function AcyumSwapClient() {
         }
         logger.info('Swap initiation successful:', result);
         toast({ title: "Swap Initiated", description: "Please follow the deposit instructions." });
+        
+        console.log("API call successful. Setting state to PENDING_DEPOSIT with:", result);
+        
         setFaucetSwapState({
             swapId: result.swapId,
             depositAddress: result.depositAddress,
@@ -271,6 +274,9 @@ export default function AcyumSwapClient() {
             failureReason: null,
             lastChecked: Date.now()
         });
+        
+        console.log("State potentially set. Starting polling...");
+
         handlePollStatus(result.swapId);
       } catch (error) {
         logger.error("Error initiating faucet swap:", error);
