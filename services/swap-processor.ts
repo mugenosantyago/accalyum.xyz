@@ -147,7 +147,7 @@ async function handleDepositEvent(event: DepositTypes.DepositMadeEvent) {
         }
 
         if (targetAmount <= 0n) {
-            throw new Error(`Calculated target amount is zero or negative (${targetAmount})`);
+            throw new Error(`Calculated target amount is zero or negative (${targetAmount.toString()})`);
         }
 
         logger.info(`Calculated ${targetAmount.toString()} smallest units of ${swapRequest.targetToken} for swap ${swapId}.`);
@@ -156,6 +156,62 @@ async function handleDepositEvent(event: DepositTypes.DepositMadeEvent) {
          logger.error(`Error calculating target amount for swap ${swapId}:`, calcError);
          await SwapRequestStore.updateRequest(swapId, { status: 'FAILED', failureReason: `Calculation error: ${calcError instanceof Error ? calcError.message : calcError}` });
          return;
+    }
+
+    // Check for 1% sWEA supply cap
+    if (swapRequest.targetToken === 'sWEA') {
+        const userToCheck = swapRequest.userAddress;
+        const adminAddr = config.alephium.adminAddress;
+
+        if (userToCheck !== adminAddr) {
+            logger.info(`User ${userToCheck} is not admin. Checking sWEA balance against 1% supply cap for swap ${swapId}.`);
+            // Total Supply: 42 trillion (42 * 10^12). Decimals: 9.
+            // Total Supply in smallest units: 42 * 10^12 * 10^9 = 42 * 10^21.
+            const TOTAL_SWEA_SUPPLY_SMALLEST_UNITS = 42n * (10n ** 21n);
+            const ONE_PERCENT_CAP_SMALLEST_UNITS = TOTAL_SWEA_SUPPLY_SMALLEST_UNITS / 100n;
+
+            try {
+                // Define a minimal type for what we expect from getAddressesAddressBalance
+                interface AddressBalanceResponse {
+                    tokenBalances?: { id: string; amount: string }[];
+                }
+                const userBalanceResult = await nodeProvider.addresses.getAddressesAddressBalance(userToCheck) as AddressBalanceResponse;
+                let currentUserSweaBalance = 0n;
+
+                if (userBalanceResult.tokenBalances) {
+                    const sweaTokenInfo = userBalanceResult.tokenBalances.find(token => token.id === config.alephium.sweaTokenIdHex);
+                    if (sweaTokenInfo && sweaTokenInfo.amount) {
+                        currentUserSweaBalance = BigInt(sweaTokenInfo.amount);
+                    }
+                }
+
+                logger.info(`User ${userToCheck} current sWEA balance: ${currentUserSweaBalance.toString()}, Amount to receive via swap: ${targetAmount.toString()}. Cap: ${ONE_PERCENT_CAP_SMALLEST_UNITS.toString()}`);
+
+                if (currentUserSweaBalance + targetAmount > ONE_PERCENT_CAP_SMALLEST_UNITS) {
+                    const failureMsg = `Swap rejected for user ${userToCheck}: Exceeds 1% sWEA supply cap. Current balance ${currentUserSweaBalance.toString()} + requested ${targetAmount.toString()} would be ${(currentUserSweaBalance + targetAmount).toString()}, cap is ${ONE_PERCENT_CAP_SMALLEST_UNITS.toString()}.`;
+                    logger.warn(failureMsg + ` (Swap ID: ${swapId})`);
+                    await SwapRequestStore.updateRequest(swapId, {
+                        status: 'FAILED',
+                        failureReason: failureMsg,
+                        amountTargetToken: targetAmount.toString() // Still record what they would have received
+                    });
+                    return; // Stop processing for this user
+                }
+                logger.info(`User ${userToCheck} is within the 1% sWEA supply cap. Proceeding with swap ${swapId}.`);
+
+            } catch (balanceError) {
+                logger.error(`Error fetching user sWEA balance for supply cap check (swap ${swapId}, user ${userToCheck}):`, balanceError);
+                const errMsg = balanceError instanceof Error ? balanceError.message : String(balanceError);
+                await SwapRequestStore.updateRequest(swapId, {
+                    status: 'FAILED',
+                    failureReason: `Failed to verify user sWEA balance for supply cap: ${errMsg}`,
+                    amountTargetToken: targetAmount.toString()
+                });
+                return; // Stop processing due to error
+            }
+        } else {
+            logger.info(`User ${userToCheck} is admin. Bypassing 1% sWEA supply cap for swap ${swapId}.`);
+        }
     }
 
     // 4. Call Faucet withdraw

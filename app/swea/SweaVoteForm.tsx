@@ -1,0 +1,154 @@
+"use client"
+
+import { useState, useEffect } from 'react';
+import { useWallet } from '@alephium/web3-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useToast } from '@/components/ui/use-toast';
+import { logger } from '@/lib/logger';
+import { config } from '@/lib/config';
+import { useBalance } from '@/components/balance-provider'; // To check ACYUM balance
+import { Loader2 } from 'lucide-react';
+
+interface SweaVoteFormProps {
+  // Props if any, e.g., a callback after submission
+}
+
+export function SweaVoteForm({}: SweaVoteFormProps) {
+  const { toast } = useToast();
+  const { account, connectionStatus } = useWallet();
+  const { acyumBalance: userAcyumTokenBalance } = useBalance(); // Get ACYUM balance from provider
+
+  const [acyumId, setAcyumId] = useState(''); // Proposal ID or similar
+  const [name, setName] = useState('');
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [canShowForm, setCanShowForm] = useState(false);
+
+  const userAddress = account?.address;
+  const isAdmin = !!userAddress && userAddress === config.alephium.adminAddress; // Ensure userAddress is defined for comparison
+  const isConnected = connectionStatus === 'connected';
+
+  useEffect(() => {
+    if (isConnected) {
+      if (isAdmin) {
+        setCanShowForm(true);
+      } else {
+        // Check if user holds ACYUM token
+        // Ensure hasAcyum is explicitly boolean
+        const hasAcyum = !!(userAcyumTokenBalance && parseFloat(userAcyumTokenBalance.replace(/,/g, '')) > 0);
+        setCanShowForm(hasAcyum);
+      }
+    } else {
+      setCanShowForm(false);
+    }
+  }, [isConnected, isAdmin, userAcyumTokenBalance]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!acyumId.trim() || !name.trim() || !message.trim()) {
+      toast({ title: 'Validation Error', description: 'All fields are required.', variant: 'destructive' });
+      return;
+    }
+    setIsSubmitting(true);
+    logger.info('Submitting sWEA vote/proposal:', { userAddress, acyumId, name, message });
+
+    try {
+      // Replace with actual API call
+      const response = await fetch('/api/swea/submit-proposal', { // Updated API endpoint
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submitterAddress: userAddress,
+          acyumProposalId: acyumId, // Renaming for clarity on backend
+          submitterName: name,
+          voteMessage: message,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Submission failed with no error message.' }));
+        throw new Error(errorData.message || `API Error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      toast({ title: 'Submission Successful', description: result.message || 'Your vote/proposal has been recorded.' });
+      setAcyumId('');
+      setName('');
+      setMessage('');
+    } catch (error) {
+      logger.error('Vote submission failed:', error);
+      toast({ title: 'Submission Failed', description: error instanceof Error ? error.message : 'An unknown error occurred.', variant: 'destructive' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!canShowForm) {
+    // Optionally, provide a message if the form is hidden due to eligibility criteria
+    // return (
+    //   <Card className="mt-8">
+    //     <CardHeader>
+    //       <CardTitle>Vote / Submit Proposal</CardTitle>
+    //     </CardHeader>
+    //     <CardContent>
+    //       <p>Please connect your wallet. Admins or ACYUM token holders can participate.</p>
+    //     </CardContent>
+    //   </Card>
+    // );
+    return null; 
+  }
+
+  return (
+    <Card className="mt-8">
+      <CardHeader>
+        <CardTitle>Cast Your Vote / Submit Proposal</CardTitle>
+        <CardDescription>
+          {isAdmin ? 'Admin vote/proposal submission.' : 'Participate in sWEA governance. Requires holding ACYUM token.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="acyumId">ACYUM ID (Proposal/Vote ID)</Label>
+            <Input
+              id="acyumId"
+              value={acyumId}
+              onChange={(e) => setAcyumId(e.target.value)}
+              placeholder="Enter the ID of the proposal or vote"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="name">Your Name</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name or alias"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="message">Message / Justification</Label>
+            <Textarea
+              id="message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Your message, vote justification, or proposal details"
+              required
+              rows={4}
+            />
+          </div>
+          <Button type="submit" disabled={isSubmitting || !isConnected} className="w-full">
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Submit
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+} 

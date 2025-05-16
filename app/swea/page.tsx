@@ -5,6 +5,7 @@ import { SweaClaim } from './swea-claim'
 import SweaSwapClient from './swea-purchase'
 import { Separator } from '@/components/ui/separator'
 import Image from 'next/image'
+import { SweaVoteForm } from './SweaVoteForm'
 
 // Add metadata for the sWEA page
 export const metadata: Metadata = {
@@ -39,6 +40,10 @@ export default function SweaPage() {
           <Separator className="my-12 bg-gradient-to-r from-transparent via-orange-600/50 to-transparent h-[1px]" />
 
           <SweaSwapClient />
+
+          <Separator className="my-12 bg-gradient-to-r from-transparent via-teal-600/50 to-transparent h-[1px]" />
+
+          <SweaVoteForm />
 
           {/* TODO: Add sWEA Bank section later */}
 

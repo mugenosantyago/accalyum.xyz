@@ -155,7 +155,7 @@ export const translations = {
     // Feature Descriptions (sweaInfo)
     sweaDescEqualDistribution: "Everyone who joins the sWEA community receives an equal allocation of tokens, ensuring fair initial access.",
     sweaDescWealthConcentration: "To maintain fairness, no single wallet address is permitted to hold more than 1% of the total sWEA token supply.",
-    sweaDescCollectiveOwnership: "A significant portion, 30% of the total sWEA tokens, is held securely in a community-controlled treasury.",
+    sweaDescCollectiveOwnership: "Approximately 11.9% (5 trillion out of 42 trillion) of the total sWEA tokens is held securely in a community-controlled treasury.",
     sweaDescRedistribution: "Funds held within the community treasury can be redistributed equally amongst all token holders, based on community decisions.",
     sweaDescGovernance: "The underlying smart contract can be extended to include voting mechanisms, empowering the community to make collective decisions about the token\'s future and treasury usage.",
     sweaNote: "Note: The specific implementation details (e.g., joining process, treasury management, governance activation) depend on the deployed smart contract.",
@@ -374,7 +374,7 @@ export const translations = {
     // Feature Descriptions (sweaInfo) - Using placeholders for brevity, replace with full translations
     sweaDescEqualDistribution: "sWEAコミュニティに参加するすべての人がトークンの均等な割り当てを受け、公正な初期アクセスを保証します。",
     sweaDescWealthConcentration: "公平性を維持するため、単一のウォレットアドレスが総sWEAトークン供給量の1％以上を保持することは許可されていません。",
-    sweaDescCollectiveOwnership: "総sWEAトークンの大部分である30％が、コミュニティ管理の財務で安全に保持されます。",
+    sweaDescCollectiveOwnership: "総sWEAトークンの約11.9％（42兆トークンのうち5兆トークン）が、コミュニティ管理の財務で安全に保持されます。",
     sweaDescRedistribution: "コミュニティ財務内で保持されている資金は、コミュニティの決定に基づき、すべてのトークン保有者に均等に再分配できます。",
     sweaDescGovernance: "基礎となるスマートコントラクトは、投票メカニズムを含むように拡張でき、コミュニティがトークンの将来と財務の使用について集合的な決定を下せるようにします。",
     sweaNote: "注意：具体的な実装詳細（参加プロセス、財務管理、ガバナンスの有効化など）は、展開されたスマートコントラクトに依存します。",

@@ -556,14 +556,59 @@ export default function AcyumBankClient() {
     } // Add sWEA withdraw logic here if needed later
   }
 
+  // LedgerEntry interface for type safety
+  interface LedgerEntry {
+    id: string;
+    type: 'deposit' | 'withdraw';
+    token: 'ALPH' | 'ACYUM' | 'sWEA';
+    amount: string;
+    txId: string;
+    timestamp: Date;
+  }
+
   const handleFaucet = async () => {
     if (!isConnected || !signer || !address ) return toast({ title: "Error", description: "Wallet not connected", variant: "destructive" });
     if (!acyumTokenId) return toast({ title: "Error", description: "ACYUM Token ID not configured", variant: "destructive" });
     if (!faucetContractAddress) return toast({ title: "Error", description: "ACYUM Faucet address not configured", variant: "destructive" });
 
     setIsFaucetProcessing(true);
-    logger.info(`Attempting to call 'withdraw' on faucet contract ${faucetContractAddress}...`);
+    logger.info(`Attempting to call 'withdraw' on faucet contract ${faucetContractAddress} for user ${address}...`);
+
     try {
+      // Check user's bank transaction history for eligibility
+      logger.info(`Fetching bank transaction ledger for ${address} to check faucet eligibility...`);
+      const ledgerResponse = await fetch(`/api/bank/ledger/${address}`);
+      if (!ledgerResponse.ok) {
+        const errorData = await ledgerResponse.json().catch(() => ({})); // Gracefully handle if JSON parsing fails
+        logger.error("Failed to fetch user bank ledger for faucet eligibility:", ledgerResponse.status, errorData);
+        toast({ title: "Eligibility Check Failed", description: errorData.error || "Could not verify your bank transaction history. Please try again.", variant: "destructive" });
+        setIsFaucetProcessing(false);
+        return;
+      }
+
+      const ledgerData: { ledger?: LedgerEntry[] } = await ledgerResponse.json();
+      const userTransactions = ledgerData.ledger || [];
+
+      const hasDeposited = userTransactions.some(tx => tx.type === 'deposit');
+      const hasWithdrawn = userTransactions.some(tx => tx.type === 'withdraw');
+
+      if (!hasDeposited || !hasWithdrawn) {
+        let eligibilityMessage = "To use the faucet, you must have at least one deposit and one withdrawal transaction recorded in the Acyum Bank.";
+        if (!hasDeposited && !hasWithdrawn) {
+          eligibilityMessage = "You need to make a deposit and a withdrawal in the Acyum Bank to use the faucet.";
+        } else if (!hasDeposited) {
+          eligibilityMessage = "You need to make a deposit in the Acyum Bank to use the faucet.";
+        } else if (!hasWithdrawn) {
+          eligibilityMessage = "You need to make a withdrawal from the Acyum Bank to use the faucet.";
+        }
+        logger.info(`User ${address} not eligible for faucet: Deposits: ${hasDeposited}, Withdrawals: ${hasWithdrawn}`);
+        toast({ title: "Faucet Not Eligible", description: eligibilityMessage, variant: "default", duration: 7000 });
+        setIsFaucetProcessing(false);
+        return;
+      }
+
+      logger.info(`User ${address} is eligible for faucet. Proceeding with claim.`);
+
       // Calculate the amount to claim (7 ACYUM)
       const amountToClaim = BigInt(7 * (10 ** config.alephium.acyumDecimals));
 
