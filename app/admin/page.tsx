@@ -1045,7 +1045,6 @@ export default function AdminPage() {
 
           </Tabs>
         </main>
-        <Footer />
 
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="bg-gray-900 border-gray-800">

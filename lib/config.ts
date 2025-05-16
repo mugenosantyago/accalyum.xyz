@@ -37,7 +37,7 @@ export const config = {
     homelessness: process.env.NEXT_PUBLIC_TREASURY_HOMELESSNESS || "",
     palestine: process.env.NEXT_PUBLIC_TREASURY_PALESTINE || "",
     communist: process.env.NEXT_PUBLIC_TREASURY_COMMUNIST || "",
-    sweaBank: process.env.NEXT_PUBLIC_TREASURY_SWEA_BANK || "",
+    sweaBank: process.env.NEXT_PUBLIC_TREASURY_SWEA_BANK || "1DjCZbKGATt82mxygUDuNr8yYxf786SNc7ek9ZEeY3CYC",
   },
   database: {
     mongoUri: process.env.MONGODB_URI || "",
