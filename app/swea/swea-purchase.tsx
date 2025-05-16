@@ -13,7 +13,6 @@ import { logger } from "@/lib/logger"
 import { config } from "@/lib/config" 
 import Image from 'next/image'
 import { useLanguage } from "@/components/language-provider"
-import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Terminal } from "lucide-react"
 import { NodeProvider } from '@alephium/web3'
@@ -319,7 +318,7 @@ export default function SweaSwapClient() {
   // --- End Format Balances ---
 
   return (
-    <ClientLayoutWrapper>
+    <>
       <div className="min-h-screen flex flex-col">
         <main className="flex-grow container mx-auto py-12 px-4">
           {/* Keep title relevant to sWEA or make generic */}
@@ -469,6 +468,6 @@ export default function SweaSwapClient() {
           </div>
         </main>
       </div>
-    </ClientLayoutWrapper>
+    </>
   )
 } 

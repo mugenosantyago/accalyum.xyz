@@ -22,7 +22,8 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
   const { account, connectionStatus } = useWallet();
   const { acyumBalance: userAcyumTokenBalance } = useBalance(); // Get ACYUM balance from provider
 
-  const [acyumId, setAcyumId] = useState(''); // Proposal ID or similar
+  const [acyumId, setAcyumId] = useState(''); // This will be the Proposal ID
+  const [userAcyumIdentifier, setUserAcyumIdentifier] = useState(''); // New state for User's ACYUM ID
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,6 +34,13 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
   const isConnected = connectionStatus === 'connected';
 
   useEffect(() => {
+    logger.info('[SweaVoteForm Debug] Checking visibility:', {
+      isConnected,
+      isAdmin,
+      userAcyumTokenBalance,
+      userAddress
+    });
+
     if (isConnected) {
       if (isAdmin) {
         setCanShowForm(true);
@@ -49,21 +57,21 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!acyumId.trim() || !name.trim() || !message.trim()) {
-      toast({ title: 'Validation Error', description: 'All fields are required.', variant: 'destructive' });
+    if (!acyumId.trim() || !name.trim() || !message.trim()) { // Proposal ID (acyumId) is required
+      toast({ title: 'Validation Error', description: 'Proposal ID, Name, and Message fields are required.', variant: 'destructive' });
       return;
     }
     setIsSubmitting(true);
-    logger.info('Submitting sWEA vote/proposal:', { userAddress, acyumId, name, message });
+    logger.info('Submitting sWEA vote/proposal:', { userAddress, proposalId: acyumId, userAcyumIdentifier, name, message });
 
     try {
-      // Replace with actual API call
-      const response = await fetch('/api/swea/submit-proposal', { // Updated API endpoint
+      const response = await fetch('/api/swea/submit-proposal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           submitterAddress: userAddress,
-          acyumProposalId: acyumId, // Renaming for clarity on backend
+          acyumProposalId: acyumId, // This is the Proposal ID
+          userAcyumIdentifier: userAcyumIdentifier.trim() || undefined, // Send if provided, else undefined
           submitterName: name,
           voteMessage: message,
         }),
@@ -77,6 +85,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
       const result = await response.json();
       toast({ title: 'Submission Successful', description: result.message || 'Your vote/proposal has been recorded.' });
       setAcyumId('');
+      setUserAcyumIdentifier(''); // Clear the new field
       setName('');
       setMessage('');
     } catch (error) {
@@ -113,13 +122,22 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="acyumId">ACYUM ID (Proposal/Vote ID)</Label>
+            <Label htmlFor="proposalId">Proposal ID</Label>
             <Input
-              id="acyumId"
+              id="proposalId"
               value={acyumId}
               onChange={(e) => setAcyumId(e.target.value)}
-              placeholder="Enter the ID of the proposal or vote"
+              placeholder="Enter the ID of the proposal or vote (e.g., SWP-001)"
               required
+            />
+          </div>
+          <div>
+            <Label htmlFor="userAcyumIdentifier">Your ACYUM ID (Optional)</Label>
+            <Input
+              id="userAcyumIdentifier"
+              value={userAcyumIdentifier}
+              onChange={(e) => setUserAcyumIdentifier(e.target.value)}
+              placeholder="Your registered ACYUM ID (e.g., ACYUM-XYZ123)"
             />
           </div>
           <div>

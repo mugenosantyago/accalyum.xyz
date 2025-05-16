@@ -10,12 +10,13 @@ interface SubmitProposalRequest {
   acyumProposalId: string;
   submitterName: string;
   voteMessage: string;
+  userAcyumIdentifier?: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as SubmitProposalRequest;
-    const { submitterAddress, acyumProposalId, submitterName, voteMessage } = body;
+    const { submitterAddress, acyumProposalId, submitterName, voteMessage, userAcyumIdentifier } = body;
 
     if (!acyumProposalId || !submitterName || !voteMessage) {
       return NextResponse.json({ error: 'Missing required fields: acyumProposalId, submitterName, voteMessage are required.' }, { status: 400 });
@@ -60,10 +61,11 @@ export async function POST(request: NextRequest) {
     await connectToDatabase(); // Ensure DB connection
 
     const newProposal = new SweaProposal({
-      submitterAddress: submitterAddress || 'N/A', // Handle if not provided
+      submitterAddress: submitterAddress || 'anonymous',
       acyumProposalId,
       submitterName,
       voteMessage,
+      userAcyumIdentifier,
       status: 'new',
       createdAt: new Date(),
     });
