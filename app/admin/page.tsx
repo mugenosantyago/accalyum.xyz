@@ -137,14 +137,14 @@ export default function AdminPage() {
         throw new Error("Failed to fetch users")
       }
       const usersData = await usersResponse.json()
-      setUsers(usersData.users)
+      setUsers(Array.isArray(usersData?.users) ? usersData.users : [])
 
       const approvalsResponse = await fetch("/api/admin/pending-approvals", { headers })
       if (!approvalsResponse.ok) {
         throw new Error("Failed to fetch pending approvals")
       }
       const approvalsData = await approvalsResponse.json()
-      setPendingApprovals(approvalsData.pendingApprovals)
+      setPendingApprovals(Array.isArray(approvalsData?.pendingApprovals) ? approvalsData.pendingApprovals : [])
     } catch (error) {
       console.error("Error fetching data:", error)
       toast({
