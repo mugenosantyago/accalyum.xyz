@@ -152,6 +152,8 @@ export default function AdminPage() {
         description: "Failed to fetch data. Please try again.",
         variant: "destructive",
       })
+      setUsers([]);
+      setPendingApprovals([]);
     } finally {
       // Keep isLoading false until all data (users, approvals, treasuries) is loaded in checkAdminStatus
       // setIsLoading(false) // Removed from here
@@ -210,32 +212,43 @@ export default function AdminPage() {
     } finally {
       setIsSweaTreasuryLoading(false)
     }
-  }, [sweaBankAddress, sweaTokenId, toast]) // Added dependencies
+  }, [sweaBankAddress, sweaTokenId, toast])
+
+  const checkAdminStatus = useCallback(async () => {
+    setIsLoading(true); // Start loading indication
+    if (isConnected && address) {
+      if (address === config.alephium.adminAddress) {
+        setIsAdmin(true);
+        // Fetch all admin-specific data in parallel
+        try {
+          await Promise.all([
+            fetchData(), 
+            fetchTreasuryData(), 
+            fetchSweaTreasuryData()
+          ]);
+        } catch (error) {
+          console.error("Error during admin data fetch ensemble:", error);
+          toast({ title: "Admin Data Error", description: "Could not load all admin data.", variant: "destructive" });
+          // Ensure states are safe even if Promise.all has an issue not caught by individual fetches
+          setUsers([]);
+          setPendingApprovals([]);
+          setTreasuryBalance("Error");
+          setFaucetBalance("Error");
+          setSweaTreasuryBalance("Error");
+        }
+      } else {
+        setIsAdmin(false);
+        toast({ title: "Access Denied", description: "You are not authorized to view this page.", variant: "destructive" });
+      }
+    } else {
+      setIsAdmin(false); // Not connected or no address
+    }
+    setIsLoading(false); // Stop loading indication after checks and data fetching (or denial)
+  }, [isConnected, address, fetchData, fetchTreasuryData, fetchSweaTreasuryData, toast]); // Added dependencies
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      setIsLoading(true) // Set loading true at the start
-      if (!isConnected || !address) {
-        setIsAdmin(false)
-        setIsLoading(false)
-        return
-      }
-
-      // Check admin address from config
-      if (address.toLowerCase() === config.alephium.adminAddress.toLowerCase()) {
-        setIsAdmin(true)
-        // Fetch all data sequentially now
-        await fetchData() // Fetch users/approvals
-        await fetchTreasuryData() // Fetch ALPH treasury/faucet
-        await fetchSweaTreasuryData() // Fetch sWEA treasury
-      } else {
-        setIsAdmin(false)
-      }
-      setIsLoading(false) // Set loading false after all checks/fetches
-    }
-
     checkAdminStatus()
-  }, [isConnected, address, toast, fetchData, fetchSweaTreasuryData, fetchTreasuryData]) // Keep fetchData in dependency array
+  }, [checkAdminStatus])
 
   const handleAddFundsToTreasury = useCallback(async () => {
     if (!depositAmount || Number.parseFloat(depositAmount) <= 0) {
