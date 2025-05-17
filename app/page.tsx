@@ -15,6 +15,20 @@ export default function Home() {
       <div className="flex flex-col">
         <HeroSection />
         <AboutSection />
+        <section className="py-8 px-4 text-center">
+          <h3 className="text-xl font-semibold mb-2">Discover Alephi Online</h3>
+          <p className="text-md text-muted-foreground mb-4">
+            A cryptographic socialist media platform built on Alephium and Irys.
+          </p>
+          <a
+            href="https://alephi.online"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline font-medium"
+          >
+            Visit alephi.online
+          </a>
+        </section>
       </div>
     </ClientLayoutWrapper>
   )

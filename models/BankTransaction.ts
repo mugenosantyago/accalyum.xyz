@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, models, Model } from 'mongoose';
 // Interface for the document (TypeScript type)
 export interface IBankTransaction extends Document {
   address: string; // User's Alephium address
-  type: 'deposit' | 'withdraw';
+  type: 'deposit' | 'withdraw' | 'interest_payout';
   token: 'ALPH' | 'ACYUM' | 'sWEA';
   // Store amount as string to handle large numbers accurately
   // This will represent the amount in the smallest unit (attoALPH or ACYUM smallest unit)
@@ -15,7 +15,7 @@ export interface IBankTransaction extends Document {
 // Mongoose Schema definition
 const BankTransactionSchema: Schema<IBankTransaction> = new Schema({
   address: { type: String, required: true, index: true }, // Index for faster querying by address
-  type: { type: String, required: true, enum: ['deposit', 'withdraw'] },
+  type: { type: String, required: true, enum: ['deposit', 'withdraw', 'interest_payout'] },
   token: { type: String, required: true, enum: ['ALPH', 'ACYUM', 'sWEA'] },
   amount: { type: String, required: true }, 
   txId: { type: String, required: true, unique: true }, // Ensure transaction IDs are unique

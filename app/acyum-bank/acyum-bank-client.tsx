@@ -536,6 +536,50 @@ export default function AcyumBankClient() {
     }
   }
 
+  const handleSweaWithdraw = async () => {
+    if (!isConnected || !address || !signer) return toast({ title: "Error", description: "Wallet not connected", variant: "destructive" });
+    if (!S_WEA_TOKEN_ID || S_WEA_TOKEN_ID === "YOUR_SWEA_TOKEN_ID_HEX") {
+        return toast({ title: "Error", description: "sWEA Token ID not configured", variant: "destructive" });
+    }
+    const withdrawAmountNum = Number.parseFloat(withdrawAmount);
+    if (!withdrawAmount || withdrawAmountNum <= 0) return toast({ title: "Error", description: "Invalid amount", variant: "destructive" });
+    const withdrawAmountSmallestUnit = BigInt(Math.floor(withdrawAmountNum * (10 ** S_WEA_DECIMALS)));
+
+    // Check: withdrawal amount vs user's deposited sWEA balance
+    if (userBankSweaBalance === null && !isUserBankBalanceLoading) {
+       return toast({ title: "Error", description: "Cannot verify deposited sWEA balance. Please wait or refresh.", variant: "destructive" });
+    }
+    if (userBankSweaBalance !== null && withdrawAmountSmallestUnit > userBankSweaBalance) {
+      const available = formatBigIntAmount(userBankSweaBalance, S_WEA_DECIMALS, 2);
+      return toast({ title: "Withdrawal Failed", description: `Withdrawal amount exceeds your deposited sWEA balance (${available} sWEA).`, variant: "destructive" });
+    }
+
+    setIsProcessing(true);
+    try {
+      logger.info(`Attempting sWEA withdrawal of ${withdrawAmount}...`);
+      const result = await Withdraw.execute(signer, {
+        initialFields: {
+          token: S_WEA_TOKEN_ID,
+          amount: withdrawAmountSmallestUnit
+        },
+        attoAlphAmount: DUST_AMOUNT,
+      });
+
+      logger.info(`sWEA Withdrawal successful: Tx ID ${result.txId}`);
+      toast({ title: "sWEA Withdrawal Submitted", description: `Tx ID: ${result.txId}` });
+      setWithdrawAmount("");
+
+      recordTransaction('withdraw', 'sWEA', withdrawAmountSmallestUnit, result.txId);
+
+    } catch (error) {
+      logger.error("sWEA Withdrawal failed", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      toast({ title: "sWEA Withdrawal Failed", description: message, variant: "destructive" });
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
   const handleDepositSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (depositTokenType === 'ALPH') {
@@ -553,7 +597,9 @@ export default function AcyumBankClient() {
       handleAlphWithdraw();
     } else if (withdrawTokenType === 'ACYUM') {
       handleAcyumWithdraw();
-    } // Add sWEA withdraw logic here if needed later
+    } else if (withdrawTokenType === 'sWEA') { // Add sWEA withdraw logic
+      handleSweaWithdraw();
+    }
   }
 
   // LedgerEntry interface for type safety
@@ -643,7 +689,7 @@ export default function AcyumBankClient() {
     <ClientLayoutWrapper>
       <div className="min-h-screen flex flex-col">
         <main className="flex-grow container mx-auto py-12 px-4">
-          <h1 className="text-3xl font-bold mb-8 text-center">{t("acyumBank")}</h1>
+          <h1 className="text-3xl font-bold mb-8 text-center">acyumBank</h1>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Treasury Info Column */} 
             <div className="md:col-span-1 space-y-6">
@@ -912,6 +958,10 @@ export default function AcyumBankClient() {
                                <input type="radio" id="withdraw_acyum" name="withdraw_token" value="ACYUM" checked={withdrawTokenType === 'ACYUM'} onChange={() => setWithdrawTokenType('ACYUM')} disabled={!acyumTokenId} />
                                <Label htmlFor="withdraw_acyum" className={!acyumTokenId ? 'text-gray-500' : ''}>ACYUM</Label>
                              </div>
+                             <div className="flex items-center space-x-2">
+                               <input type="radio" id="withdraw_swea" name="withdraw_token" value="sWEA" checked={withdrawTokenType === 'sWEA'} onChange={() => setWithdrawTokenType('sWEA')} disabled={!S_WEA_TOKEN_ID || S_WEA_TOKEN_ID === "YOUR_SWEA_TOKEN_ID_HEX"} />
+                               <Label htmlFor="withdraw_swea" className={!S_WEA_TOKEN_ID || S_WEA_TOKEN_ID === "YOUR_SWEA_TOKEN_ID_HEX" ? 'text-gray-500' : ''}>sWEA</Label>
+                             </div>
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="withdrawAmount">{t("amount")} ({withdrawTokenType})</Label>
@@ -930,7 +980,7 @@ export default function AcyumBankClient() {
                           <Button
                             type="submit"
                             className="w-full bg-[#FF6B35] hover:bg-[#E85A2A]"
-                            disabled={isProcessing || !isConnected || !signer || (withdrawTokenType === 'ACYUM' && !acyumTokenId)}
+                            disabled={isProcessing || !isConnected || !signer || (withdrawTokenType === 'ACYUM' && !acyumTokenId) || (withdrawTokenType === 'sWEA' && (!S_WEA_TOKEN_ID || S_WEA_TOKEN_ID === "YOUR_SWEA_TOKEN_ID_HEX"))}
                           >
                             {isProcessing ? (
                               <>

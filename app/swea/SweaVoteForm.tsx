@@ -112,7 +112,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
   }
 
   return (
-    <Card className="mt-8">
+    <Card className="mt-8 w-full">
       <CardHeader>
         <CardTitle>Cast Your Vote / Submit Proposal</CardTitle>
         <CardDescription>
@@ -121,7 +121,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+          <div className="w-full">
             <Label htmlFor="proposalId">Proposal ID</Label>
             <Input
               id="proposalId"
@@ -131,7 +131,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
               required
             />
           </div>
-          <div>
+          <div className="w-full">
             <Label htmlFor="userAcyumIdentifier">Your ACYUM ID (Optional)</Label>
             <Input
               id="userAcyumIdentifier"
@@ -140,7 +140,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
               placeholder="Your registered ACYUM ID (e.g., ACYUM-XYZ123)"
             />
           </div>
-          <div>
+          <div className="w-full">
             <Label htmlFor="name">Your Name</Label>
             <Input
               id="name"
@@ -150,7 +150,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
               required
             />
           </div>
-          <div>
+          <div className="w-full">
             <Label htmlFor="message">Message / Justification</Label>
             <Textarea
               id="message"
