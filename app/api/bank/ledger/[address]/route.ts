@@ -39,6 +39,8 @@ export async function GET(request: Request, { params }: { params: { address: str
       throw new Error('Database model not properly initialized');
     }
 
+    logger.info('API: Executing bank ledger query...');
+
     // Fetch transactions for the user, sorted by most recent first
     const transactions: IBankTransaction[] = await BankTransaction.find(
       { address: address }, 
@@ -48,6 +50,7 @@ export async function GET(request: Request, { params }: { params: { address: str
     .lean(); // Use lean for plain JS objects
 
     logger.info(`API: Found ${transactions.length} transactions for ${address}`);
+    logger.debug(`Raw transactions fetched for ${address}:`, transactions);
 
     // Map to the LedgerEntry format, casting _id
     const ledger: LedgerEntry[] = transactions.map(tx => ({
@@ -83,9 +86,12 @@ export async function GET(request: Request, { params }: { params: { address: str
       });
     }
 
+    // Return a more detailed error response
     return NextResponse.json({ 
       error: 'Internal Server Error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
+      type: error instanceof Error ? error.name : 'Unknown',
+      timestamp: new Date().toISOString()
     }, { status: 500 });
   }
 } 

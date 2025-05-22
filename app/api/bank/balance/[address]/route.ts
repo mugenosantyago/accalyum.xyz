@@ -47,12 +47,15 @@ export async function GET(request: Request, { params }: { params: { address: str
       throw new Error('Database model not properly initialized');
     }
 
+    logger.info('API: Executing bank balance query...');
+    
     // Fetch all relevant transactions for the user, including sWEA
     const userTransactions = await BankTransaction.find(
       { address: address, token: { $in: ['ALPH', 'ACYUM', 'sWEA'] } },
       { token: 1, type: 1, amount: 1, _id: 0 }
     ).lean();
 
+    logger.info(`API: Found ${userTransactions.length} transactions for ${address}`);
     logger.debug(`Raw transactions fetched for ${address}:`, userTransactions);
 
     // Calculate net balances for all three tokens
@@ -89,9 +92,12 @@ export async function GET(request: Request, { params }: { params: { address: str
       });
     }
 
+    // Return a more detailed error response
     return NextResponse.json({ 
       error: 'Internal Server Error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
+      type: error instanceof Error ? error.name : 'Unknown',
+      timestamp: new Date().toISOString()
     }, { status: 500 });
   }
 } 
