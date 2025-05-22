@@ -41,7 +41,7 @@ export const config = {
   },
   database: {
     mongoUri: process.env.MONGODB_URI || "",
-    mongoDb: process.env.MONGODB_DB || "",
+    mongoDb: "acyum", // Hardcoded database name
   },
   storage: {
     blobToken: process.env.BLOB_READ_WRITE_TOKEN || "",
