@@ -810,6 +810,14 @@ export default function AcyumBankClient() {
                             <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
                               <p className="text-sm font-medium text-gray-600 dark:text-gray-300">ALPH Balance</p>
                               <p className="text-xl font-bold text-gray-900 dark:text-white">{displayAlphBalance ?? '0'} ALPH</p>
+                              <a 
+                                href="https://buy.onramper.com/" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-500 hover:text-blue-600 mt-1 inline-block"
+                              >
+                                Buy ALPH with fiat →
+                              </a>
                             </div>
                             {/* ACYUM Balance */}
                             <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
