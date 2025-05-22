@@ -1,17 +1,19 @@
 import { MongoClient } from "mongodb"
 import { config } from "./config"
+import { logger } from "./logger"
+import mongoose from "mongoose"
 
 // Connection URI
 const uri = process.env.MONGODB_URI || config.database.mongoUri
 const dbName = process.env.MONGODB_DB || config.database.mongoDb
 
-// Create a new MongoClient
-const client = new MongoClient(uri)
-let clientPromise: Promise<MongoClient>
-
 if (!uri) {
   throw new Error("Please add your MongoDB URI to .env.local")
 }
+
+// Create a new MongoClient
+const client = new MongoClient(uri)
+let clientPromise: Promise<MongoClient>
 
 if (process.env.NODE_ENV === "development") {
   // In development mode, use a global variable so that the value
@@ -36,11 +38,50 @@ export async function getDb() {
   return client.db(dbName)
 }
 
-// Add the connectToDatabase function that was missing
+// Enhanced connectToDatabase function with better error handling
 export async function connectToDatabase() {
-  const client = await clientPromise
-  const db = client.db(dbName)
-  return { client, db }
+  try {
+    // Check if already connected
+    if (mongoose.connection.readyState === 1) {
+      logger.info('MongoDB already connected');
+      return { client: await clientPromise, db: mongoose.connection.db };
+    }
+
+    // Configure mongoose
+    mongoose.set('strictQuery', true);
+    
+    // Connect to MongoDB
+    logger.info('Connecting to MongoDB...');
+    await mongoose.connect(uri, {
+      dbName,
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+    });
+
+    logger.info('MongoDB connected successfully');
+    return { client: await clientPromise, db: mongoose.connection.db };
+  } catch (error) {
+    logger.error('MongoDB connection error:', error);
+    
+    // Log detailed error information
+    if (error instanceof Error) {
+      logger.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+    }
+
+    // Check for specific error types
+    if (error instanceof mongoose.Error) {
+      logger.error('Mongoose error:', {
+        name: error.name,
+        message: error.message
+      });
+    }
+
+    throw error; // Re-throw the error to be handled by the caller
+  }
 }
 
 // User types
