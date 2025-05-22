@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import mongoose from 'mongoose';
 import { logger } from '@/lib/logger';
+import BankTransaction from '@/models/BankTransaction';
 
 export async function GET() {
   try {
@@ -20,28 +21,36 @@ export async function GET() {
     const registeredModels = Object.keys(mongoose.models);
     logger.info(`Registered models: ${registeredModels.join(', ')}`);
 
-    // Try to create a test document
-    if (mongoose.models.BankTransaction) {
-      logger.info('Testing BankTransaction model...');
-      const testDoc = new mongoose.models.BankTransaction({
-        address: 'test_address',
-        type: 'deposit',
-        token: 'ALPH',
-        amount: '1000000000000000000',
-        txId: `test_${Date.now()}`,
-        timestamp: new Date()
-      });
-
-      await testDoc.save();
-      logger.info('Test document created successfully');
-      await mongoose.models.BankTransaction.deleteOne({ txId: testDoc.txId });
-      logger.info('Test document cleaned up');
+    // Verify BankTransaction model specifically
+    if (!mongoose.models.BankTransaction) {
+      logger.error('BankTransaction model not found in registered models');
+      throw new Error('BankTransaction model not registered');
     }
+
+    // Try to create a test document
+    logger.info('Testing BankTransaction model...');
+    const testDoc = new BankTransaction({
+      address: 'test_address',
+      type: 'deposit',
+      token: 'ALPH',
+      amount: '1000000000000000000',
+      txId: `test_${Date.now()}`,
+      timestamp: new Date()
+    });
+
+    await testDoc.save();
+    logger.info('Test document created successfully');
+    await BankTransaction.deleteOne({ txId: testDoc.txId });
+    logger.info('Test document cleaned up');
 
     return NextResponse.json({
       status: 'success',
       connectionState: mongoose.connection.readyState,
       registeredModels,
+      bankTransactionModel: {
+        exists: !!mongoose.models.BankTransaction,
+        schema: mongoose.models.BankTransaction.schema.obj,
+      },
       message: 'MongoDB connection and model registration test completed successfully'
     });
 

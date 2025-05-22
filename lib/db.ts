@@ -3,6 +3,9 @@ import { config } from "./config"
 import { logger } from "./logger"
 import mongoose from "mongoose"
 
+// Import models to ensure they are registered
+import '@/models/BankTransaction'
+
 // Connection URI
 const uri = process.env.MONGODB_URI || config.database.mongoUri
 const dbName = process.env.MONGODB_DB || config.database.mongoDb
@@ -57,6 +60,15 @@ export async function connectToDatabase() {
       serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
       socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
     });
+
+    // Verify models are registered
+    const registeredModels = Object.keys(mongoose.models);
+    logger.info(`Registered models after connection: ${registeredModels.join(', ')}`);
+
+    if (!mongoose.models.BankTransaction) {
+      logger.error('BankTransaction model not registered after connection');
+      throw new Error('BankTransaction model not registered');
+    }
 
     logger.info('MongoDB connected successfully');
     return { client: await clientPromise, db: mongoose.connection.db };
