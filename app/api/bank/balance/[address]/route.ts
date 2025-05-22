@@ -1,26 +1,25 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import BankTransaction from '@/models/BankTransaction';
-import { logger } from '@/lib/logger';
 import mongoose from 'mongoose';
+import { logger } from '@/lib/logger';
+import BankTransaction from '@/models/BankTransaction';
 
-// Helper function updated to accept sWEA
-function calculateNetBalance(transactions: any[], tokenSymbol: 'ALPH' | 'ACYUM' | 'sWEA'): string {
-  let netBalance = 0n;
-  transactions.forEach(tx => {
-    if (tx.token !== tokenSymbol) return;
-    try {
-      const amountBigInt = BigInt(tx.amount || '0');
-      if (tx.type === 'deposit' || tx.type === 'interest_payout') {
-        netBalance += amountBigInt;
+// Helper function to calculate net balance
+function calculateNetBalance(transactions: any[], token: string): string {
+  let balance = 0n;
+  for (const tx of transactions) {
+    if (tx.token === token) {
+      const amount = BigInt(tx.amount);
+      if (tx.type === 'deposit') {
+        balance += amount;
       } else if (tx.type === 'withdraw') {
-        netBalance -= amountBigInt;
+        balance -= amount;
+      } else if (tx.type === 'interest_payout') {
+        balance += amount;
       }
-    } catch (e) {
-      logger.error('Error processing transaction amount for balance calculation:', e, { tx });
     }
-  });
-  return netBalance.toString();
+  }
+  return balance.toString();
 }
 
 export async function GET(request: Request, { params }: { params: { address: string } }) {
@@ -67,9 +66,9 @@ export async function GET(request: Request, { params }: { params: { address: str
 
     // Return all balances as strings
     return NextResponse.json({
-      alphBalance: alphBalance,
-      acyumBalance: acyumBalance,
-      sweaBalance: sweaBalance,
+      alphBalance,
+      acyumBalance,
+      sweaBalance,
     });
 
   } catch (error) {

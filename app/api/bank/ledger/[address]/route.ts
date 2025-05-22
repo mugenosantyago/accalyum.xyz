@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import BankTransaction, { IBankTransaction } from '@/models/BankTransaction'; // Import model and interface
+import mongoose, { Types } from 'mongoose';
 import { logger } from '@/lib/logger';
-import type { Types } from 'mongoose'; // Import Types for ObjectId
-import mongoose from 'mongoose';
+import BankTransaction, { IBankTransaction } from '@/models/BankTransaction'; // Import model and interface
 
 // Define the shape of the ledger entry returned by the API
 interface LedgerEntry {

@@ -11,11 +11,18 @@ const uri = process.env.MONGODB_URI || config.database.mongoUri
 const dbName = process.env.MONGODB_DB || config.database.mongoDb
 
 if (!uri) {
-  throw new Error("Please add your MongoDB URI to .env.local")
+  logger.error("MongoDB URI is not configured. Please add MONGODB_URI to your environment variables.")
+  throw new Error("MongoDB URI is not configured")
 }
 
 // Create a new MongoClient
-const client = new MongoClient(uri)
+const client = new MongoClient(uri, {
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  connectTimeoutMS: 10000,
+  maxPoolSize: 10,
+})
+
 let clientPromise: Promise<MongoClient>
 
 if (process.env.NODE_ENV === "development") {
@@ -37,8 +44,13 @@ if (process.env.NODE_ENV === "development") {
 export default clientPromise
 
 export async function getDb() {
-  const client = await clientPromise
-  return client.db(dbName)
+  try {
+    const client = await clientPromise
+    return client.db(dbName)
+  } catch (error) {
+    logger.error("Error getting database instance:", error)
+    throw error
+  }
 }
 
 // Enhanced connectToDatabase function with better error handling
@@ -46,34 +58,36 @@ export async function connectToDatabase() {
   try {
     // Check if already connected
     if (mongoose.connection.readyState === 1) {
-      logger.info('MongoDB already connected');
-      return { client: await clientPromise, db: mongoose.connection.db };
+      logger.info('MongoDB already connected')
+      return { client: await clientPromise, db: mongoose.connection.db }
     }
 
     // Configure mongoose
-    mongoose.set('strictQuery', true);
+    mongoose.set('strictQuery', true)
     
     // Connect to MongoDB
-    logger.info('Connecting to MongoDB...');
+    logger.info('Connecting to MongoDB...')
     await mongoose.connect(uri, {
       dbName,
-      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
-    });
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
+      maxPoolSize: 10,
+    })
 
     // Verify models are registered
-    const registeredModels = Object.keys(mongoose.models);
-    logger.info(`Registered models after connection: ${registeredModels.join(', ')}`);
+    const registeredModels = Object.keys(mongoose.models)
+    logger.info(`Registered models after connection: ${registeredModels.join(', ')}`)
 
     if (!mongoose.models.BankTransaction) {
-      logger.error('BankTransaction model not registered after connection');
-      throw new Error('BankTransaction model not registered');
+      logger.error('BankTransaction model not registered after connection')
+      throw new Error('BankTransaction model not registered')
     }
 
-    logger.info('MongoDB connected successfully');
-    return { client: await clientPromise, db: mongoose.connection.db };
+    logger.info('MongoDB connected successfully')
+    return { client: await clientPromise, db: mongoose.connection.db }
   } catch (error) {
-    logger.error('MongoDB connection error:', error);
+    logger.error('MongoDB connection error:', error)
     
     // Log detailed error information
     if (error instanceof Error) {
@@ -81,7 +95,7 @@ export async function connectToDatabase() {
         message: error.message,
         stack: error.stack,
         name: error.name
-      });
+      })
     }
 
     // Check for specific error types
@@ -89,10 +103,10 @@ export async function connectToDatabase() {
       logger.error('Mongoose error:', {
         name: error.name,
         message: error.message
-      });
+      })
     }
 
-    throw error; // Re-throw the error to be handled by the caller
+    throw error // Re-throw the error to be handled by the caller
   }
 }
 
