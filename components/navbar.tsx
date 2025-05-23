@@ -44,8 +44,8 @@ export function Navbar() {
           <Link href="/mutual-funding" className="text-gray-300 hover:text-[#FF6B35]">
             {t("mutualFunding")}
           </Link>
-          <Link href="/tokens" className="text-gray-300 hover:text-[#FF6B35]">
-            {t("tokens")}
+          <Link href="/bank" className="text-gray-300 hover:text-[#FF6B35]">
+            Bank
           </Link>
           <Link href="/transactions" className="text-gray-300 hover:text-[#FF6B35]">
             {t("transactions")}
@@ -114,8 +114,8 @@ export function Navbar() {
             <Link href="/mutual-funding" className="text-gray-300 hover:text-[#FF6B35] py-2">
               {t("mutualFunding")}
             </Link>
-            <Link href="/tokens" className="text-gray-300 hover:text-[#FF6B35] py-2">
-              {t("tokens")}
+            <Link href="/bank" className="text-gray-300 hover:text-[#FF6B35] py-2">
+              Bank
             </Link>
             <Link href="/transactions" className="text-gray-300 hover:text-[#FF6B35] py-2">
               {t("transactions")}

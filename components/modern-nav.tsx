@@ -7,16 +7,19 @@ import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Home,
+  UserPlus,
+  Wallet,
+  Coins,
+  History,
+  HeartHandshake,
+  Globe,
+  Scale,
+  PiggyBank,
   BadgeIcon as IdCard,
   Landmark,
   BarChart3,
-  HeartHandshake,
-  Coins,
-  History,
   Menu,
   X,
-  Globe,
-  Scale,
 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
@@ -44,7 +47,7 @@ export function ModernNav() {
     { href: "/acyum-swap", icon: <BarChart3 size={20} />, label: t("tradeTokens") },
     { href: "/swea", icon: <Scale size={20} />, label: "sWEA" },
     { href: "/mutual-funding", icon: <HeartHandshake size={20} />, label: t("mutualFunding") },
-    { href: "/tokens", icon: <Coins size={20} />, label: t("tokens") },
+    { href: "/bank", icon: <PiggyBank size={20} />, label: t("acyumBank") },
     { href: "/transactions", icon: <History size={20} />, label: t("transactions") },
   ]
 

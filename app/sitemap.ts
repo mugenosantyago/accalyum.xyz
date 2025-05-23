@@ -10,7 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/acyum-bank",
     "/acyum-swap",
     "/mutual-funding",
-    "/tokens",
+    "/bank",
     "/transactions",
     "/register",
   ]

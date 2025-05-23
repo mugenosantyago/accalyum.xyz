@@ -52,7 +52,7 @@ export function GlobalStructuredData() {
         "@type": "ListItem",
         position: 6,
         name: "Tokens",
-        item: `${baseUrl}/tokens`,
+        item: `${baseUrl}/bank`,
       },
       {
         "@type": "ListItem",
