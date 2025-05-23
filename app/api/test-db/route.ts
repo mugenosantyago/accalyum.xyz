@@ -6,9 +6,6 @@ export async function GET() {
   try {
     logger.info('Testing MongoDB connection...')
     
-    // Check current connection state
-    logger.info(`Current MongoDB connection state: ${mongoose.connection.readyState}`)
-    
     // Attempt to connect
     const { db } = await connectToDatabase()
     
@@ -24,7 +21,6 @@ export async function GET() {
     return NextResponse.json({
       status: 'success',
       message: 'MongoDB connection successful',
-      connectionState: mongoose.connection.readyState,
       dbName: db.databaseName,
       timestamp: new Date().toISOString()
     })
@@ -34,7 +30,6 @@ export async function GET() {
     return NextResponse.json({
       status: 'error',
       message: error instanceof Error ? error.message : 'Unknown error',
-      connectionState: mongoose.connection.readyState,
       timestamp: new Date().toISOString()
     }, { status: 500 })
   }
