@@ -48,18 +48,30 @@ export async function GET(request: Request, { params }: { params: { address: str
     .sort({ timestamp: -1 }) // Sort by timestamp descending
     .lean(); // Use lean for plain JS objects
 
+    if (!transactions) {
+      logger.warn(`API: No transactions found for address: ${address}`);
+      return NextResponse.json({ ledger: [] });
+    }
+
     logger.info(`API: Found ${transactions.length} transactions for ${address}`);
     logger.debug(`Raw transactions fetched for ${address}:`, transactions);
 
     // Map to the LedgerEntry format, casting _id
-    const ledger: LedgerEntry[] = transactions.map(tx => ({
-        id: (tx._id as Types.ObjectId).toString(), // Cast _id before calling toString
-        type: tx.type,
-        token: tx.token,
-        amount: tx.amount,
-        txId: tx.txId,
-        timestamp: tx.timestamp,
-    }));
+    const ledger: LedgerEntry[] = transactions.map(tx => {
+      try {
+        return {
+          id: (tx._id as Types.ObjectId).toString(), // Cast _id before calling toString
+          type: tx.type,
+          token: tx.token,
+          amount: tx.amount,
+          txId: tx.txId,
+          timestamp: tx.timestamp,
+        };
+      } catch (error) {
+        logger.error(`Error processing transaction ${tx._id}:`, error);
+        throw new Error(`Failed to process transaction ${tx._id}`);
+      }
+    });
 
     logger.info(`API: Successfully processed ${ledger.length} ledger entries for ${address}`);
 

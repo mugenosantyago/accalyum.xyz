@@ -1,7 +1,7 @@
 import { MongoClient } from "mongodb"
 import { config } from "./config"
 import { logger } from "./logger"
-import mongoose from "mongoose"
+import mongoose, { ConnectionStates } from "mongoose"
 
 // Import models to ensure they are registered
 import '@/models/BankTransaction'
@@ -15,12 +15,16 @@ if (!uri) {
   throw new Error("MongoDB URI is not configured")
 }
 
-// Create a new MongoClient
+// Create a new MongoClient with enhanced options
 const client = new MongoClient(uri, {
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
   connectTimeoutMS: 10000,
   maxPoolSize: 10,
+  retryWrites: true,
+  retryReads: true,
+  w: 'majority',
+  wtimeoutMS: 2500,
 })
 
 let clientPromise: Promise<MongoClient>
@@ -53,19 +57,19 @@ export async function getDb() {
   }
 }
 
-// Enhanced connectToDatabase function with better error handling
+// Enhanced connectToDatabase function with better error handling and connection verification
 export async function connectToDatabase() {
   try {
     // Check if already connected
-    if (mongoose.connection.readyState === 1) {
+    if (mongoose.connection.readyState === ConnectionStates.connected) {
       logger.info('MongoDB already connected')
       return { client: await clientPromise, db: mongoose.connection.db }
     }
 
-    // Configure mongoose
+    // Configure mongoose with enhanced options
     mongoose.set('strictQuery', true)
     
-    // Connect to MongoDB
+    // Connect to MongoDB with enhanced options
     logger.info('Connecting to MongoDB...')
     await mongoose.connect(uri, {
       dbName,
@@ -73,7 +77,16 @@ export async function connectToDatabase() {
       socketTimeoutMS: 45000,
       connectTimeoutMS: 10000,
       maxPoolSize: 10,
+      retryWrites: true,
+      retryReads: true,
+      w: 'majority',
+      wtimeoutMS: 2500,
     })
+
+    // Verify connection is successful
+    if (mongoose.connection.readyState !== ConnectionStates.connected) {
+      throw new Error('MongoDB connection failed to establish')
+    }
 
     // Verify models are registered
     const registeredModels = Object.keys(mongoose.models)
@@ -82,6 +95,19 @@ export async function connectToDatabase() {
     if (!mongoose.models.BankTransaction) {
       logger.error('BankTransaction model not registered after connection')
       throw new Error('BankTransaction model not registered')
+    }
+
+    // Test the connection with a simple operation
+    if (!mongoose.connection.db) {
+      throw new Error('MongoDB database instance not available')
+    }
+
+    try {
+      await mongoose.connection.db.admin().ping()
+      logger.info('MongoDB connection verified with ping')
+    } catch (pingError) {
+      logger.error('MongoDB ping failed:', pingError)
+      throw new Error('MongoDB connection verification failed')
     }
 
     logger.info('MongoDB connected successfully')
@@ -106,7 +132,8 @@ export async function connectToDatabase() {
       })
     }
 
-    throw error // Re-throw the error to be handled by the caller
+    // Ensure we're throwing a proper error that can be caught by the API route
+    throw new Error(`MongoDB connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 

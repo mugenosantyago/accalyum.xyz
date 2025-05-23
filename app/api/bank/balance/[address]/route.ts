@@ -6,20 +6,25 @@ import BankTransaction from '@/models/BankTransaction';
 
 // Helper function to calculate net balance
 function calculateNetBalance(transactions: any[], token: string): string {
-  let balance = 0n;
-  for (const tx of transactions) {
-    if (tx.token === token) {
-      const amount = BigInt(tx.amount);
-      if (tx.type === 'deposit') {
-        balance += amount;
-      } else if (tx.type === 'withdraw') {
-        balance -= amount;
-      } else if (tx.type === 'interest_payout') {
-        balance += amount;
+  try {
+    let balance = 0n;
+    for (const tx of transactions) {
+      if (tx.token === token) {
+        const amount = BigInt(tx.amount);
+        if (tx.type === 'deposit') {
+          balance += amount;
+        } else if (tx.type === 'withdraw') {
+          balance -= amount;
+        } else if (tx.type === 'interest_payout') {
+          balance += amount;
+        }
       }
     }
+    return balance.toString();
+  } catch (error) {
+    logger.error(`Error calculating balance for token ${token}:`, error);
+    throw new Error(`Failed to calculate balance for token ${token}`);
   }
-  return balance.toString();
 }
 
 export async function GET(request: Request, { params }: { params: { address: string } }) {
@@ -53,6 +58,15 @@ export async function GET(request: Request, { params }: { params: { address: str
       { address: address, token: { $in: ['ALPH', 'ACYUM', 'sWEA'] } },
       { token: 1, type: 1, amount: 1, _id: 0 }
     ).lean();
+
+    if (!userTransactions) {
+      logger.warn(`API: No transactions found for address: ${address}`);
+      return NextResponse.json({
+        alphBalance: '0',
+        acyumBalance: '0',
+        sweaBalance: '0'
+      });
+    }
 
     logger.info(`API: Found ${userTransactions.length} transactions for ${address}`);
     logger.debug(`Raw transactions fetched for ${address}:`, userTransactions);
