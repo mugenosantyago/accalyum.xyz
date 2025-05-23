@@ -41,7 +41,12 @@ export async function GET(request: Request, { params }: { params: { address: str
     // Check MongoDB connection state
     if (mongoose.connection.readyState !== 1) {
       logger.info('API: MongoDB not connected, attempting to connect...');
-      await connectToDatabase();
+      const { db } = await connectToDatabase();
+      
+      if (!db) {
+        throw new Error('Database connection failed - no database instance returned');
+      }
+      
       logger.info('API: MongoDB connection established');
     }
 

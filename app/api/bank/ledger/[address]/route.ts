@@ -28,7 +28,12 @@ export async function GET(request: Request, { params }: { params: { address: str
     // Check MongoDB connection state
     if (mongoose.connection.readyState !== 1) {
       logger.info('API: MongoDB not connected, attempting to connect...');
-      await connectToDatabase();
+      const { db } = await connectToDatabase();
+      
+      if (!db) {
+        throw new Error('Database connection failed - no database instance returned');
+      }
+      
       logger.info('API: MongoDB connection established');
     }
 
@@ -59,6 +64,10 @@ export async function GET(request: Request, { params }: { params: { address: str
     // Map to the LedgerEntry format, casting _id
     const ledger: LedgerEntry[] = transactions.map(tx => {
       try {
+        if (!tx._id) {
+          throw new Error('Transaction missing _id');
+        }
+        
         return {
           id: (tx._id as Types.ObjectId).toString(), // Cast _id before calling toString
           type: tx.type,
