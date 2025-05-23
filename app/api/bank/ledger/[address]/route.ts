@@ -25,22 +25,30 @@ export async function GET(request: Request, { params }: { params: { address: str
   logger.info(`API: Fetching bank transaction ledger for address: ${address}`);
 
   try {
-    // Check MongoDB connection state
-    if (mongoose.connection.readyState !== 1) {
-      logger.info('API: MongoDB not connected, attempting to connect...');
-      const { db } = await connectToDatabase();
-      
-      if (!db) {
-        throw new Error('Database connection failed - no database instance returned');
+    // Enhanced connection check with more detailed logging
+    const connectionState = mongoose.connection.readyState;
+    logger.info(`MongoDB Connection State: ${connectionState}`);
+
+    if (connectionState !== 1) {
+      logger.warn('API: MongoDB not connected, attempting to reconnect...');
+      try {
+        await connectToDatabase();
+      } catch (connectionError) {
+        logger.error('API: Failed to reconnect to MongoDB:', connectionError);
+        return NextResponse.json({ 
+          error: 'Database Connection Failed', 
+          details: connectionError instanceof Error ? connectionError.message : 'Unknown connection error'
+        }, { status: 500 });
       }
-      
-      logger.info('API: MongoDB connection established');
     }
 
     // Verify the BankTransaction model is registered
     if (!mongoose.models.BankTransaction) {
       logger.error('API: BankTransaction model not registered');
-      throw new Error('Database model not properly initialized');
+      return NextResponse.json({ 
+        error: 'Database Model Error', 
+        details: 'BankTransaction model not initialized' 
+      }, { status: 500 });
     }
 
     logger.info('API: Executing bank ledger query...');
@@ -51,15 +59,18 @@ export async function GET(request: Request, { params }: { params: { address: str
       { _id: 1, type: 1, token: 1, amount: 1, txId: 1, timestamp: 1 } // Select necessary fields including _id
     )
     .sort({ timestamp: -1 }) // Sort by timestamp descending
-    .lean(); // Use lean for plain JS objects
+    .lean()
+    .catch((queryError) => {
+      logger.error('API: Error executing transaction query:', queryError);
+      throw queryError;
+    });
 
-    if (!transactions) {
+    if (!transactions || transactions.length === 0) {
       logger.warn(`API: No transactions found for address: ${address}`);
       return NextResponse.json({ ledger: [] });
     }
 
     logger.info(`API: Found ${transactions.length} transactions for ${address}`);
-    logger.debug(`Raw transactions fetched for ${address}:`, transactions);
 
     // Map to the LedgerEntry format, casting _id
     const ledger: LedgerEntry[] = transactions.map(tx => {
@@ -89,29 +100,22 @@ export async function GET(request: Request, { params }: { params: { address: str
   } catch (error) {
     logger.error(`API Error fetching bank ledger for ${address}:`, error);
     
-    // Log detailed error information
-    if (error instanceof Error) {
-      logger.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-    }
+    // Comprehensive error logging
+    const errorDetails = {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'UnknownError',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    };
 
-    // Check for specific error types
-    if (error instanceof mongoose.Error) {
-      logger.error('Mongoose error:', {
-        name: error.name,
-        message: error.message
-      });
-    }
+    logger.error('Detailed Error:', errorDetails);
 
     // Return a more detailed error response
     return NextResponse.json({ 
       error: 'Internal Server Error',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      type: error instanceof Error ? error.name : 'Unknown',
-      timestamp: new Date().toISOString()
+      details: errorDetails.message,
+      type: errorDetails.name,
+      timestamp: errorDetails.timestamp
     }, { status: 500 });
   }
 } 
