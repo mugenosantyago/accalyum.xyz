@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/db'
-import mongoose from 'mongoose'
 import { logger } from '@/lib/logger'
 
 export async function GET() {
@@ -26,7 +25,8 @@ export async function GET() {
       status: 'success',
       message: 'MongoDB connection successful',
       connectionState: mongoose.connection.readyState,
-      dbName: db.databaseName
+      dbName: db.databaseName,
+      timestamp: new Date().toISOString()
     })
   } catch (error) {
     logger.error('MongoDB connection test failed:', error)
@@ -34,7 +34,8 @@ export async function GET() {
     return NextResponse.json({
       status: 'error',
       message: error instanceof Error ? error.message : 'Unknown error',
-      connectionState: mongoose.connection.readyState
+      connectionState: mongoose.connection.readyState,
+      timestamp: new Date().toISOString()
     }, { status: 500 })
   }
 } 
