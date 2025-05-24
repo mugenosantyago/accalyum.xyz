@@ -4,13 +4,14 @@ import mongoose, { Schema, Model, models, Types } from 'mongoose';
 export interface IBankTransaction {
   _id?: Types.ObjectId;
   address: string; // User's Alephium address
-  type: 'deposit' | 'withdraw' | 'interest_payout';
+  type: 'deposit' | 'withdraw' | 'interest_payout' | 'donation';
   token: 'ALPH' | 'ACYUM' | 'sWEA';
   // Store amount as string to handle large numbers accurately
   // This will represent the amount in the smallest unit (attoALPH or ACYUM smallest unit)
   amount: string;
   txId: string; // Transaction ID from Alephium
   timestamp: Date; // Timestamp of when the record was created
+  initiative?: string; // Optional initiative field for donations
 }
 
 // Mongoose Schema definition
@@ -23,7 +24,7 @@ const BankTransactionSchema: Schema<IBankTransaction> = new Schema({
   type: { 
     type: String, 
     required: true, 
-    enum: ['deposit', 'withdraw', 'interest_payout'],
+    enum: ['deposit', 'withdraw', 'interest_payout', 'donation'],
     index: true 
   },
   token: { 
@@ -51,6 +52,10 @@ const BankTransactionSchema: Schema<IBankTransaction> = new Schema({
     type: Date, 
     default: Date.now,
     index: true 
+  },
+  initiative: {
+    type: String,
+    required: false
   }
 }, {
   timestamps: true // Adds createdAt and updatedAt fields

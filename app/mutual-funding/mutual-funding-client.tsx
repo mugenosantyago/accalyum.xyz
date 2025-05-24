@@ -200,6 +200,10 @@ export default function MutualFundingClient() {
       // Refresh balances after successful donation
       fetchTreasuryBalances(initiatives)
 
+      // --- Add recording of the donation transaction ---
+      await recordTransaction('donation', 'ALPH', amountAttoAlph, result.txId, initiative.id);
+      // --- End recording --- 
+
     } catch (error) {
       logger.error("Donation error:", error)
       toast({ title: "Donation failed", description: "There was an error processing your donation. Please try again.", variant: "destructive" })
@@ -207,6 +211,40 @@ export default function MutualFundingClient() {
       setIsProcessing(false)
     }
   }
+
+  // --- Add a helper function to record transactions --- 
+  const recordTransaction = async (type: 'deposit' | 'withdraw' | 'donation', token: 'ALPH' | 'ACYUM' | 'sWEA', amountInSmallestUnit: bigint, txId: string, initiativeId?: string) => {
+    if (!address) return;
+    logger.info(`Recording ${type} transaction: ${amountInSmallestUnit} ${token} for ${address}, TxID: ${txId}`);
+    try {
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          from: address, 
+          to: (initiativeId 
+                ? (initiatives.find(i => i.id === initiativeId)?.treasuryAddress || 'unknown')
+                : 'unknown') as string, // Explicitly cast to string to satisfy linter
+          amount: amountInSmallestUnit.toString(), 
+          type, 
+          txId, 
+          initiative: initiativeId // Include initiative ID if it's a donation
+        }), 
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({})); // Gracefully handle if JSON parsing fails
+        logger.error("Failed to record transaction via API:", response.status, errorData);
+        // Optionally show a toast error here for the user
+      } else {
+        logger.info("Transaction recorded successfully via API.");
+        // Optionally refresh transaction list on transactions page if user is on that page
+      }
+    } catch (error) {
+      logger.error("Failed to make API call to record transaction:", error);
+      // Optionally show a toast error here for the user
+    }
+  };
+  // --- End helper function ---
 
   // JSX Structure
   return (
