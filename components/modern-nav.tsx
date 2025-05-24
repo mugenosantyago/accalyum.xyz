@@ -47,7 +47,6 @@ export function ModernNav() {
     { href: "/acyum-swap", icon: <BarChart3 size={20} />, label: t("tradeTokens") },
     { href: "/swea", icon: <Scale size={20} />, label: "sWEA" },
     { href: "/mutual-funding", icon: <HeartHandshake size={20} />, label: t("mutualFunding") },
-    { href: "/bank", icon: <PiggyBank size={20} />, label: t("acyumBank") },
     { href: "/transactions", icon: <History size={20} />, label: t("transactions") },
   ]
 
