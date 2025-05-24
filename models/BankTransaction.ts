@@ -45,8 +45,7 @@ const BankTransactionSchema: Schema<IBankTransaction> = new Schema({
   txId: { 
     type: String, 
     required: true, 
-    unique: true,
-    index: true 
+    unique: true
   },
   timestamp: { 
     type: Date, 
@@ -60,7 +59,6 @@ const BankTransactionSchema: Schema<IBankTransaction> = new Schema({
 // Create compound indexes for common queries
 BankTransactionSchema.index({ address: 1, token: 1 });
 BankTransactionSchema.index({ address: 1, timestamp: -1 });
-BankTransactionSchema.index({ txId: 1 }, { unique: true });
 
 // Create and export the Mongoose model
 // Check if the model already exists to prevent recompilation issues in Next.js dev mode
