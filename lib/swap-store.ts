@@ -11,10 +11,20 @@ export type SwapRequestData = Omit<ISwapRequest, '_id' | '__v' | 'timestamp' > &
   timestamp?: Date;
 };
 
-type SwapRequestInputData = Omit<SwapRequestData, '_id' | 'status' | 'timestamp' > & {
-    status?: 'PENDING_DEPOSIT' | 'PROCESSING' | 'COMPLETE' | 'FAILED'; // Make status optional for creation
-    timestamp?: Date; // Make timestamp optional
-};
+// Modified SwapRequestInputData to explicitly list expected fields for creation
+// This avoids inheriting Mongoose Document methods from ISwapRequest via SwapRequestData
+export interface SwapRequestInputData {
+    userAddress: string;
+    targetToken: 'ACYUM' | 'sWEA';
+    amountAlph: number;
+    depositAmountAttos?: string; // Optional for creation
+    amountTargetToken?: string; // Optional for creation
+    status?: 'PENDING_DEPOSIT' | 'PROCESSING' | 'COMPLETE' | 'FAILED'; // Optional for creation
+    timestamp?: Date; // Optional for creation
+    depositTxId?: string; // Optional for creation
+    faucetTxId?: string; // Optional for creation
+    failureReason?: string; // Optional for creation
+}
 
 export const SwapRequestStore = {
   async createRequest(requestInput: SwapRequestInputData): Promise<string> {

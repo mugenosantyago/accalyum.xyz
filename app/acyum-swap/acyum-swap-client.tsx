@@ -244,40 +244,85 @@ export default function AcyumSwapClient() {
       setFaucetSwapState(prev => ({ ...prev, status: 'IDLE', failureReason: null }));
       logger.info(`Initiating faucet swap: ${amountNum} ALPH for ${targetFaucetToken} by ${address}`);
       try {
+        // --- Initiate the on-chain transfer to the Deposit Contract ---
+        const depositContractAddress = config.alephium.depositContractAddress;
+        if (!depositContractAddress) {
+           toast({ title: "Configuration Error", description: "Deposit contract address is not configured.", variant: "destructive" });
+           setIsFaucetSwapProcessing(false);
+           return;
+        }
+
+        const amountAttoAlph = BigInt(Math.floor(amountNum * (10 ** 18))); // Convert ALPH to attoALPH
+
+        logger.info(`Submitting ALPH transfer transaction to Deposit Contract ${depositContractAddress} for swap.`);
+
+        const txResult = await signer.signAndSubmitTransferTx({
+           signerAddress: address,
+           destinations: [{
+             address: depositContractAddress,
+             attoAlphAmount: amountAttoAlph
+           }]
+        });
+
+        logger.info(`ALPH transfer transaction submitted. Tx ID: ${txResult.txId}`);
+
+        // --- Now, inform the backend about the initiated swap and include the transaction ID ---
+        // This allows the backend to link the on-chain deposit to this swap request.
         const response = await fetch('/api/swap/initiate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                amountAlph: amountNum,
+                amountAlph: amountNum, // Still send the requested amount
                 targetToken: targetFaucetToken,
                 userAddress: address,
+                depositTxId: txResult.txId, // Include the transaction ID
             }),
         });
+
         const result = await response.json();
+
         if (!response.ok) {
-            logger.error('Failed to initiate swap API call:', result);
-            throw new Error(result.message || `API Error: ${response.status}`);
+            logger.error('Failed to record swap initiation on backend:', result);
+            // Even if backend recording fails, the ALPH transfer is submitted.
+            // Decide how to handle this - perhaps show a warning?
+            toast({ title: "Swap Initiated (Backend Sync Warning)", description: `Your ALPH transfer Tx ${txResult.txId} was submitted, but there was an issue recording the swap on the backend. The swap might still process, but status tracking may be affected.`, variant: "default", duration: 10000 });
+            // Don't throw here, as the primary on-chain action succeeded.
+             // Set a basic pending state, but acknowledge the backend issue.
+            setFaucetSwapState({
+                swapId: null, // We don't have a backend swapId if recording failed
+                depositAddress: depositContractAddress, // Still show deposit address info
+                expectedAmountAlph: amountNum,
+                status: 'PENDING_DEPOSIT', // Indicate waiting for backend processing
+                depositTxId: txResult.txId,
+                faucetTxId: undefined,
+                amountTargetToken: null,
+                failureReason: "Backend recording failed. Swap status may not update.",
+                lastChecked: Date.now()
+            });
+             // We cannot poll without a backend swapId.
+             setIsFaucetSwapProcessing(false);
+             return; // Exit after handling the backend error
         }
-        logger.info('Swap initiation successful:', result);
-        toast({ title: "Swap Initiated", description: "Please follow the deposit instructions." });
-        
-        console.log("API call successful. Setting state to PENDING_DEPOSIT with:", result);
-        
+
+        logger.info('Swap initiation successfully recorded on backend:', result);
+        toast({ title: "Swap Initiated", description: `Your ALPH transfer Tx ${txResult.txId} submitted. Processing swap...` });
+
+        // Set state and start polling as before, using the swapId from the backend response
         setFaucetSwapState({
             swapId: result.swapId,
-            depositAddress: result.depositAddress,
-            expectedAmountAlph: result.expectedAmountAlph,
-            status: 'PENDING_DEPOSIT',
-            depositTxId: undefined,
+            depositAddress: depositContractAddress, // Backend might return this, but we already have it
+            expectedAmountAlph: amountNum, // Backend might return this, but we already have it
+            status: 'PENDING_DEPOSIT', // Waiting for backend to detect Tx and process
+            depositTxId: txResult.txId,
             faucetTxId: undefined,
             amountTargetToken: null,
             failureReason: null,
             lastChecked: Date.now()
         });
-        
-        console.log("State potentially set. Starting polling...");
 
+        // Start polling for swap status using the backend-provided swapId
         handlePollStatus(result.swapId);
+
       } catch (error) {
         logger.error("Error initiating faucet swap:", error);
         const message = error instanceof Error ? error.message : "An unknown error occurred.";

@@ -8,6 +8,7 @@ const initiateSwapSchema = z.object({
   targetToken: z.enum(['ACYUM', 'sWEA']),
   amountAlph: z.number().positive("ALPH amount must be positive"),
   userAddress: z.string().min(1, "User address is required"),
+  depositTxId: z.string().optional(),
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -23,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: "Invalid request body", errors: validation.error.format() });
     }
 
-    const { targetToken, amountAlph, userAddress } = validation.data;
+    const { targetToken, amountAlph, userAddress, depositTxId } = validation.data;
     const { depositContractAddress } = config.alephium; // Access via config object
 
     if (!depositContractAddress) {
@@ -37,16 +38,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       targetToken,
       amountAlph,
       status: 'PENDING_DEPOSIT',
-      timestamp: Date.now(),
+      timestamp: new Date(Date.now()),
+      depositTxId: depositTxId
     });
 
-    logger.info(`Swap initiated: ${swapId}`, { userAddress, targetToken, amountAlph });
+    logger.info(`Swap initiated: ${swapId}`, { userAddress, targetToken, amountAlph, depositTxId });
 
     // Return deposit instructions
     return res.status(200).json({
       message: 'Swap initiated. Please deposit the ALPH amount.',
-      depositAddress: depositContractAddress,
-      expectedAmountAlph: amountAlph,
       swapId: swapId,
     });
 
