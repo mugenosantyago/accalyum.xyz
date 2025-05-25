@@ -243,12 +243,44 @@ async function handleDepositEvent(event: DepositTypes.DepositMadeEvent) {
 
     } catch (txError) {
         logger.error(`Faucet withdrawal failed for swap ${swapId}:`, txError);
-        // Update status to FAILED
+        // Update status to FAILED initially
         await SwapRequestStore.updateRequest(swapId, {
             status: 'FAILED',
             failureReason: `Faucet transaction failed: ${txError instanceof Error ? txError.message : txError}`,
             amountTargetToken: targetAmount.toString() // Still store calculated amount
         });
+
+        // --- Basic Refund Attempt ---
+        logger.info(`Attempting to refund ALPH for failed swap ${swapId} to user ${swapRequest.userAddress}`);
+        try {
+            // Send the original deposited amount back to the user
+            // Note: backendWallet is a PrivateKeyWallet which should implement SignerProvider
+            const refundResult = await backendWallet.signAndSubmitTransferTx({
+                signerAddress: backendWallet.address,
+                destinations: [{
+                    address: swapRequest.userAddress, // Send back to the user who made the deposit
+                    attoAlphAmount: depositedAttos // Refund the original deposited amount
+                }]
+            });
+            logger.info(`Refund transaction successful for swap ${swapId}: TxID=${refundResult.txId}`);
+            // Update status to REFUNDED upon successful refund
+            await SwapRequestStore.updateRequest(swapId, {
+                status: 'REFUNDED',
+                refundTxId: refundResult.txId,
+                // Optionally append refund success to failureReason
+                // failureReason: `${swapRequest.failureReason} - Refund successful.`
+            });
+            logger.info(`Swap request ${swapId} status updated to REFUNDED.`);
+        } catch (refundError) {
+            logger.error(`Refund transaction failed for swap ${swapId}:`, refundError);
+            // Update status to REFUND_FAILED if refund also fails
+            await SwapRequestStore.updateRequest(swapId, {
+                status: 'REFUND_FAILED',
+                failureReason: `${swapRequest.failureReason} - Refund failed: ${refundError instanceof Error ? refundError.message : refundError}`, // Append refund error
+            });
+            logger.error(`Swap request ${swapId} status updated to REFUND_FAILED.`);
+        }
+        // --- End Refund Attempt ---
     }
 }
 

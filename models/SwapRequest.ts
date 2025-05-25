@@ -7,11 +7,12 @@ export interface ISwapRequest extends Document {
   amountAlph: number; // Store the requested ALPH amount (human-readable)
   depositAmountAttos?: string; // Store the actual deposited amount in Attos (BigInt as string)
   amountTargetToken?: string; // Store calculated target amount in smallest unit (BigInt as string)
-  status: 'PENDING_DEPOSIT' | 'PROCESSING' | 'COMPLETE' | 'FAILED';
+  status: 'PENDING_DEPOSIT' | 'PROCESSING' | 'COMPLETE' | 'FAILED' | 'REFUNDED' | 'REFUND_FAILED';
   timestamp: Date;
   depositTxId?: string;
   faucetTxId?: string;
   failureReason?: string;
+  refundTxId?: string;
 }
 
 // Mongoose Schema definition
@@ -24,7 +25,7 @@ const SwapRequestSchema: Schema<ISwapRequest> = new Schema({
   status: {
     type: String,
     required: true,
-    enum: ['PENDING_DEPOSIT', 'PROCESSING', 'COMPLETE', 'FAILED'],
+    enum: ['PENDING_DEPOSIT', 'PROCESSING', 'COMPLETE', 'FAILED', 'REFUNDED', 'REFUND_FAILED'],
     default: 'PENDING_DEPOSIT',
     index: true, // Index status for faster querying of pending requests
   },
@@ -32,6 +33,7 @@ const SwapRequestSchema: Schema<ISwapRequest> = new Schema({
   depositTxId: { type: String, index: true }, // Index depositTxId if needed for lookups
   faucetTxId: { type: String },
   failureReason: { type: String },
+  refundTxId: { type: String },
 });
 
 // Create and export the Mongoose model

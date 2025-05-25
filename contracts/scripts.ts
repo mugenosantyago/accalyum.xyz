@@ -16,7 +16,13 @@ import WithdrawScriptJson from "../artifacts2/Withdraw.ral.json"
 //   amount: bigint
 // }>(Script.fromJson(WithdrawScriptJson, "", []), getContractByCodeHash)
 
-export const MakeDeposit = // Need to define/import MakeDeposit correctly
+// Correctly define and export the MakeDeposit executable script
+export const MakeDeposit = new ExecutableScript<{
+  depositContract: HexString
+  account: HexString
+  bank: HexString
+  attoAlphAmount: bigint
+}>(Script.fromJson(MakeDepositScriptJson, "", []), getContractByCodeHash)
 
 // Export the imported Withdraw instance
 export const Withdraw = WithdrawFromArtifacts2;
