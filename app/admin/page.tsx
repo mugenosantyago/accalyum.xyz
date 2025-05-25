@@ -55,6 +55,17 @@ import { useLanguage } from "@/components/language-provider"
 import type { Proposal } from "@/lib/types/proposal"
 import { Textarea } from "@/components/ui/textarea"
 
+// --- Imports from Bank Client ---
+import { MakeDeposit } from "@/contracts/scripts"
+import { Withdraw } from "@/artifacts2/ts/scripts"
+import { TokenFaucet } from "@/artifacts/ts"
+// --- End Imports ---
+
+// --- Constants from Bank Client ---
+const ONE_ALPH = 10n ** 18n;
+const DUST_AMOUNT = 10000n;
+// --- End Constants ---
+
 interface PendingApproval {
   _id: string
   address: string
@@ -132,6 +143,11 @@ export default function AdminPage() {
   const sweaBankAddress = config.treasury.sweaBank
   const sweaTokenId = config.alephium.sweaTokenIdHex
   const sweaDecimals = config.alephium.sweaDecimals
+
+  // --- Addresses from Config ---
+  const bankTreasuryAddress = config.treasury.communist;
+  const faucetContractAddress = config.alephium.acyumFaucetAddress;
+  // --- End Addresses ---
 
   const fetchData = useCallback(async () => {
     if (!address) return
@@ -282,67 +298,63 @@ export default function AdminPage() {
       return
     }
 
+    if (!signer) {
+       toast({ title: "Wallet Error", description: "Signer not available.", variant: "destructive" });
+       return;
+    }
+    if (!address) {
+       toast({ title: "Wallet Error", description: "Admin address not found.", variant: "destructive" });
+       return;
+    }
+     if (!bankTreasuryAddress) {
+       toast({ title: "Config Error", description: "Bank treasury address not configured.", variant: "destructive" });
+       return;
+    }
+
     setIsProcessing(true)
     try {
-      const result = await addFundsToTreasury(depositAmount)
-      if (result.success) {
-        toast({
-          title: "Success",
-          description: `Successfully added ${depositAmount} ALPH to the treasury`,
-          variant: "default",
-        })
-        setDepositAmount("")
-        await fetchTreasuryData()
-      } else {
-        throw new Error(result.error || "Failed to add funds")
-      }
-    } catch (error) {
-      console.error("Error adding funds to treasury:", error)
+      // Use the MakeDeposit script from the bank page
+      const amountInSmallestUnit = BigInt(Math.floor(Number.parseFloat(depositAmount) * Number(ONE_ALPH)));
+      
+      logger.info(`Client: Signing ALPH deposit of ${depositAmount} to ${bankTreasuryAddress}`);
+
+      const result = await MakeDeposit.execute(
+        signer,
+        {
+          attoAlphAmount: amountInSmallestUnit,
+          account: address,
+          bank: bankTreasuryAddress
+        }
+      );
+
+      logger.info(`Client: ALPH Deposit successful: Tx ID ${result.txId}`);
+
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add funds to treasury",
+        title: "Success",
+        description: `ALPH deposit submitted (Tx: ${result.txId})`,
+        variant: "default",
+      })
+      setDepositAmount("")
+      // Refresh balance after a delay to allow propagation
+      setTimeout(fetchTreasuryData, 5000);
+
+    } catch (error) {
+      logger.error("Error submitting ALPH deposit transaction:", error)
+      toast({
+        title: "Deposit Error",
+        description: error instanceof Error ? error.message : "Failed to submit ALPH deposit",
         variant: "destructive",
       })
     } finally {
       setIsProcessing(false)
     }
-  }, [depositAmount, address, toast, fetchTreasuryData]) // Added dependencies
+  }, [depositAmount, address, toast, fetchTreasuryData, signer, bankTreasuryAddress]) // Added dependencies
 
   const handleWithdrawFromTreasury = useCallback(async () => {
-    if (!withdrawAmount || Number.parseFloat(withdrawAmount) <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid amount to withdraw",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsProcessing(true)
-    try {
-      const result = await withdrawFromTreasury(withdrawAmount)
-      if (result.success) {
-        toast({
-          title: "Success",
-          description: `Successfully withdrew ${withdrawAmount} ALPH from the treasury`,
-          variant: "default",
-        })
-        setWithdrawAmount("")
-        await fetchTreasuryData()
-      } else {
-        throw new Error(result.error || "Failed to withdraw funds")
-      }
-    } catch (error) {
-      console.error("Error withdrawing from treasury:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to withdraw from treasury",
-        variant: "destructive",
-      })
-    } finally {
-      setIsProcessing(false)
-    }
-  }, [withdrawAmount, address, toast, fetchTreasuryData]) // Added dependencies
+    // This is still a placeholder as secure withdrawal from a basic address isn't feasible via UI
+    console.warn("Withdraw ALPH from treasury simulation running - NOT IMPLEMENTED SECURELY");
+    toast({ title: "Not Implemented", description: "Withdrawal from a basic address treasury requires private key access or a contract with a withdrawal function.", variant: "destructive" });
+  }, []) // No dependencies as it's a placeholder
 
   const handleAddFundsToFaucet = useCallback(async () => {
     if (!faucetAmount || Number.parseFloat(faucetAmount) <= 0) {
@@ -354,31 +366,68 @@ export default function AdminPage() {
       return
     }
 
+     if (!signer) {
+       toast({ title: "Wallet Error", description: "Signer not available.", variant: "destructive" });
+       return;
+    }
+    if (!address) {
+       toast({ title: "Wallet Error", description: "Admin address not found.", variant: "destructive" });
+       return;
+    }
+     if (!faucetContractAddress) {
+       toast({ title: "Config Error", description: "Faucet contract address not configured.", variant: "destructive" });
+       return;
+    }
+
     setIsProcessing(true)
     try {
-      const result = await addFundsToFaucet(faucetAmount)
-      if (result.success) {
-        toast({
-          title: "Success",
-          description: `Successfully added ${faucetAmount} ALPH to the token faucet`,
-          variant: "default",
-        })
-        setFaucetAmount("")
-        await fetchTreasuryData()
-      } else {
-        throw new Error(result.error || "Failed to add funds to faucet")
-      }
+      // Use the TokenFaucet contract interaction
+      const amountInSmallestUnit = BigInt(Math.floor(Number.parseFloat(faucetAmount) * Number(ONE_ALPH)));
+      
+      logger.info(`Client: Signing ALPH faucet funding of ${faucetAmount} to ${faucetContractAddress}`);
+
+       // Assuming TokenFaucet has a method like 'fund' or similar that accepts ALPH
+       // This might need adjustment based on the actual TokenFaucet contract ABI/methods.
+       // Placeholder: Replace with actual contract interaction if needed.
+       console.warn("Funding Faucet: Direct contract call needed. Using placeholder.");
+
+       // Example (requires actual contract method): 
+       // const result = await TokenFaucet.at(faucetContractAddress).methods.fund() 
+       //   .withTx( { attoAlphAmount: amountInSmallestUnit, signer: signer } ) 
+       //   .submit();
+       
+       // Using a simplified transfer for now, assuming faucet is a basic address
+       // If it's a contract, the above contract call pattern is better.
+        const result = await signer.signAndSubmitTransferTx({
+          signerAddress: address,
+          destinations: [{
+            address: faucetContractAddress,
+            attoAlphAmount: amountInSmallestUnit,
+          }]
+        });
+
+      logger.info(`Client: ALPH Faucet funding successful: Tx ID ${result.txId}`);
+
+      toast({
+        title: "Success",
+        description: `ALPH faucet funding submitted (Tx: ${result.txId})`,
+        variant: "default",
+      })
+      setFaucetAmount("")
+      // Refresh balance after a delay to allow propagation
+      setTimeout(fetchTreasuryData, 5000);
+
     } catch (error) {
-      console.error("Error adding funds to faucet:", error)
+      logger.error("Error submitting ALPH faucet funding transaction:", error)
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add funds to faucet",
+        description: error instanceof Error ? error.message : "Failed to submit ALPH faucet funding",
         variant: "destructive",
       })
     } finally {
       setIsProcessing(false)
     }
-  }, [faucetAmount, address, toast, fetchTreasuryData]) // Added dependencies
+  }, [faucetAmount, address, toast, fetchTreasuryData, signer, faucetContractAddress]) // Added dependencies
 
   const handleApprove = useCallback(async (id: string) => {
     setIsProcessing(true)
@@ -646,37 +695,12 @@ export default function AdminPage() {
   }, [sweaDepositAmount, sweaBankAddress, sweaTokenId, sweaDecimals, signer, address, toast, fetchSweaTreasuryData]) // Added dependencies
 
   const handleWithdrawSweaFromTreasury = useCallback(async () => {
-    // --- Keeping Placeholder Logic --- 
+    // --- Keeping Placeholder Logic ---
     // As discussed, secure withdrawal from a basic address via UI is not feasible without keys/contract.
     console.warn("withdrawSweaFromTreasury simulation running - NOT IMPLEMENTED SECURELY");
-    toast({ title: "Not Implemented", description: "Withdrawal from treasury requires a specific contract setup for security.", variant: "destructive" });
-    // --- End Placeholder --- 
+    toast({ title: "Not Implemented", description: "Withdrawal from treasury requires a specific contract setup for security or private key access.", variant: "destructive" });
+    // --- End Placeholder ---
 
-    // Original placeholder simulation (can be removed or kept for UI testing)
-    /*
-    if (!withdrawSweaAmount || Number.parseFloat(withdrawSweaAmount) <= 0) return toast({ title: "Invalid amount", variant: "destructive" })
-    if (!sweaBankAddress || !sweaTokenId) return toast({ title: "sWEA Config Error", description: "sWEA Bank address or Token ID not configured.", variant: "destructive" })
-    if (!signer) return toast({ title: "Wallet Error", description: "Signer not available.", variant: "destructive" })
-
-    setIsSweaProcessing(true)
-    try {
-       console.warn("withdrawSweaFromTreasury simulation running");
-       await new Promise(resolve => setTimeout(resolve, 1500)); 
-       const result = { success: true, txId: "simulated_tx_id_withdraw_swea" }; 
-       if (result.success) {
-        toast({ title: "Success (Simulated)", description: `sWEA withdrawal submitted (Tx: ${result.txId})`, variant: "default" })
-        setWithdrawSweaAmount("")
-        setTimeout(fetchSweaTreasuryData, 3000); 
-      } else {
-        throw new Error("Simulated failure or missing error message") 
-      }
-    } catch (error) {
-      console.error("Error withdrawing sWEA from treasury:", error)
-      toast({ title: "Error (Simulated)", description: error instanceof Error ? error.message : "Failed to withdraw sWEA from treasury", variant: "destructive" })
-    } finally {
-      setIsSweaProcessing(false)
-    }
-    */
   }, [withdrawSweaAmount, sweaBankAddress, sweaTokenId, signer, toast, fetchSweaTreasuryData]) // Dependencies kept for consistency if simulation is uncommented
 
   const handleCreateProposal = useCallback(async () => {
