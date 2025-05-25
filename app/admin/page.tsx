@@ -51,6 +51,9 @@ import {
 import { logger } from "@/lib/logger"
 import { AlephiumConnectButton } from "@alephium/web3-react"
 import { User } from "@/lib/types/user"
+import { useLanguage } from "@/components/language-provider"
+import type { Proposal } from "@/lib/types/proposal"
+import { Textarea } from "@/components/ui/textarea"
 
 interface PendingApproval {
   _id: string
@@ -117,6 +120,13 @@ export default function AdminPage() {
   const [isSweaTreasuryLoading, setIsSweaTreasuryLoading] = useState(false)
   const [isSweaProcessing, setIsSweaProcessing] = useState(false)
 
+  // State for Proposals
+  const [proposals, setProposals] = useState<Proposal[]>([])
+  const [isLoadingProposals, setIsLoadingProposals] = useState(false)
+  const [newProposal, setNewProposal] = useState({ title: "", content: "" })
+  const [isCreatingProposal, setIsCreatingProposal] = useState(false)
+  const [isUpdatingProposal, setIsUpdatingProposal] = useState(false)
+
   const isConnected = connectionStatus === 'connected' && !!account?.address
   const address = account?.address
   const sweaBankAddress = config.treasury.sweaBank
@@ -145,6 +155,16 @@ export default function AdminPage() {
       }
       const approvalsData = await approvalsResponse.json()
       setPendingApprovals(Array.isArray(approvalsData?.pendingApprovals) ? approvalsData.pendingApprovals : [])
+
+      // Fetch proposals
+      setIsLoadingProposals(true);
+      const proposalsResponse = await fetch("/api/admin/proposals", { headers });
+      if (!proposalsResponse.ok) {
+        throw new Error("Failed to fetch proposals");
+      }
+      const proposalsData = await proposalsResponse.json();
+      setProposals(Array.isArray(proposalsData?.proposals) ? proposalsData.proposals : []);
+
     } catch (error) {
       console.error("Error fetching data:", error)
       toast({
@@ -154,9 +174,10 @@ export default function AdminPage() {
       })
       setUsers([]);
       setPendingApprovals([]);
+      setProposals([]); // Clear proposals on error
     } finally {
-      // Keep isLoading false until all data (users, approvals, treasuries) is loaded in checkAdminStatus
-      // setIsLoading(false) // Removed from here
+      setIsLoading(false);
+      setIsLoadingProposals(false);
     }
   }, [address, toast])
 
@@ -215,14 +236,14 @@ export default function AdminPage() {
   }, [sweaBankAddress, sweaTokenId, toast])
 
   const checkAdminStatus = useCallback(async () => {
-    setIsLoading(true); // Start loading indication
+    setIsLoading(true); // Start loading indication for the whole page
     if (isConnected && address) {
       if (address === config.alephium.adminAddress) {
         setIsAdmin(true);
         // Fetch all admin-specific data in parallel
         try {
           await Promise.all([
-            fetchData(), 
+            fetchData(), // fetchData now includes proposals
             fetchTreasuryData(), 
             fetchSweaTreasuryData()
           ]);
@@ -232,6 +253,7 @@ export default function AdminPage() {
           // Ensure states are safe even if Promise.all has an issue not caught by individual fetches
           setUsers([]);
           setPendingApprovals([]);
+          setProposals([]);
           setTreasuryBalance("Error");
           setFaucetBalance("Error");
           setSweaTreasuryBalance("Error");
@@ -657,6 +679,118 @@ export default function AdminPage() {
     */
   }, [withdrawSweaAmount, sweaBankAddress, sweaTokenId, signer, toast, fetchSweaTreasuryData]) // Dependencies kept for consistency if simulation is uncommented
 
+  const handleCreateProposal = useCallback(async () => {
+    if (!newProposal.title || !newProposal.content) {
+      toast({
+        title: "Error",
+        description: "Title and Content are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!address) {
+      toast({
+        title: "Error",
+        description: "Admin wallet address not available.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingProposal(true);
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+        "x-wallet-address": address,
+      };
+
+      const response = await fetch("/api/admin/proposals", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(newProposal),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error("Error creating proposal:", result);
+        throw new Error(result.message || "Failed to create proposal");
+      }
+
+      toast({
+        title: "Success",
+        description: "Proposal created successfully.",
+        variant: "default",
+      });
+
+      setNewProposal({ title: "", content: "" });
+      fetchData();
+
+    } catch (error) {
+      console.error("Error creating proposal:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingProposal(false);
+    }
+  }, [newProposal, address, toast, fetchData]);
+
+  const handleUpdateProposalStatus = useCallback(async (id: string, status: 'draft' | 'live' | 'archived') => {
+    if (!address) {
+      toast({
+        title: "Error",
+        description: "Admin wallet address not available.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUpdatingProposal(true);
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+        "x-wallet-address": address,
+      };
+
+      // Note: We are sending the update to the base /api/admin/proposals route
+      // The backend will handle the update based on the ID in the body.
+      const response = await fetch("/api/admin/proposals", {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ id, status }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error(`Error updating proposal ${id} status to ${status}:`, result);
+        throw new Error(result.message || `Failed to update proposal status to ${status}`);
+      }
+
+      toast({
+        title: "Success",
+        description: `Proposal status updated to '${status}'.`,
+        variant: "default",
+      });
+
+      fetchData();
+
+    } catch (error) {
+      console.error(`Error updating proposal status to ${status}:`, error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingProposal(false);
+    }
+  }, [address, toast, fetchData]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -736,6 +870,7 @@ export default function AdminPage() {
               <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
               <TabsTrigger value="alph_treasury">ALPH Treasury</TabsTrigger>
               <TabsTrigger value="swea_treasury">sWEA Treasury</TabsTrigger>
+              <TabsTrigger value="proposals">Proposals</TabsTrigger>
             </TabsList>
 
             <TabsContent value="users">
@@ -1039,6 +1174,85 @@ export default function AdminPage() {
                       </Button>
                     </CardContent>
                   </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="proposals">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Proposals</CardTitle>
+                  <CardDescription>Manage site proposals.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingProposals ? (
+                    <div className="flex items-center justify-center h-40 text-gray-500">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading proposals...
+                    </div>
+                  ) : proposals.length === 0 ? (
+                    <p className="text-center py-8 text-gray-500">No proposals found.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Author</TableHead>
+                          <TableHead>Created At</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {proposals.map((proposal) => (
+                          <TableRow key={proposal._id}>
+                            <TableCell>{proposal.title}</TableCell>
+                            <TableCell>{proposal.status}</TableCell>
+                            <TableCell className="font-mono text-xs">{proposal.authorAddress}</TableCell>
+                            <TableCell>{new Date(proposal.createdAt!).toLocaleString()}</TableCell>
+                            <TableCell className="text-right space-x-2">
+                              {proposal.status === 'draft' && (
+                                <Button size="sm" onClick={() => handleUpdateProposalStatus(proposal._id!, 'live')} disabled={isUpdatingProposal}>Publish</Button>
+                              )}
+                              {proposal.status === 'live' && (
+                                <Button size="sm" variant="secondary" onClick={() => handleUpdateProposalStatus(proposal._id!, 'archived')} disabled={isUpdatingProposal}>Archive</Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+
+                  <div className="mb-8 space-y-4 p-4 border rounded-md bg-gray-850 border-gray-700">
+                    <h3 className="text-lg font-semibold mb-2">Create New Proposal</h3>
+                    <div className="space-y-2">
+                      <Label htmlFor="proposalTitle">Title</Label>
+                      <Input
+                        id="proposalTitle"
+                        value={newProposal.title}
+                        onChange={(e) => setNewProposal({ ...newProposal, title: e.target.value })}
+                        placeholder="Proposal Title"
+                        className="bg-gray-800 border-gray-700"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="proposalContent">Content</Label>
+                      <Textarea
+                        id="proposalContent"
+                        value={newProposal.content}
+                        onChange={(e) => setNewProposal({ ...newProposal, content: e.target.value })}
+                        placeholder="Proposal Content (Markdown supported)"
+                        className="bg-gray-800 border-gray-700 min-h-[150px]"
+                      />
+                    </div>
+                    <Button onClick={handleCreateProposal} disabled={isCreatingProposal || !address}>
+                      {isCreatingProposal ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
+                      Create Proposal
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

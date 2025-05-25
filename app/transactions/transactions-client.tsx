@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowDown, ArrowUp, Loader2 } from "lucide-react"
+import { ArrowDown, ArrowUp, Loader2, Heart, Coins } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
@@ -12,12 +12,14 @@ import { ConnectionSuccessModal } from "@/components/connection-success-modal"
 import { logger } from "@/lib/logger"
 
 interface Transaction {
-  id: string
-  type: "deposit" | "withdraw"
-  amount: string
-  token: string
-  timestamp: string
-  status: "completed" | "pending" | "failed"
+  _id: string;
+  address: string;
+  type: "deposit" | "withdraw" | "donation" | "interest_payout";
+  token: 'ALPH' | 'ACYUM' | 'sWEA';
+  amount: string;
+  txId: string;
+  initiative?: string;
+  timestamp: string;
 }
 
 // Renamed component
@@ -43,19 +45,17 @@ export default function TransactionsClient() {
       }
 
       try {
-        // Note: Actual API call would go here, fetching based on `address`
-        // Replace with actual API call:
         logger.info(`Fetching transactions for address: ${address}`); // Log actual attempt
-        // const response = await fetch(`/api/transactions?address=${encodeURIComponent(address)}`)
-        // if (!response.ok) {
-        //   throw new Error("Failed to fetch transactions")
-        // }
-        // const data = await response.json()
-        // setTransactions(data.transactions)
-
-        // Placeholder: Set empty array until real API is implemented
-        setTransactions([]); 
-        logger.warn("Transaction fetching not implemented yet. Displaying empty list.");
+        const response = await fetch(`/api/transactions?address=${encodeURIComponent(address)}`)
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to fetch transactions");
+        }
+        
+        const data = await response.json();
+        setTransactions(Array.isArray(data?.transactions) ? data.transactions : []);
+        logger.info(`Fetched ${data.transactions?.length || 0} transactions.`);
 
       } catch (error) {
         logger.error("Error fetching transactions:", error)
@@ -73,6 +73,21 @@ export default function TransactionsClient() {
     const date = new Date(dateString)
     return date.toLocaleString()
   }
+
+  const getTypeIcon = (type: Transaction['type']) => {
+    switch (type) {
+      case 'deposit':
+        return <ArrowDown className="mr-2 h-4 w-4 text-green-500" />;
+      case 'withdraw':
+        return <ArrowUp className="mr-2 h-4 w-4 text-blue-500" />;
+      case 'donation':
+        return <Heart className="mr-2 h-4 w-4 text-red-500" />;
+      case 'interest_payout':
+        return <Coins className="mr-2 h-4 w-4 text-yellow-500" />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <ClientLayoutWrapper>
@@ -114,38 +129,23 @@ export default function TransactionsClient() {
                       <TableHead>{t("amount")}</TableHead>
                       <TableHead>{t("token")}</TableHead>
                       <TableHead>{t("date")}</TableHead>
-                      <TableHead>{t("status")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {transactions.map((tx) => (
-                      <TableRow key={tx.id}>
+                      <TableRow key={tx._id}>
                         <TableCell>
                           <div className="flex items-center">
-                            {tx.type === "deposit" ? (
-                              <ArrowDown className="mr-2 h-4 w-4 text-green-500" />
-                            ) : (
-                              <ArrowUp className="mr-2 h-4 w-4 text-blue-500" />
-                            )}
+                            {getTypeIcon(tx.type)}
                             {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}
+                            {tx.type === 'donation' && tx.initiative && (
+                              <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">({tx.initiative})</span>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>{tx.amount}</TableCell>
                         <TableCell>{tx.token}</TableCell>
                         <TableCell>{formatDate(tx.timestamp)}</TableCell>
-                        <TableCell>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              tx.status === "completed"
-                                ? "bg-green-100 text-green-800"
-                                : tx.status === "pending"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
-                          </span>
-                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

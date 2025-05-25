@@ -18,6 +18,8 @@ import { Terminal } from "lucide-react"
 import { NodeProvider } from '@alephium/web3'
 import { useBalance } from '@/components/balance-provider'
 import { formatBalance } from '@/lib/utils'
+import type { Proposal } from '@/lib/types/proposal'
+import ReactMarkdown from 'react-markdown'
 
 // Helper function copied from other components
 function formatBigIntAmount(amount: bigint | undefined | null, decimals: number, displayDecimals: number = 4): string {
@@ -95,12 +97,12 @@ interface FaucetSwapState {
   swapId: string | null;
   depositAddress: string | null;
   expectedAmountAlph: number | null;
-  status: 'IDLE' | 'PENDING_DEPOSIT' | 'PROCESSING' | 'COMPLETE' | 'FAILED';
-  depositTxId?: string | undefined;
-  faucetTxId?: string | undefined;
-  amountTargetToken: string | null; // Will be sWEA amount
+  status: 'IDLE' | 'PENDING_INITIATE' | 'PENDING_DEPOSIT' | 'PROCESSING' | 'COMPLETE' | 'FAILED';
+  depositTxId?: string;
+  faucetTxId?: string;
+  amountTargetToken: string | null; // Stored as string from backend (BigInt)
   failureReason: string | null;
-  lastChecked: number;
+  lastChecked: number; // Timestamp of last status check
 }
 
 export default function SweaSwapClient() {
@@ -146,6 +148,11 @@ export default function SweaSwapClient() {
   const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
   // --- End Faucet Swap State ---
 
+  // State for Live Proposals
+  const [liveProposals, setLiveProposals] = useState<Proposal[]>([])
+  const [isLoadingLiveProposals, setIsLoadingLiveProposals] = useState(true)
+  const [liveProposalsError, setLiveProposalsError] = useState<string | null>(null)
+
   // --- Fetch User Token Balance (sWEA) ---
   useEffect(() => {
     const fetchSweaBalance = async () => {
@@ -186,6 +193,35 @@ export default function SweaSwapClient() {
     // Refetch if address or token ID changes (though token ID is constant here)
   }, [isConnected, address, sweaTokenId, providerUrl]); 
   // --- End Token Balance Fetch ---
+
+  // --- Fetch Live Proposals Effect ---
+  useEffect(() => {
+    const fetchLiveProposals = async () => {
+      setIsLoadingLiveProposals(true);
+      setLiveProposalsError(null);
+      try {
+        const response = await fetch('/api/proposals/live');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to fetch live proposals: ${response.statusText}`);
+        }
+        const data = await response.json();
+        setLiveProposals(Array.isArray(data?.proposals) ? data.proposals : []);
+        logger.info(`Fetched ${data.proposals?.length || 0} live proposals.`);
+      } catch (error) {
+        logger.error("Error fetching live proposals:", error);
+        const message = error instanceof Error ? error.message : "Could not load live proposals.";
+        setLiveProposalsError(message);
+        setLiveProposals([]);
+      } finally {
+        setIsLoadingLiveProposals(false);
+      }
+    };
+
+    fetchLiveProposals();
+  }, []); // Empty dependency array means this runs once on mount
+
+  // --- End Fetch Live Proposals Effect ---
 
   // --- Faucet Swap Logic (Adapted) ---
   const clearFaucetSwapState = useCallback(() => {
@@ -321,11 +357,34 @@ export default function SweaSwapClient() {
     <>
       <div className="min-h-screen flex flex-col">
         <main className="flex-grow container mx-auto py-12 px-4">
-          {/* Keep title relevant to sWEA or make generic */}
-          <h1 className="text-3xl font-bold mb-8 text-center">Swap ALPH for sWEA</h1> 
+          <h1 className="text-3xl font-bold mb-8 text-center">sWEA Swap</h1>
+
+          {/* Display Live Proposals */}
+          {isLoadingLiveProposals ? (
+            <div className="text-center text-gray-500 mb-8"><Loader2 className="mr-2 h-4 w-4 animate-spin inline-block" /> Loading proposals...</div>
+          ) : liveProposalsError ? (
+            <div className="text-red-500 text-center mb-8">Error loading proposals: {liveProposalsError}</div>
+          ) : liveProposals.length > 0 ? (
+            <div className="mb-8 space-y-6">
+              <h2 className="text-2xl font-semibold text-center">Latest Proposals</h2>
+              {liveProposals.map(proposal => (
+                <Card key={proposal._id} className="bg-gray-850 border-gray-700">
+                  <CardHeader>
+                    <CardTitle className="text-xl">{proposal.title}</CardTitle>
+                    {proposal.publishedAt && (
+                      <CardDescription className="text-sm text-gray-400">Published: {new Date(proposal.publishedAt).toLocaleString()}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent className="prose prose-invert max-w-none">{/* Use prose for markdown styling */}
+                     <ReactMarkdown>{proposal.content}</ReactMarkdown>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : null}
 
           <div className="max-w-md mx-auto space-y-6">
-            {/* Wallet Info Card - Display ALPH and sWEA */} 
+            {/* Wallet Info Card - Display ALPH and sWEA */}
             {isConnected && address && (
               <Card>
                 <CardHeader>
@@ -369,7 +428,7 @@ export default function SweaSwapClient() {
               </Card>
             )}
 
-            {/* Faucet Swap Card - Specific to sWEA */} 
+            {/* Faucet Swap Card - Specific to sWEA */}
             <Card>
               <CardHeader>
                 <CardTitle>Swap ALPH for sWEA</CardTitle>
@@ -399,7 +458,6 @@ export default function SweaSwapClient() {
                         className="bg-gray-800 border-gray-700 text-lg"
                       />
                     </div>
-                    {/* Removed RadioGroup for target token */}
                     <Button
                       type="submit"
                       className="w-full bg-blue-600 hover:bg-blue-700"
@@ -442,7 +500,7 @@ export default function SweaSwapClient() {
                     <Terminal className="h-4 w-4 text-green-500" />
                     <AlertTitle className="text-green-600">Swap Complete!</AlertTitle>
                     <AlertDescription className="space-y-2">
-                      <p>Successfully received {faucetSwapState.amountTargetToken ? `${formatBalance(faucetSwapState.amountTargetToken, SWEA_DECIMALS)} sWEA` : 'sWEA'}.</p>
+                      <p>Successfully received {faucetSwapState.amountTargetToken ? `${formatBigIntAmount(BigInt(faucetSwapState.amountTargetToken), SWEA_DECIMALS)} sWEA` : 'sWEA'}.</p>
                       <p>Faucet Tx ID: <code className="block break-all bg-gray-700 p-1 rounded text-xs">{faucetSwapState.faucetTxId || 'N/A'}</code></p>
                       <Button onClick={clearFaucetSwapState} variant="outline" size="sm" className="mt-3">
                         Start New Swap

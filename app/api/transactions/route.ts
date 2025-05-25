@@ -19,37 +19,28 @@ interface Transaction {
 
 export async function GET(request: Request) {
   try {
-    const url = new URL(request.url)
-    const address = url.searchParams.get("address")
+    const { searchParams } = new URL(request.url);
+    const address = searchParams.get('address');
 
     if (!address) {
-      logger.warn('API: Missing address parameter in transactions GET request');
-      return NextResponse.json({ error: "Address is required" }, { status: 400 })
+      return NextResponse.json({ error: 'Missing address parameter' }, { status: 400 });
     }
 
     logger.info(`API: Fetching transactions for address: ${address}`);
 
-    // Connect to DB
     await connectToDatabase();
 
-    // Fetch transactions for the user, sorted by most recent first
-    const transactions = await BankTransaction.find(
-      { address: address }, // Filter by the user's address
-      // { from: address }, // Use 'address' field as per BankTransaction model
-      // { to: address },
-    )
-    .sort({ timestamp: -1 })
-    .lean(); // Use lean for plain JS objects
+    // Find transactions for the given address, sorted by timestamp descending
+    const transactions = await BankTransaction.find({ address: address }).sort({ timestamp: -1 }).lean();
+
+    // Note: .lean() is used for performance when you don't need Mongoose document methods
 
     logger.info(`API: Found ${transactions.length} transactions for ${address}`);
 
-    // Map to the Transaction interface (if needed, but lean() should be close)
-    // const formattedTransactions: Transaction[] = transactions.map(tx => ({ ...tx, _id: tx._id.toString() }));
-
-    return NextResponse.json({ transactions })
+    return NextResponse.json({ transactions });
   } catch (error) {
-    logger.error("API Error fetching transactions:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+    logger.error('API: Error fetching transactions:', error);
+    return NextResponse.json({ error: 'Failed to fetch transactions' }, { status: 500 });
   }
 }
 
@@ -102,25 +93,14 @@ export async function POST(request: Request) {
 
     await newTransaction.save();
 
-    logger.info(`API: Transaction recorded successfully for txId: ${txId}`);
-
-    return NextResponse.json({
-      success: true,
-      transaction: {
-        _id: newTransaction._id.toString(), // Return the created _id
-        address: newTransaction.address, // Return the created address
-        type: newTransaction.type,
-        token: newTransaction.token,
-        amount: newTransaction.amount,
-        txId: newTransaction.txId,
-        timestamp: newTransaction.timestamp,
-        initiative: newTransaction.initiative,
-        // status: 'completed' // Status is not in model, return conceptually
-      }
-    }, { status: 201 }); // Use 201 Created status
+    return NextResponse.json({ message: "Transaction recorded successfully", transactionId: newTransaction._id }, { status: 201 });
 
   } catch (error) {
-    logger.error("API Error recording transaction:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+    logger.error('API: Error recording transaction:', error);
+    // Check for duplicate key error (e.g., duplicate txId)
+    if (error instanceof Error && (error as any).code === 11000) { // MongoDB duplicate key error code
+      return NextResponse.json({ error: 'Duplicate transaction ID' }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'Failed to record transaction' }, { status: 500 });
   }
 }

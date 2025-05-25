@@ -180,6 +180,18 @@ export const translations = {
     sweaErrorInsufficientBalance: "Insufficient ${token} balance", // Placeholder
     sweaErrorInvalidAmount: "Invalid amount",
     sweaErrorPurchaseFailed: "Purchase failed. Please try again.",
+
+    // --- sWEA Proposals (New) ---
+    sweaLoadingProposals: "Loading proposals...",
+    sweaErrorLoadingProposals: "Error loading proposals: ${error}", // Placeholder for error message
+    sweaLatestProposals: "Latest Proposals",
+    sweaProposalPublishedAt: "Published: ${date}", // Placeholder for date
+
+    // --- Transaction Types (Added for History Page) ---
+    transactionTypeDeposit: "Deposit",
+    transactionTypeWithdraw: "Withdraw",
+    transactionTypeDonation: "Donation",
+    transactionTypeInterestPayout: "Interest Payout",
   },
   ja: {
     // Navigation
@@ -289,8 +301,8 @@ export const translations = {
     // Transactions Page
     transactionHistory: "取引履歴",
     recentTransactions: "最近の取引",
-    viewTransactions: "最近の入出金取引を表示します。",
-    viewYourTransactions: "取引を表示するにはウォレットを接続してください",
+    viewTransactions: "最近の入金および出金取引を表示します。",
+    viewYourTransactions: "取引履歴を表示するにはウォレットを接続してください",
     noTransactionsFound: "取引が見つかりません。",
     type: "タイプ",
     date: "日付",
@@ -298,7 +310,8 @@ export const translations = {
 
     // Contact Page
     contactUs: "お問い合わせ",
-    getInTouch: "連絡を取る",
+    getInTouch: "連絡する",
+    sendMessage: "メッセージを送信してください。できるだけ早く返信いたします。",
     subject: "件名",
     message: "メッセージ",
     sendingMessage: "送信中...",
@@ -308,7 +321,7 @@ export const translations = {
     loading: "読み込み中...",
     error: "エラー",
     success: "成功",
-    tryAgain: "再試行",
+    tryAgain: "もう一度試す",
     cancel: "キャンセル",
     save: "保存",
     edit: "編集",
@@ -362,42 +375,54 @@ export const translations = {
     noResults: "結果なし",
 
     // --- sWEA Page --- 
-    sweaMechanicsTitle: "sWEA（サカガウィアコイン）の仕組み", // Title on page
-    sweaTagline: "Alephiumブロックチェーン上で公平性、コミュニティ所有権、公平な分配に焦点を当てて設計されたユニークな原則を持つsWEA。", // Tagline
-    sweaCorePrinciples: "コア原則", // Card title in info
+    sweaMechanicsTitle: "sWEA（サカガウィアコイン）の仕組み",
+    sweaTagline: "sWEAは、Alephiumブロックチェーン上で公平性、コミュニティ所有権、公平な分配に焦点を当てた独自の原則で設計されています。",
+    sweaCorePrinciples: "コア原則",
     // Feature Titles (sweaInfo)
-    sweaFeatureEqualDistribution: "平等な分配",
+    sweaFeatureEqualDistribution: "均等分配",
     sweaFeatureWealthConcentration: "富の集中防止",
-    sweaFeatureCollectiveOwnership: "共同所有権とコミュニティ財務",
+    sweaFeatureCollectiveOwnership: "集団所有権とコミュニティ財務",
     sweaFeatureRedistribution: "富の再分配メカニズム",
     sweaFeatureGovernance: "コミュニティガバナンスの可能性",
-    // Feature Descriptions (sweaInfo) - Using placeholders for brevity, replace with full translations
-    sweaDescEqualDistribution: "sWEAコミュニティに参加するすべての人がトークンの均等な割り当てを受け、公正な初期アクセスを保証します。",
-    sweaDescWealthConcentration: "公平性を維持するため、単一のウォレットアドレスが総sWEAトークン供給量の1％以上を保持することは許可されていません。",
-    sweaDescCollectiveOwnership: "総sWEAトークンの約11.9％（42兆トークンのうち5兆トークン）が、コミュニティ管理の財務で安全に保持されます。",
-    sweaDescRedistribution: "コミュニティ財務内で保持されている資金は、コミュニティの決定に基づき、すべてのトークン保有者に均等に再分配できます。",
-    sweaDescGovernance: "基礎となるスマートコントラクトは、投票メカニズムを含むように拡張でき、コミュニティがトークンの将来と財務の使用について集合的な決定を下せるようにします。",
-    sweaNote: "注意：具体的な実装詳細（参加プロセス、財務管理、ガバナンスの有効化など）は、展開されたスマートコントラクトに依存します。",
+    // Feature Descriptions (sweaInfo)
+    sweaDescEqualDistribution: "sWEAコミュニティに参加するすべての人が均等なトークン割り当てを受け取り、公正な初期アクセスを保証します。",
+    sweaDescWealthConcentration: "公平性を維持するために、単一のウォレットアドレスがsWEAトークン総供給量の1％以上を保有することは許可されていません。",
+    sweaDescCollectiveOwnership: "sWEAトークン総数の約11.9％（42兆のうち5兆）が、コミュニティ管理の財務に安全に保管されています。",
+    sweaDescRedistribution: "コミュニティ財務に保持されている資金は、コミュニティの決定に基づいて、すべてのトークン保有者に均等に再分配できます。",
+    sweaDescGovernance: "基盤となるスマートコントラクトは、投票メカニズムを含めるように拡張でき、トークンの将来と財務の使用について集団的な決定を行うコミュニティに力を与えます。",
+    sweaNote: "注：特定の実装の詳細（例：参加プロセス、財務管理、ガバナンスの有効化）は、デプロイされたスマートコントラクトに依存します。",
     // Swap Component (sweaSwap)
-    sweaPurchaseTitle: "sWEAを購入",
-    sweaPurchaseDescription: "ALPHまたはACYUMを使用してsWEAを取得します。価格はコミュニティによって管理されます。",
+    sweaPurchaseTitle: "sWEA購入",
+    sweaPurchaseDescription: "ALPHまたはACYUMを使用してsWEAを取得します。価格はコミュニティ管理です。",
     sweaConnectWalletPrompt: "sWEAを購入するにはウォレットを接続してください",
     sweaYourBalances: "あなたの残高:",
-    sweaConfigurePrompt: " (sWEAを設定してください)",
-    sweaPayWithLabel: "支払い方法",
+    sweaConfigurePrompt: " (sWEAを設定)",
+    sweaPayWithLabel: "支払う通貨",
     sweaSelectPayToken: "支払いトークンを選択",
-    sweaAmountToPayLabel: "支払う金額",
+    sweaAmountToPayLabel: "支払額",
     sweaYouReceiveLabel: "受け取る金額 (sWEA)",
-    sweaCurrentRateLabel: "現在のレート（コミュニティ管理）:",
-    sweaAcyumRateNote: "（ACYUMレートは未定）",
-    sweaPriceInfo: "価格は最初に設定され、コミュニティ投票により調整可能です。",
-    sweaPurchaseButton: "sWEAを購入",
+    sweaCurrentRateLabel: "現在のレート (コミュニティ管理):",
+    sweaAcyumRateNote: "(ACYUMレートはまだ決定されていません)",
+    sweaPriceInfo: "価格は最初に設定され、コミュニティ投票で調整可能です。",
+    sweaPurchaseButton: "sWEA購入",
     sweaProcessing: "処理中...",
-    // Error Messages (example)
+    // Error Messages
     sweaErrorRateNotSet: "ACYUMスワップレートが設定されていません。",
     sweaErrorConfigNeeded: "sWEAトークンの詳細が設定されていません。",
-    sweaErrorInsufficientBalance: "${token}の残高が不足しています", // Placeholder for dynamic token
+    sweaErrorInsufficientBalance: "残高不足: ${token}", // Placeholder
     sweaErrorInvalidAmount: "無効な金額",
     sweaErrorPurchaseFailed: "購入に失敗しました。もう一度お試しください。",
+
+    // --- sWEA Proposals (New) ---
+    sweaLoadingProposals: "提案を読み込み中...",
+    sweaErrorLoadingProposals: "提案の読み込みエラー: ${error}", // Placeholder for error message
+    sweaLatestProposals: "最新の提案",
+    sweaProposalPublishedAt: "公開日: ${date}", // Placeholder for date
+
+    // --- Transaction Types (Added for History Page) ---
+    transactionTypeDeposit: "入金",
+    transactionTypeWithdraw: "出金",
+    transactionTypeDonation: "寄付",
+    transactionTypeInterestPayout: "利息支払",
   },
 }

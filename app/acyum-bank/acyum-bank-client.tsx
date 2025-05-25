@@ -473,7 +473,7 @@ export default function AcyumBankClient() {
       logger.info(`Attempting ALPH withdrawal of ${withdrawAmount}...`);
       const result = await Withdraw.execute(signer, {
         initialFields: {
-          token: ALPH_TOKEN_ID,
+          token: "vWvXtZRY7X5z1amCJ9U1rTzJ9SvbX6TUnchxhLgsbV3G",
           amount: withdrawAmountAttoAlph
         },
         attoAlphAmount: DUST_AMOUNT,
@@ -515,7 +515,7 @@ export default function AcyumBankClient() {
       logger.info(`Attempting ACYUM withdrawal of ${withdrawAmount}...`);
       const result = await Withdraw.execute(signer, {
         initialFields: {
-          token: acyumTokenId,
+          token: "vWvXtZRY7X5z1amCJ9U1rTzJ9SvbX6TUnchxhLgsbV3G",
           amount: withdrawAmountSmallestUnit
         },
         attoAlphAmount: DUST_AMOUNT,
@@ -560,7 +560,7 @@ export default function AcyumBankClient() {
       logger.info(`Attempting sWEA withdrawal of ${withdrawAmount}...`);
       const result = await Withdraw.execute(signer, {
         initialFields: {
-          token: S_WEA_TOKEN_ID,
+          token: "vWvXtZRY7X5z1amCJ9U1rTzJ9SvbX6TUnchxhLgsbV3G",
           amount: withdrawAmountSmallestUnit
         },
         attoAlphAmount: DUST_AMOUNT,
