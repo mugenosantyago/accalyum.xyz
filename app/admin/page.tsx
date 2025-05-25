@@ -868,8 +868,7 @@ export default function AdminPage() {
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="users">User Management</TabsTrigger>
               <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
-              <TabsTrigger value="alph_treasury">ALPH Treasury</TabsTrigger>
-              <TabsTrigger value="swea_treasury">sWEA Treasury</TabsTrigger>
+              <TabsTrigger value="acyum_bank_treasury">ACYUM Bank Treasury</TabsTrigger>
               <TabsTrigger value="proposals">Proposals</TabsTrigger>
             </TabsList>
 
@@ -1025,17 +1024,18 @@ export default function AdminPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="alph_treasury">
+            <TabsContent value="acyum_bank_treasury">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    ALPH Treasury Management
+                    ACYUM Bank Treasury Management
                   </CardTitle>
                   <CardDescription>
-                    Manage funds in the main ACYUM treasury.
+                    Manage funds in the main ACYUM bank treasury.
                   </CardDescription>
+                  {/* ALPH Treasury Section */}
                   <div className="flex items-center gap-2 pt-2">
-                    <span>Refresh Balance:</span>
+                    <span>Refresh ALPH Balance:</span>
                     <Button onClick={fetchTreasuryData} variant="outline" size="sm" disabled={isTreasuryLoading}>
                       {isTreasuryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     </Button>
@@ -1043,12 +1043,12 @@ export default function AdminPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Communist Treasury</p>
+                    <p className="text-sm font-medium">Communist Treasury (ALPH)</p>
                     <p className="text-2xl font-bold">{treasuryBalance} ALPH</p>
                     <p className="text-xs text-muted-foreground break-all">Address: {config.treasury.communist || "Not Set"}</p>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Token Faucet</p>
+                    <p className="text-sm font-medium">Token Faucet (ALPH)</p>
                     <p className="text-2xl font-bold">{faucetBalance} ALPH</p>
                      <p className="text-xs text-muted-foreground break-all">Address: {config.treasury.communist || "Not Set"} (Assuming same)</p>
                   </div>
@@ -1109,10 +1109,9 @@ export default function AdminPage() {
                   </Card>
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            <TabsContent value="swea_treasury">
-              <Card>
+              {/* sWEA Treasury Section */}
+              <Card className="mt-6">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     sWEA Bank Treasury Management
@@ -1124,7 +1123,7 @@ export default function AdminPage() {
                     {!sweaTokenId && <span className="text-red-500 block"> sWEA Token ID not set in config!</span>}
                   </CardDescription>
                    <div className="flex items-center gap-2 pt-2">
-                    <span>Refresh Balance:</span>
+                    <span>Refresh sWEA Balance:</span>
                     <Button onClick={fetchSweaTreasuryData} variant="outline" size="sm" disabled={isSweaTreasuryLoading || !sweaBankAddress || !sweaTokenId}>
                       {isSweaTreasuryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     </Button>
@@ -1256,7 +1255,6 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-
           </Tabs>
         </main>
 
