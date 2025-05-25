@@ -54,9 +54,11 @@ import { User } from "@/lib/types/user"
 import { useLanguage } from "@/components/language-provider"
 import type { Proposal } from "@/lib/types/proposal"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // --- Imports from Bank Client ---
 import { MakeDeposit, Withdraw } from "../../artifacts/ts/scripts"
+import { getTokenBalanceAction, getAcyumTokenId } from "@/app/actions/token-actions"
 // --- End Imports ---
 
 // --- Constants from Bank Client ---
@@ -115,18 +117,24 @@ export default function AdminPage() {
   })
 
   // Treasury management states
-  const [treasuryBalance, setTreasuryBalance] = useState("0")
-  const [faucetBalance, setFaucetBalance] = useState("0")
+  const [alphTreasuryBalance, setAlphTreasuryBalance] = useState("0")
+  const [acyumTreasuryBalance, setAcyumTreasuryBalance] = useState("0")
+  const [sweaTreasuryBalance, setSweaTreasuryBalance] = useState("0")
+  
+  const [alphFaucetBalance, setAlphFaucetBalance] = useState("0")
+  const [acyumFaucetBalance, setAcyumFaucetBalance] = useState("0")
+
   const [depositAmount, setDepositAmount] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
   const [faucetAmount, setFaucetAmount] = useState("")
   const [isTreasuryLoading, setIsTreasuryLoading] = useState(false)
+  
+  // State for selected token in Treasury tab
+  const [selectedTreasuryToken, setSelectedTreasuryToken] = useState<'ALPH' | 'ACYUM' | 'sWEA'>('ALPH')
 
   // sWEA Treasury management states
-  const [sweaTreasuryBalance, setSweaTreasuryBalance] = useState("0")
   const [sweaDepositAmount, setSweaDepositAmount] = useState("")
   const [withdrawSweaAmount, setWithdrawSweaAmount] = useState("")
-  const [isSweaTreasuryLoading, setIsSweaTreasuryLoading] = useState(false)
   const [isSweaProcessing, setIsSweaProcessing] = useState(false)
 
   // State for Proposals
@@ -136,11 +144,16 @@ export default function AdminPage() {
   const [isCreatingProposal, setIsCreatingProposal] = useState(false)
   const [isUpdatingProposal, setIsUpdatingProposal] = useState(false)
 
+  // State for Transactions and Donations tab
+  const [transactions, setTransactions] = useState<any[]>([]); // TODO: Define a proper interface for transaction records
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+
   const isConnected = connectionStatus === 'connected' && !!account?.address
   const address = account?.address
   const sweaBankAddress = config.treasury.sweaBank
   const sweaTokenId = config.alephium.sweaTokenIdHex
   const sweaDecimals = config.alephium.sweaDecimals
+  const acyumTokenId = config.alephium.acyumTokenIdHex; // Get ACYUM token ID from config
 
   // --- Addresses from Config ---
   const bankTreasuryAddress = config.treasury.communist;
@@ -197,57 +210,92 @@ export default function AdminPage() {
 
   // Define fetch functions *before* the main useEffect that uses them
   const fetchTreasuryData = useCallback(async () => {
-    setIsTreasuryLoading(true)
+    setIsTreasuryLoading(true);
     try {
-      const treasuryBalanceResult = await getTreasuryBalance()
-      if (treasuryBalanceResult.success) {
-        setTreasuryBalance(treasuryBalanceResult.balance)
+      // Fetch ALPH treasury balance
+      const alphTreasuryBalanceResult = await getTokenBalanceAction(bankTreasuryAddress, ""); // ALPH has no token ID
+      if (alphTreasuryBalanceResult.success) {
+        setAlphTreasuryBalance(alphTreasuryBalanceResult.balance);
       }
 
-      const faucetBalanceResult = await getFaucetBalance()
-      if (faucetBalanceResult.success) {
-        setFaucetBalance(faucetBalanceResult.balance)
+      // Fetch ACYUM treasury balance
+      if (acyumTokenId) {
+        const acyumTreasuryBalanceResult = await getTokenBalanceAction(bankTreasuryAddress, acyumTokenId);
+        if (acyumTreasuryBalanceResult.success) {
+          setAcyumTreasuryBalance(acyumTreasuryBalanceResult.balance);
+        }
       }
+
+      // Fetch sWEA treasury balance
+      if (sweaBankAddress && sweaTokenId) {
+        const sweaTreasuryBalanceResult = await getTokenBalanceAction(sweaBankAddress, sweaTokenId);
+        if (sweaTreasuryBalanceResult.success) {
+          setSweaTreasuryBalance(sweaTreasuryBalanceResult.balance);
+        }
+      } else if (!sweaBankAddress) {
+         setSweaTreasuryBalance("sWEA Bank Address Not Set");
+      } else if (!sweaTokenId) {
+         setSweaTreasuryBalance("sWEA Token ID Not Set");
+      }
+
+      // Fetch ALPH faucet balance
+      const alphFaucetBalanceResult = await getTokenBalanceAction(faucetContractAddress, ""); // ALPH has no token ID
+      if (alphFaucetBalanceResult.success) {
+        setAlphFaucetBalance(alphFaucetBalanceResult.balance);
+      }
+
+       // Fetch ACYUM faucet balance (Assuming faucet also holds ACYUM)
+      if (acyumTokenId) {
+        const acyumFaucetBalanceResult = await getTokenBalanceAction(faucetContractAddress, acyumTokenId);
+        if (acyumFaucetBalanceResult.success) {
+          setAcyumFaucetBalance(acyumFaucetBalanceResult.balance);
+        }
+      }
+
     } catch (error) {
-      console.error("Error fetching treasury data:", error)
+      console.error("Error fetching treasury/faucet data:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch treasury data. Please try again.",
+        description: "Failed to fetch treasury/faucet data. Please try again.",
         variant: "destructive",
-      })
-    } finally {
-      setIsTreasuryLoading(false)
-    }
-  }, [toast])
-
-  const fetchSweaTreasuryData = useCallback(async () => {
-    if (!sweaBankAddress || !sweaTokenId) {
-      console.warn("sWEA Bank address or Token ID not configured. Skipping sWEA balance fetch.");
-      setSweaTreasuryBalance("N/A");
-      return;
-    }
-    setIsSweaTreasuryLoading(true)
-    try {
-      // Call the server action to get sWEA balance
-      const sweaBalanceResult = await getSweaBalanceAction(sweaBankAddress)
-      if (sweaBalanceResult.success) {
-        setSweaTreasuryBalance(sweaBalanceResult.balance)
-      } else {
-        setSweaTreasuryBalance("Error");
-        toast({ title: "Error", description: sweaBalanceResult.error || "Failed to fetch sWEA treasury balance.", variant: "destructive"})
-      }
-    } catch (error) {
-      console.error("Error fetching sWEA treasury data:", error)
+      });
+      // Set balances to error state on failure
+      setAlphTreasuryBalance("Error");
+      setAcyumTreasuryBalance("Error");
       setSweaTreasuryBalance("Error");
+      setAlphFaucetBalance("Error");
+      setAcyumFaucetBalance("Error");
+    } finally {
+      setIsTreasuryLoading(false);
+    }
+  }, [bankTreasuryAddress, faucetContractAddress, acyumTokenId, sweaBankAddress, sweaTokenId, toast]);
+
+  // Function to fetch transaction and donation records
+  const fetchTransactionsAndDonations = useCallback(async () => {
+    setIsLoadingTransactions(true);
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+        "x-wallet-address": address || "", // Include admin address in header
+      };
+      const response = await fetch("/api/admin/transactions", { headers }); // Assuming this endpoint exists
+      if (!response.ok) {
+        throw new Error("Failed to fetch transactions and donations");
+      }
+      const data = await response.json();
+      setTransactions(Array.isArray(data?.records) ? data.records : []); // Assuming the response has a 'records' field
+    } catch (error) {
+      console.error("Error fetching transactions and donations:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch sWEA treasury data. Please try again.",
+        description: "Failed to fetch transaction and donation history. Please try again.",
         variant: "destructive",
-      })
+      });
+      setTransactions([]);
     } finally {
-      setIsSweaTreasuryLoading(false)
+      setIsLoadingTransactions(false);
     }
-  }, [sweaBankAddress, sweaTokenId, toast])
+  }, [address, toast]); // Added dependencies
 
   const checkAdminStatus = useCallback(async () => {
     setIsLoading(true); // Start loading indication for the whole page
@@ -259,7 +307,6 @@ export default function AdminPage() {
           await Promise.all([
             fetchData(), // fetchData now includes proposals
             fetchTreasuryData(), 
-            fetchSweaTreasuryData()
           ]);
         } catch (error) {
           console.error("Error during admin data fetch ensemble:", error);
@@ -268,9 +315,11 @@ export default function AdminPage() {
           setUsers([]);
           setPendingApprovals([]);
           setProposals([]);
-          setTreasuryBalance("Error");
-          setFaucetBalance("Error");
+          setAlphTreasuryBalance("Error");
+          setAcyumTreasuryBalance("Error");
           setSweaTreasuryBalance("Error");
+          setAlphFaucetBalance("Error");
+          setAcyumFaucetBalance("Error");
         }
       } else {
         setIsAdmin(false);
@@ -280,20 +329,25 @@ export default function AdminPage() {
       setIsAdmin(false); // Not connected or no address
     }
     setIsLoading(false); // Stop loading indication after checks and data fetching (or denial)
-  }, [isConnected, address, fetchData, fetchTreasuryData, fetchSweaTreasuryData, toast]); // Added dependencies
+    // Fetch transactions and donations when admin status is checked and wallet is connected/admin
+    if (isConnected && address && isAdmin) {
+       fetchTransactionsAndDonations();
+    }
+  }, [isConnected, address, fetchData, fetchTreasuryData, toast, isAdmin, fetchTransactionsAndDonations]); // Added fetchTransactionsAndDonations as dependency
 
   useEffect(() => {
     checkAdminStatus()
   }, [checkAdminStatus])
 
-  const handleAddFundsToTreasury = useCallback(async () => {
+  // ACYUM deposit handler (new)
+  const handleAddAcyumToTreasury = useCallback(async () => {
     if (!depositAmount || Number.parseFloat(depositAmount) <= 0) {
       toast({
         title: "Invalid amount",
         description: "Please enter a valid amount to deposit",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     if (!signer) {
@@ -304,16 +358,92 @@ export default function AdminPage() {
        toast({ title: "Wallet Error", description: "Admin address not found.", variant: "destructive" });
        return;
     }
-     if (!bankTreasuryAddress) {
-       toast({ title: "Config Error", description: "Bank treasury address not configured.", variant: "destructive" });
-       return;
+    if (!bankTreasuryAddress) {
+      toast({ title: "Config Error", description: "Bank treasury address not configured.", variant: "destructive" });
+      return;
+    }
+    if (!acyumTokenId) {
+      toast({ title: "Config Error", description: "ACYUM token ID not configured.", variant: "destructive" });
+      return;
     }
 
-    setIsProcessing(true)
+    setIsProcessing(true);
     try {
-      // Use the MakeDeposit script from the bank page
+      // ACYUM has 7 decimals based on config.alephium.acyumDecimals
+      const acyumDecimals = config.alephium.acyumDecimals ?? 7;
+      const amountInSmallestUnit = BigInt(Math.floor(Number.parseFloat(depositAmount) * (10 ** acyumDecimals)));
+
+      logger.info(`Client: Signing ACYUM deposit of ${depositAmount} to ${bankTreasuryAddress}`);
+
+      // Use the MakeDeposit script for tokens
+      const result = await MakeDeposit.execute(
+        signer,
+        {
+          tokenAmount: amountInSmallestUnit,
+          tokenId: acyumTokenId,
+          account: address,
+          bank: bankTreasuryAddress,
+          attoAlphAmount: DUST_AMOUNT // Include DUST_AMOUNT for the ALPH part of the UTXO
+        }
+      );
+
+      logger.info(`Client: ACYUM Deposit successful: Tx ID ${result.txId}`);
+
+      toast({
+        title: "Success",
+        description: `ACYUM deposit submitted (Tx: ${result.txId})`,
+        variant: "default",
+      });
+      setDepositAmount("");
+      // Refresh balances after a delay to allow propagation
+      setTimeout(fetchTreasuryData, 5000);
+
+    } catch (error) {
+      logger.error("Error submitting ACYUM deposit transaction:", error);
+      toast({
+        title: "Deposit Error",
+        description: error instanceof Error ? error.message : "Failed to submit ACYUM deposit",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [depositAmount, address, toast, fetchTreasuryData, signer, bankTreasuryAddress, acyumTokenId, config.alephium.acyumDecimals]);
+
+  const handleAddFundsToTreasury = useCallback(async () => {
+    if (!depositAmount || Number.parseFloat(depositAmount) <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount to deposit",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!signer) {
+       toast({ title: "Wallet Error", description: "Signer not available.", variant: "destructive" });
+       return;
+    }
+    if (!address) {
+       toast({ title: "Wallet Error", description: "Admin address not found.", variant: "destructive" });
+       return;
+    }
+    if (!bankTreasuryAddress) {
+      toast({ title: "Config Error", description: "Bank treasury address not configured.", variant: "destructive" });
+      return;
+    }
+
+    // Only proceed if ALPH is selected
+    if (selectedTreasuryToken !== 'ALPH') {
+      console.warn("Attempted to deposit ALPH when ALPH is not selected.");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Handle ALPH deposit
       const amountInSmallestUnit = BigInt(Math.floor(Number.parseFloat(depositAmount) * Number(ONE_ALPH)));
-      
+
       logger.info(`Client: Signing ALPH deposit of ${depositAmount} to ${bankTreasuryAddress}`);
 
       const result = await MakeDeposit.execute(
@@ -331,28 +461,28 @@ export default function AdminPage() {
         title: "Success",
         description: `ALPH deposit submitted (Tx: ${result.txId})`,
         variant: "default",
-      })
-      setDepositAmount("")
+      });
+      setDepositAmount("");
       // Refresh balance after a delay to allow propagation
       setTimeout(fetchTreasuryData, 5000);
 
     } catch (error) {
-      logger.error("Error submitting ALPH deposit transaction:", error)
+      logger.error("Error submitting ALPH deposit transaction:", error);
       toast({
         title: "Deposit Error",
         description: error instanceof Error ? error.message : "Failed to submit ALPH deposit",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsProcessing(false)
+      setIsProcessing(false);
     }
-  }, [depositAmount, address, toast, fetchTreasuryData, signer, bankTreasuryAddress]) // Added dependencies
+  }, [depositAmount, address, toast, fetchTreasuryData, signer, bankTreasuryAddress, selectedTreasuryToken]);
 
   const handleWithdrawFromTreasury = useCallback(async () => {
     // This is still a placeholder as secure withdrawal from a basic address isn't feasible via UI
     console.warn("Withdraw ALPH from treasury simulation running - NOT IMPLEMENTED SECURELY");
     toast({ title: "Not Implemented", description: "Withdrawal from a basic address treasury requires private key access or a contract with a withdrawal function.", variant: "destructive" });
-  }, []) // No dependencies as it's a placeholder
+  }, []);
 
   const handleAddFundsToFaucet = useCallback(async () => {
     if (!faucetAmount || Number.parseFloat(faucetAmount) <= 0) {
@@ -360,8 +490,8 @@ export default function AdminPage() {
         title: "Invalid amount",
         description: "Please enter a valid amount to add to the faucet",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
      if (!signer) {
@@ -377,11 +507,11 @@ export default function AdminPage() {
        return;
     }
 
-    setIsProcessing(true)
+    setIsProcessing(true);
     try {
       // Use the TokenFaucet contract interaction
       const amountInSmallestUnit = BigInt(Math.floor(Number.parseFloat(faucetAmount) * Number(ONE_ALPH)));
-      
+
       logger.info(`Client: Signing ALPH faucet funding of ${faucetAmount} to ${faucetContractAddress}`);
 
        // Assuming TokenFaucet has a method like 'fund' or similar that accepts ALPH
@@ -410,22 +540,22 @@ export default function AdminPage() {
         title: "Success",
         description: `ALPH faucet funding submitted (Tx: ${result.txId})`,
         variant: "default",
-      })
-      setFaucetAmount("")
+      });
+      setFaucetAmount("");
       // Refresh balance after a delay to allow propagation
       setTimeout(fetchTreasuryData, 5000);
 
     } catch (error) {
-      logger.error("Error submitting ALPH faucet funding transaction:", error)
+      logger.error("Error submitting ALPH faucet funding transaction:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to submit ALPH faucet funding",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsProcessing(false)
+      setIsProcessing(false);
     }
-  }, [faucetAmount, address, toast, fetchTreasuryData, signer, faucetContractAddress]) // Added dependencies
+  }, [faucetAmount, address, toast, fetchTreasuryData, signer, faucetContractAddress]);
 
   const handleApprove = useCallback(async (id: string) => {
     setIsProcessing(true)
@@ -658,6 +788,12 @@ export default function AdminPage() {
     if (!signer) return toast({ title: "Wallet Error", description: "Signer not available.", variant: "destructive" })
     if (!address) return toast({ title: "Wallet Error", description: "Admin address not found.", variant: "destructive" }) // Need admin address
 
+    // Only proceed if sWEA is selected
+    if (selectedTreasuryToken !== 'sWEA') {
+      console.warn("Attempted to deposit sWEA when sWEA is not selected.");
+      return;
+    }
+
     setIsSweaProcessing(true)
     try {
       // --- Client-side Signing (Required for Real TX) --- 
@@ -682,7 +818,7 @@ export default function AdminPage() {
       toast({ title: "Success", description: `sWEA deposit submitted (Tx: ${result.txId})`, variant: "default" })
       setSweaDepositAmount("")
       // Refresh balance after a delay to allow propagation
-      setTimeout(fetchSweaTreasuryData, 5000);
+      setTimeout(fetchTreasuryData, 5000);
 
     } catch (error) {
       logger.error("Error submitting sWEA deposit transaction:", error)
@@ -690,7 +826,7 @@ export default function AdminPage() {
     } finally {
       setIsSweaProcessing(false)
     }
-  }, [sweaDepositAmount, sweaBankAddress, sweaTokenId, sweaDecimals, signer, address, toast, fetchSweaTreasuryData]) // Added dependencies
+  }, [sweaDepositAmount, sweaBankAddress, sweaTokenId, sweaDecimals, signer, address, toast, fetchTreasuryData, selectedTreasuryToken]);
 
   const handleWithdrawSweaFromTreasury = useCallback(async () => {
     // --- Keeping Placeholder Logic ---
@@ -699,7 +835,7 @@ export default function AdminPage() {
     toast({ title: "Not Implemented", description: "Withdrawal from treasury requires a specific contract setup for security or private key access.", variant: "destructive" });
     // --- End Placeholder ---
 
-  }, [withdrawSweaAmount, sweaBankAddress, sweaTokenId, signer, toast, fetchSweaTreasuryData]) // Dependencies kept for consistency if simulation is uncommented
+  }, [withdrawSweaAmount, sweaBankAddress, sweaTokenId, signer, toast, fetchTreasuryData, selectedTreasuryToken]);
 
   const handleCreateProposal = useCallback(async () => {
     if (!newProposal.title || !newProposal.content) {
@@ -887,11 +1023,12 @@ export default function AdminPage() {
           <h1 className="text-3xl font-bold mb-8">Admin Panel</h1>
 
           <Tabs defaultValue="users">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="users">User Management</TabsTrigger>
               <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
               <TabsTrigger value="acyum_bank_treasury">ACYUM Bank Treasury</TabsTrigger>
               <TabsTrigger value="proposals">Proposals</TabsTrigger>
+              <TabsTrigger value="transactions">Transactions/Donations</TabsTrigger>
             </TabsList>
 
             <TabsContent value="users">
@@ -1055,146 +1192,209 @@ export default function AdminPage() {
                   <CardDescription>
                     Manage funds in the main ACYUM bank treasury.
                   </CardDescription>
-                  {/* ALPH Treasury Section */}
-                  <div className="flex items-center gap-2 pt-2">
-                    <span>Refresh ALPH Balance:</span>
+                  <div className="mt-2 flex items-center gap-4">
+                    <Label htmlFor="token-selector">Select Token:</Label>
+                    <Select onValueChange={(value: 'ALPH' | 'ACYUM' | 'sWEA') => setSelectedTreasuryToken(value)} value={selectedTreasuryToken}>
+                      <SelectTrigger id="token-selector" className="w-[180px]">
+                        <SelectValue placeholder="Select a token" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALPH">ALPH</SelectItem>
+                        <SelectItem value="ACYUM" disabled={!acyumTokenId}>ACYUM { acyumTokenId ? '' : '(Not Configured)'}</SelectItem>
+                        <SelectItem value="sWEA" disabled={!sweaTokenId}>sWEA { sweaTokenId ? '' : '(Not Configured)'}</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button onClick={fetchTreasuryData} variant="outline" size="sm" disabled={isTreasuryLoading}>
-                      {isTreasuryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                      {isTreasuryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />} Refresh Balances
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Communist Treasury (ALPH)</p>
-                    <p className="text-2xl font-bold">{treasuryBalance} ALPH</p>
-                    <p className="text-xs text-muted-foreground break-all">Address: {config.treasury.communist || "Not Set"}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Token Faucet (ALPH)</p>
-                    <p className="text-2xl font-bold">{faucetBalance} ALPH</p>
-                     <p className="text-xs text-muted-foreground break-all">Address: {config.treasury.communist || "Not Set"} (Assuming same)</p>
-                  </div>
+                  {selectedTreasuryToken === 'ALPH' && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Communist Treasury (ALPH)</p>
+                        <p className="text-2xl font-bold">{alphTreasuryBalance} ALPH</p>
+                        <p className="text-xs text-muted-foreground break-all">Address: {config.treasury.communist || "Not Set"}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Token Faucet (ALPH)</p>
+                        <p className="text-2xl font-bold">{alphFaucetBalance} ALPH</p>
+                        <p className="text-xs text-muted-foreground break-all">Address: {config.alephium.acyumFaucetAddress || "Not Set"}</p>
+                      </div>
+                      
+                      <Card className="bg-background/50">
+                         <CardHeader>
+                           <CardTitle className="text-lg">Deposit ALPH to Treasury</CardTitle>
+                         </CardHeader>
+                         <CardContent className="flex gap-2">
+                           <Input
+                             type="number"
+                             placeholder="ALPH Amount"
+                             value={depositAmount}
+                             onChange={(e) => setDepositAmount(e.target.value)}
+                             disabled={isProcessing}
+                           />
+                           <Button onClick={handleAddFundsToTreasury} disabled={isProcessing || !depositAmount || Number.parseFloat(depositAmount) <= 0 || !signer || !address || !bankTreasuryAddress}>
+                             {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDown className="h-4 w-4" />} Deposit
+                           </Button>
+                         </CardContent>
+                       </Card>
+ 
+                        <Card className="bg-background/50">
+                           <CardHeader>
+                             <CardTitle className="text-lg">Withdraw ALPH from Treasury</CardTitle>
+                             <CardDescription>Requires treasury contract interaction or private key.</CardDescription>
+                           </CardHeader>
+                           <CardContent className="flex gap-2">
+                             <Input
+                               type="number"
+                               placeholder="ALPH Amount"
+                               value={withdrawAmount}
+                               onChange={(e) => setWithdrawAmount(e.target.value)}
+                               disabled={isProcessing}
+                             />
+                             <Button onClick={handleWithdrawFromTreasury} disabled={isProcessing || !withdrawAmount || Number.parseFloat(withdrawAmount) <= 0}>
+                                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />} Withdraw
+                             </Button>
+                           </CardContent>
+                         </Card>
+ 
+                         <Card className="bg-background/50">
+                           <CardHeader>
+                              <CardTitle className="text-lg">Add ALPH to Faucet</CardTitle>
+                           </CardHeader>
+                           <CardContent className="flex gap-2">
+                             <Input
+                               type="number"
+                               placeholder="ALPH Amount"
+                               value={faucetAmount}
+                               onChange={(e) => setFaucetAmount(e.target.value)}
+                               disabled={isProcessing}
+                             />
+                             <Button onClick={handleAddFundsToFaucet} disabled={isProcessing || !faucetAmount || Number.parseFloat(faucetAmount) <= 0 || !signer || !address || !faucetContractAddress}>
+                                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Coins className="h-4 w-4" />} Fund Faucet
+                             </Button>
+                           </CardContent>
+                         </Card>
+                       </div>
+                     )}
 
-                  <Card className="bg-background/50">
-                    <CardHeader>
-                      <CardTitle className="text-lg">Deposit ALPH to Treasury</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex gap-2">
-                      <Input
-                        type="number"
-                        placeholder="ALPH Amount"
-                        value={depositAmount}
-                        onChange={(e) => setDepositAmount(e.target.value)}
-                        disabled={isProcessing}
-                      />
-                      <Button onClick={handleAddFundsToTreasury} disabled={isProcessing || !depositAmount}>
-                        {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDown className="h-4 w-4" />} Deposit
-                      </Button>
-                    </CardContent>
-                  </Card>
+                     {selectedTreasuryToken === 'ACYUM' && (
+                        <div className="space-y-4">
+                          {!acyumTokenId && (
+                             <div className="text-red-500">ACYUM Token ID is not configured. ACYUM treasury management is disabled.</div>
+                          )}
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Communist Treasury (ACYUM)</p>
+                            <p className="text-2xl font-bold">{acyumTreasuryBalance} ACYUM</p>
+                            <p className="text-xs text-muted-foreground break-all">Address: {config.treasury.communist || "Not Set"}</p>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Token Faucet (ACYUM)</p>
+                            <p className="text-2xl font-bold">{acyumFaucetBalance} ACYUM</p>
+                            <p className="text-xs text-muted-foreground break-all">Address: {config.alephium.acyumFaucetAddress || "Not Set"}</p>
+                          </div>
 
-                  <Card className="bg-background/50">
-                    <CardHeader>
-                      <CardTitle className="text-lg">Withdraw ALPH from Treasury</CardTitle>
-                      <CardDescription>Requires treasury contract interaction or private key.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex gap-2">
-                      <Input
-                        type="number"
-                        placeholder="ALPH Amount"
-                        value={withdrawAmount}
-                        onChange={(e) => setWithdrawAmount(e.target.value)}
-                        disabled={isProcessing}
-                      />
-                      <Button onClick={handleWithdrawFromTreasury} disabled={isProcessing || !withdrawAmount}>
-                         {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />} Withdraw
-                      </Button>
-                    </CardContent>
-                  </Card>
+                          {acyumTokenId && (
+                            <Card className="bg-background/50">
+                              <CardHeader>
+                                 <CardTitle className="text-lg flex items-center gap-2"><Banknote className="h-5 w-5"/>Deposit ACYUM to Treasury</CardTitle>
+                                 <CardDescription>Send ACYUM from your admin wallet to the bank treasury.</CardDescription>
+                              </CardHeader>
+                              <CardContent className="flex gap-2">
+                                <Input
+                                  type="number"
+                                  placeholder="ACYUM Amount"
+                                  value={depositAmount}
+                                  onChange={(e) => setDepositAmount(e.target.value)}
+                                  disabled={isProcessing}
+                                />
+                                <Button onClick={handleAddAcyumToTreasury} disabled={isProcessing || !depositAmount || Number.parseFloat(depositAmount) <= 0 || !signer || !address || !bankTreasuryAddress || !acyumTokenId}>
+                                  {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDown className="h-4 w-4" />} Deposit ACYUM
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          )}
 
-                  <Card className="bg-background/50">
-                    <CardHeader>
-                       <CardTitle className="text-lg">Add ALPH to Faucet</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex gap-2">
-                      <Input
-                        type="number"
-                        placeholder="ALPH Amount"
-                        value={faucetAmount}
-                        onChange={(e) => setFaucetAmount(e.target.value)}
-                        disabled={isProcessing}
-                      />
-                      <Button onClick={handleAddFundsToFaucet} disabled={isProcessing || !faucetAmount}>
-                         {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Coins className="h-4 w-4" />} Fund Faucet
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </CardContent>
-              </Card>
+                          <Card className="bg-background/50">
+                            <CardHeader>
+                              <CardTitle className="text-lg flex items-center gap-2"><Banknote className="h-5 w-5"/>Withdraw ACYUM from Treasury</CardTitle>
+                              <CardDescription>Requires treasury contract interaction or private key (if treasury is a basic address). Assumes a withdrawal mechanism exists.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex gap-2">
+                              <Input
+                                type="number"
+                                placeholder="ACYUM Amount"
+                                value={withdrawAmount}
+                                onChange={(e) => setWithdrawAmount(e.target.value)}
+                                disabled={isProcessing}
+                              />
+                              <Button onClick={handleWithdrawFromTreasury} disabled={isProcessing || !withdrawAmount || Number.parseFloat(withdrawAmount) <= 0}>
+                                 {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />} Withdraw ACYUM
+                              </Button>
+                            </CardContent>
+                          </Card>
 
-              {/* sWEA Treasury Section */}
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    sWEA Bank Treasury Management
-                     <Image src="/IMG_5086_Original.jpg" alt="sWEA" width={24} height={24} className="rounded-full ml-2" />
-                  </CardTitle>
-                  <CardDescription>
-                    Manage sWEA balance in the dedicated bank treasury address.
-                    {!sweaBankAddress && <span className="text-red-500 block"> sWEA Bank Treasury address not set in config!</span>}
-                    {!sweaTokenId && <span className="text-red-500 block"> sWEA Token ID not set in config!</span>}
-                  </CardDescription>
-                   <div className="flex items-center gap-2 pt-2">
-                    <span>Refresh sWEA Balance:</span>
-                    <Button onClick={fetchSweaTreasuryData} variant="outline" size="sm" disabled={isSweaTreasuryLoading || !sweaBankAddress || !sweaTokenId}>
-                      {isSweaTreasuryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">sWEA Bank Treasury</p>
-                    <p className="text-2xl font-bold">{sweaTreasuryBalance} sWEA</p>
-                    <p className="text-xs text-muted-foreground break-all">Address: {sweaBankAddress || "Not Set"}</p>
-                  </div>
+                        </div>
+                      )}
 
-                  <Card className="bg-background/50">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2"><Banknote className="h-5 w-5"/>Deposit sWEA to Bank Treasury</CardTitle>
-                      <CardDescription>Send sWEA from your admin wallet to the bank treasury.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex gap-2">
-                      <Input
-                        type="number"
-                        placeholder="sWEA Amount"
-                        value={sweaDepositAmount}
-                        onChange={(e) => setSweaDepositAmount(e.target.value)}
-                        disabled={isSweaProcessing || !sweaBankAddress || !sweaTokenId}
-                      />
-                      <Button onClick={handleAddSweaToTreasury} disabled={isSweaProcessing || !sweaDepositAmount || !sweaBankAddress || !sweaTokenId}>
-                        {isSweaProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDown className="h-4 w-4" />} Deposit sWEA
-                      </Button>
-                    </CardContent>
-                  </Card>
+                      {selectedTreasuryToken === 'sWEA' && (
+                         <div className="space-y-4">
+                            {!sweaBankAddress && (
+                              <div className="text-red-500">sWEA Bank Treasury address is not configured. sWEA treasury management is disabled.</div>
+                            )}
+                            {!sweaTokenId && (
+                              <div className="text-red-500">sWEA Token ID is not configured. sWEA treasury management is disabled.</div>
+                            )}
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">sWEA Bank Treasury</p>
+                            <p className="text-2xl font-bold">{sweaTreasuryBalance} sWEA</p>
+                            <p className="text-xs text-muted-foreground break-all">Address: {sweaBankAddress || "Not Set"}</p>
+                          </div>
 
-                  <Card className="bg-background/50">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2"><Banknote className="h-5 w-5"/>Withdraw sWEA from Bank Treasury</CardTitle>
-                      <CardDescription>Requires treasury contract interaction or private key (if treasury is a basic address). Assumes a withdrawal mechanism exists.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex gap-2">
-                      <Input
-                        type="number"
-                        placeholder="sWEA Amount"
-                        value={withdrawSweaAmount}
-                        onChange={(e) => setWithdrawSweaAmount(e.target.value)}
-                        disabled={isSweaProcessing || !withdrawSweaAmount || !sweaBankAddress || !sweaTokenId}
-                      />
-                      <Button onClick={handleWithdrawSweaFromTreasury} disabled={isSweaProcessing || !withdrawSweaAmount || !sweaBankAddress || !sweaTokenId}>
-                         {isSweaProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />} Withdraw sWEA
-                      </Button>
-                    </CardContent>
-                  </Card>
+                          {(sweaBankAddress && sweaTokenId) && (
+                            <Card className="bg-background/50">
+                              <CardHeader>
+                                 <CardTitle className="text-lg flex items-center gap-2"><Banknote className="h-5 w-5"/>Deposit sWEA to Treasury</CardTitle>
+                                 <CardDescription>Send sWEA from your admin wallet to the bank treasury.</CardDescription>
+                              </CardHeader>
+                              <CardContent className="flex gap-2">
+                                <Input
+                                  type="number"
+                                  placeholder="sWEA Amount"
+                                  value={sweaDepositAmount}
+                                  onChange={(e) => setSweaDepositAmount(e.target.value)}
+                                  disabled={isSweaProcessing || !sweaDepositAmount || !sweaBankAddress || !sweaTokenId}
+                                />
+                                <Button onClick={handleAddSweaToTreasury} disabled={isSweaProcessing || !sweaDepositAmount || Number.parseFloat(sweaDepositAmount) <= 0 || !sweaBankAddress || !sweaTokenId || !signer || !address}>
+                                  {isSweaProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDown className="h-4 w-4" />} Deposit sWEA
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          )}
+
+                          <Card className="bg-background/50">
+                            <CardHeader>
+                              <CardTitle className="text-lg flex items-center gap-2"><Banknote className="h-5 w-5"/>Withdraw sWEA from Treasury</CardTitle>
+                              <CardDescription>Requires treasury contract interaction or private key (if treasury is a basic address). Assumes a withdrawal mechanism exists.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex gap-2">
+                              <Input
+                                type="number"
+                                placeholder="sWEA Amount"
+                                value={withdrawSweaAmount}
+                                onChange={(e) => setWithdrawSweaAmount(e.target.value)}
+                                disabled={isSweaProcessing || !withdrawSweaAmount || !sweaBankAddress || !sweaTokenId}
+                              />
+                              <Button onClick={handleWithdrawSweaFromTreasury} disabled={isSweaProcessing || !withdrawSweaAmount || Number.parseFloat(withdrawSweaAmount) <= 0 || !sweaBankAddress || !sweaTokenId}>
+                                 {isSweaProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />} Withdraw sWEA
+                              </Button>
+                            </CardContent>
+                          </Card>
+
+                        </div>
+                      )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -1274,6 +1474,54 @@ export default function AdminPage() {
                       Create Proposal
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="transactions">
+              <Card className="bg-gray-900 border-gray-800">
+                <CardHeader>
+                  <CardTitle>Transaction and Donation History</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    View all recorded transactions and donations.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingTransactions ? (
+                    <div className="flex items-center justify-center h-40 text-gray-500">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading transactions...
+                    </div>
+                  ) : transactions.length === 0 ? (
+                    <p className="text-center py-8 text-gray-500">No transaction or donation records found.</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Token</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Address</TableHead>
+                          <TableHead>Tx ID</TableHead>
+                          <TableHead>Timestamp</TableHead>
+                          <TableHead>Initiative</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {transactions.map((tx) => (
+                          <TableRow key={tx._id}>
+                            <TableCell>{tx.type}</TableCell>
+                            <TableCell>{tx.token}</TableCell>
+                            <TableCell>{tx.amount}</TableCell>
+                            <TableCell className="font-mono text-xs">{tx.address}</TableCell>
+                            <TableCell className="font-mono text-xs">{tx.txId}</TableCell>
+                            <TableCell>{new Date(tx.timestamp).toLocaleString()}</TableCell>
+                            <TableCell>{tx.initiative || 'N/A'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

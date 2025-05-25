@@ -90,7 +90,7 @@ export const translations = {
     accessDonationFeatures: "Please connect your wallet to make a donation",
     selectedInitiative: "Selected Initiative",
     pleaseSelectInitiative: "Please select an initiative above",
-    donationAmount: "Donation Amount (ALPH)",
+    donationAmount: "Donation Amount",
     donate: "Donate",
 
     // Tokens Page
@@ -285,7 +285,7 @@ export const translations = {
     accessDonationFeatures: "寄付するにはウォレットを接続してください",
     selectedInitiative: "選択したイニシアチブ",
     pleaseSelectInitiative: "上記からイニシアチブを選択してください",
-    donationAmount: "寄付金額（ALPH）",
+    donationAmount: "Donation Amount",
     donate: "寄付",
 
     // Tokens Page
