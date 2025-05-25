@@ -15,7 +15,7 @@ export const config = {
 
     acyumTokenIdHex: process.env.NEXT_PUBLIC_ACYUM_TOKEN_ID_HEX ?? "", // Default to empty string if not set
     acyumDecimals: parseInt(process.env.NEXT_PUBLIC_ACYUM_DECIMALS || "7", 10),
-    acyumFaucetAddress: process.env.NEXT_PUBLIC_ACYUM_FAUCET_ADDRESS || "1DjCZbKGATt82mxygUDuNr8yYxf786SNc7ek9ZEeY3CYC", // Added Faucet Address
+    acyumFaucetAddress: process.env.NEXT_PUBLIC_ACYUM_FAUCET_ADDRESS || "vWvXtZRY7X5z1amCJ9U1rTzJ9SvbX6TUnchxhLgsbV3G", // Updated Faucet Address fallback
     
     // sWEA Configuration
     sweaTokenIdHex: process.env.NEXT_PUBLIC_SWEA_TOKEN_ID_HEX ?? "5d738e4fda3dab2c3edf175842df94f877f4be41b06bba553f61328b5c276300", // Updated with provided ID

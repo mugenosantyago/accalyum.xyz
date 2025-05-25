@@ -4,13 +4,16 @@ import { config } from "@/lib/config"
 import { NodeProvider } from "@alephium/web3"
 
 const TREASURY_ADDRESS = config.treasury.homelessness
-const TOKEN_FAUCET_ADDRESS = config.alephium.contractAddress
+const TOKEN_FAUCET_ADDRESS = config.alephium.acyumFaucetAddress
 const PROVIDER_URL = config.alephium.providerUrl
 
 // Initialize the node provider
 let nodeProvider: NodeProvider | null = null
 
 async function getNodeProvider(): Promise<NodeProvider> {
+  if (!PROVIDER_URL) {
+    throw new Error("Node provider URL is not configured.")
+  }
   if (!nodeProvider) {
     nodeProvider = new NodeProvider(PROVIDER_URL)
   }
