@@ -56,9 +56,7 @@ import type { Proposal } from "@/lib/types/proposal"
 import { Textarea } from "@/components/ui/textarea"
 
 // --- Imports from Bank Client ---
-import { MakeDeposit } from "@/contracts/scripts"
-import { Withdraw } from "@/artifacts2/ts/scripts"
-import { TokenFaucet } from "@/artifacts/ts"
+import { MakeDeposit, Withdraw } from "../../artifacts/ts/scripts"
 // --- End Imports ---
 
 // --- Constants from Bank Client ---
