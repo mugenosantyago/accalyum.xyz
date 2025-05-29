@@ -92,6 +92,9 @@ function formatBigIntAmount(amount: bigint | undefined | null, decimals: number,
   return `${integerPart}${displayFractional.length > 0 ? '.' + displayFractional : ''}`;
 }
 
+// Define the hardcoded TokenFaucet contract address
+const TOKEN_FAUCET_CONTRACT_ADDRESS = "vWvXtZRY7X5z1amCJ9U1rTzJ9SvbX6TUnchxhLgsbV3G";
+
 // Renamed component
 export default function AcyumBankClient() {
   const { t } = useLanguage()
@@ -127,8 +130,8 @@ export default function AcyumBankClient() {
   const [isFaucetProcessing, setIsFaucetProcessing] = useState(false)
 
   const bankTreasuryAddress = config.treasury.communist;
-  const faucetContractAddress = config.alephium.acyumFaucetAddress; // Use new faucet address config
-  const providerUrl = config.alephium.providerUrl;
+  const faucetContractAddress = TOKEN_FAUCET_CONTRACT_ADDRESS; // Use hardcoded address
+  const providerUrl = "https://node.alphaga.app/";
 
   const [treasuryAlphBalance, setTreasuryAlphBalance] = useState<bigint | null>(null);
   const [treasuryAcyumBalance, setTreasuryAcyumBalance] = useState<bigint | null>(null);
@@ -473,7 +476,7 @@ export default function AcyumBankClient() {
       logger.info(`Attempting ALPH withdrawal of ${withdrawAmount}...`);
       const result = await Withdraw.execute(signer, {
         initialFields: {
-          token: "vWvXtZRY7X5z1amCJ9U1rTzJ9SvbX6TUnchxhLgsbV3G",
+          token: TOKEN_FAUCET_CONTRACT_ADDRESS,
           amount: withdrawAmountAttoAlph
         },
         attoAlphAmount: DUST_AMOUNT,
@@ -515,7 +518,7 @@ export default function AcyumBankClient() {
       logger.info(`Attempting ACYUM withdrawal of ${withdrawAmount}...`);
       const result = await Withdraw.execute(signer, {
         initialFields: {
-          token: "vWvXtZRY7X5z1amCJ9U1rTzJ9SvbX6TUnchxhLgsbV3G",
+          token: TOKEN_FAUCET_CONTRACT_ADDRESS,
           amount: withdrawAmountSmallestUnit
         },
         attoAlphAmount: DUST_AMOUNT,
@@ -560,7 +563,7 @@ export default function AcyumBankClient() {
       logger.info(`Attempting sWEA withdrawal of ${withdrawAmount}...`);
       const result = await Withdraw.execute(signer, {
         initialFields: {
-          token: "vWvXtZRY7X5z1amCJ9U1rTzJ9SvbX6TUnchxhLgsbV3G",
+          token: TOKEN_FAUCET_CONTRACT_ADDRESS,
           amount: withdrawAmountSmallestUnit
         },
         attoAlphAmount: DUST_AMOUNT,
