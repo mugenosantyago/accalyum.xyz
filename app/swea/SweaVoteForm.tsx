@@ -112,7 +112,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
   }
 
   return (
-    <Card className="mt-8 w-full">
+    <Card className="mt-8 w-full sm:w-full md:max-w-md md:mx-auto">
       <CardHeader>
         <CardTitle>Cast Your Vote / Submit Proposal</CardTitle>
         <CardDescription>

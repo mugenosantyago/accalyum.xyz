@@ -632,6 +632,13 @@ export default function AcyumFundClient() {
                         </form>
                       </TabsContent>
                     </Tabs>
+
+                    {/* Deposit/Withdraw Tabs - This starts here */} 
+                    <div className="mt-8 text-center text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+                      <p className="text-sm leading-relaxed">
+                        {t("acyumFundDescription")}
+                      </p>
+                    </div>
                   </>
                 )}
 

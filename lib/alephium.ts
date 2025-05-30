@@ -106,6 +106,9 @@ export class AlephiumWeb3 {
       try {
         // Initialize node provider
         if (!instance.nodeProvider || forceRefresh) {
+          if (!config.alephium.providerUrl) {
+            throw new Error("Alephium provider URL is not configured.");
+          }
           instance.nodeProvider = new NodeProvider(config.alephium.providerUrl)
 
           // Configure WalletConnect if project ID is available and the method exists
@@ -514,6 +517,9 @@ export class AlephiumWeb3 {
       return balance.balance
     } catch (error) {
       console.error("Failed to get balance:", error)
+      if (this.connectionMethod === ConnectionMethod.WalletConnect) {
+        console.error("WalletConnect balance fetch error details:", error);
+      }
       return "0" // Return 0 instead of throwing to avoid breaking the UI
     }
   }
@@ -539,9 +545,9 @@ export class AlephiumWeb3 {
       const balance = (await this.nodeProvider.addresses.getAddressesAddressBalance(address)) as AddressBalance
 
       let acyumBalance = BigInt(0)
-      const normalizedTokenId = config.alephium.acyumTokenId.startsWith("0x")
-        ? config.alephium.acyumTokenId.slice(2)
-        : config.alephium.acyumTokenId
+      const normalizedTokenId = config.alephium.acyumTokenIdHex.startsWith("0x")
+        ? config.alephium.acyumTokenIdHex.slice(2)
+        : config.alephium.acyumTokenIdHex
 
       if (balance.tokenBalances) {
         if (Array.isArray(balance.tokenBalances)) {
@@ -636,7 +642,7 @@ export class AlephiumWeb3 {
       throw new Error("Invalid amount")
     }
 
-    if (!config.alephium.acyumTokenId) {
+    if (!config.alephium.acyumTokenIdHex) {
       throw new Error("ACYUM token ID not configured")
     }
 
@@ -647,7 +653,7 @@ export class AlephiumWeb3 {
       from: fromAddress,
       to,
       amount: "0",
-      tokens: [{ id: config.alephium.acyumTokenId, amount }],
+      tokens: [{ id: config.alephium.acyumTokenIdHex, amount }],
     })
 
     return txId
@@ -671,11 +677,11 @@ export class AlephiumWeb3 {
       throw new Error("Invalid amount")
     }
 
-    if (!config.alephium.contractAddress) {
+    if (!config.alephium.depositContractAddress) {
       throw new Error("Contract address not configured")
     }
 
-    if (!config.alephium.acyumTokenId) {
+    if (!config.alephium.acyumTokenIdHex) {
       throw new Error("ACYUM token ID not configured")
     }
 
@@ -683,10 +689,10 @@ export class AlephiumWeb3 {
     const txId = await this.provider.signAndSubmitExecuteScriptTx({
       bytecode: makeDepositJson.bytecodeTemplate,
       args: {
-        depositContract: config.alephium.contractAddress,
+        depositContract: config.alephium.depositContractAddress,
         amount,
       },
-      tokens: [{ id: config.alephium.acyumTokenId, amount }],
+      tokens: [{ id: config.alephium.acyumTokenIdHex, amount }],
     })
 
     return txId
@@ -710,7 +716,7 @@ export class AlephiumWeb3 {
       throw new Error("Invalid amount")
     }
 
-    if (!config.alephium.acyumTokenId) {
+    if (!config.alephium.acyumTokenIdHex) {
       throw new Error("ACYUM token ID not configured")
     }
 
@@ -718,7 +724,7 @@ export class AlephiumWeb3 {
     const txId = await this.provider.signAndSubmitExecuteScriptTx({
       bytecode: withdrawJson.bytecodeTemplate,
       args: {
-        token: config.alephium.acyumTokenId,
+        token: config.alephium.acyumTokenIdHex,
         amount,
       },
     })

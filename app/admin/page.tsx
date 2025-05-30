@@ -1289,7 +1289,7 @@ export default function AdminPage() {
                                 <Button
                                   onClick={() => handleProcessSweaClaim(request)}
                                   disabled={isProcessing}
-                                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
+                                  className="w-full bg-green-600 hover:bg-green-700 text-white"
                                 >
                                   {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                   Process Claim

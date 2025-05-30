@@ -43,7 +43,7 @@ export function ModernNav() {
   const navItems = [
     { href: "/", icon: <Home size={20} />, label: t("home") },
     { href: "/id-registration", icon: <IdCard size={20} />, label: t("idRegistration") },
-    { href: "/acyum-fund", icon: <Landmark size={20} />, label: t("acyumFund") },
+    { href: "/acyum-fund", icon: <Landmark size={20} />, label: "acyumFund" },
     { href: "/nightshade-swap", icon: <BarChart3 size={20} />, label: t("tradeTokens") },
     { href: "/swea", icon: <Scale size={20} />, label: "sWEA" },
     { href: "/transactions", icon: <History size={20} />, label: t("transactions") },

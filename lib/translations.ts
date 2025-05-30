@@ -205,6 +205,9 @@ export const translations = {
 
     // Nightshade Swap Page (New)
     goToNightshadeSwapButton: "Go to Nightshade Finance Swap",
+
+    // ACYUM Fund Description
+    acyumFundDescription: "The American Communist Youth Uprising Movement is dedicated to funding socialist infrastructure and mutual aid for all struggling groups across the globe. acyumFund is a way to cryptographically send fund via a more eco-friendly algorithm, we utilize these funds to create tangible change whether it be converting to USDT to send to Palestinians struggling, or paying for communal infrastructure such as food, housing, militant protest, arts, security & protections. Proposals are voted on via the sWEA page for fund allocation.",
   },
   ja: {
     // Navigation
@@ -450,5 +453,8 @@ export const translations = {
 
     // Nightshade Swap Page (New)
     goToNightshadeSwapButton: "Go to Nightshade Finance Swap",
+
+    // ACYUM Fund Description
+    acyumFundDescription: "アメリカ共産主義青年蜂起運動は、世界中のすべての苦闘するグループのための社会主義インフラと相互扶助に資金を提供することに専念しています。acyumFundは、より環境に優しいアルゴリズムを通じて暗号的に資金を送る方法です。私たちはこれらの資金を、パレスチナの苦闘する人々にUSDTを送るための変換や、食料、住宅、過激な抗議、芸術、セキュリティと保護などのコミュニティインフラの支払いなど、具体的な変化を生み出すために活用しています。提案はsWEAページを通じて投票されます。",
   },
 }
