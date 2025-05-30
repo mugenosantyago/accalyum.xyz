@@ -10,7 +10,6 @@ export function SweaInfo() {
   // Map feature keys to translation keys
   const features = [
     { key: "EqualDistribution", title: t("sweaFeatureEqualDistribution"), description: t("sweaDescEqualDistribution") },
-    { key: "Redistribution", title: t("sweaFeatureRedistribution"), description: t("sweaDescRedistribution") },
     { key: "Governance", title: t("sweaFeatureGovernance"), description: t("sweaDescGovernance") },
   ];
 

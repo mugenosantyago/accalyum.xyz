@@ -152,14 +152,12 @@ export const translations = {
     sweaFeatureEqualDistribution: "Equal Distribution",
     sweaFeatureWealthConcentration: "Prevention of Wealth Concentration",
     sweaFeatureCollectiveOwnership: "Collective Ownership & Community Treasury",
-    sweaFeatureRedistribution: "Wealth Redistribution Mechanism",
-    sweaFeatureGovernance: "Community Governance Potential",
+    sweaFeatureGovernance: "Community Governance",
     // Feature Descriptions (sweaInfo)
     sweaDescEqualDistribution: "Everyone who joins the sWEA community receives an equal allocation of tokens, ensuring fair initial access.",
     sweaDescWealthConcentration: "To maintain fairness, no single wallet address is permitted to hold more than 1% of the total sWEA token supply.",
     sweaDescCollectiveOwnership: "Approximately 11.9% (5 trillion out of 42 trillion) of the total sWEA tokens is held securely in a community-controlled treasury.",
-    sweaDescRedistribution: "Funds held within the community treasury can be redistributed equally amongst all token holders, based on community decisions.",
-    sweaDescGovernance: "The underlying smart contract can be extended to include voting mechanisms, empowering the community to make collective decisions about the token\'s future and treasury usage.",
+    sweaDescGovernance: "ACYUM ID holders can vote on proposals via the sWEA page.",
     sweaNote: "Note: The specific implementation details (e.g., joining process, treasury management, governance activation) depend on the deployed smart contract.",
     // Swap Component (sweaSwap)
     sweaPurchaseTitle: "Purchase sWEA",
@@ -399,14 +397,12 @@ export const translations = {
     sweaFeatureEqualDistribution: "均等分配",
     sweaFeatureWealthConcentration: "富の集中防止",
     sweaFeatureCollectiveOwnership: "集団所有権とコミュニティ財務",
-    sweaFeatureRedistribution: "富の再分配メカニズム",
-    sweaFeatureGovernance: "コミュニティガバナンスの可能性",
+    sweaFeatureGovernance: "コミュニティガバナンス",
     // Feature Descriptions (sweaInfo)
     sweaDescEqualDistribution: "sWEAコミュニティに参加するすべての人が均等なトークン割り当てを受け取り、公正な初期アクセスを保証します。",
     sweaDescWealthConcentration: "公平性を維持するために、単一のウォレットアドレスがsWEAトークン総供給量の1％以上を保有することは許可されていません。",
     sweaDescCollectiveOwnership: "sWEAトークン総数の約11.9％（42兆のうち5兆）が、コミュニティ管理の財務に安全に保管されています。",
-    sweaDescRedistribution: "コミュニティ財務に保持されている資金は、コミュニティの決定に基づいて、すべてのトークン保有者に均等に再分配できます。",
-    sweaDescGovernance: "基盤となるスマートコントラクトは、投票メカニズムを含めるように拡張でき、トークンの将来と財務の使用について集団的な決定を行うコミュニティに力を与えます。",
+    sweaDescGovernance: "ACYUM ID holders can vote on proposals via the sWEA page.",
     sweaNote: "注：特定の実装の詳細（例：参加プロセス、財務管理、ガバナンスの有効化）は、デプロイされたスマートコントラクトに依存します。",
     // Swap Component (sweaSwap)
     sweaPurchaseTitle: "sWEA購入",
