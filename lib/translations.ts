@@ -3,7 +3,8 @@ export const translations = {
     // Navigation
     home: "Home",
     idRegistration: "ID Registration",
-    acyumBank: "Acyum Bank",
+    acyumBank: "Acyum Bank (Old)",
+    acyumFund: "ACYUM Fund",
     sweaBank: "sWEA Bank",
     tradeTokens: "acyumSwap",
     mutualFunding: "Mutual Funding",
@@ -60,8 +61,8 @@ export const translations = {
     registering: "Registering...",
 
     // ACYUM Bank Page
-    acyumBanking: "ACYUM Banking",
-    depositWithdrawSecurely: "Deposit and withdraw ACYUM tokens securely.",
+    acyumFundTitle: "ACYUM Fund",
+    donateSecurely: "Donate ALPH, ACYUM, or sWEA tokens securely.",
     pleaseConnectWallet: "Please connect your wallet to access banking features",
     yourWallet: "Your Wallet",
     balance: "Balance",
@@ -192,13 +193,24 @@ export const translations = {
     transactionTypeWithdraw: "Withdraw",
     transactionTypeDonation: "Donation",
     transactionTypeInterestPayout: "Interest Payout",
+
+    // sWEA Claim Request (New)
+    requestInitialSweaClaim: "Request Initial sWEA Claim",
+    requestClaimDescription: "Enter your registered Acyum ID and submit a request to claim your first {amount} sWEA tokens. Admin review is required.", // {amount} is a placeholder
+    yourAcyumId: "Your Acyum ID",
+    requestSweaClaimButton: "Request {amount} sWEA Claim", // {amount} is a placeholder
+    claimRequestSubmitted: "Claim Request Submitted!",
+    claimRequestSubmittedDescription: "Your request has been sent for admin review. You will receive sWEA after approval and processing.",
+    checkingEligibility: "Checking Eligibility...",
+    submittingRequest: "Submitting Request...",
   },
   ja: {
     // Navigation
     home: "ホーム",
     idRegistration: "ID登録",
-    acyumBank: "Acyum銀行",
-    sweaBank: "sWEAバンク",
+    acyumBank: "Acyum銀行 (旧)",
+    acyumFund: "ACYUMファンド",
+    sweaBank: "sWEA銀行",
     tradeTokens: "acyumSwap",
     mutualFunding: "相互資金",
     tokens: "トークン",
@@ -255,8 +267,8 @@ export const translations = {
     registering: "登録中...",
 
     // ACYUM Bank Page
-    acyumBanking: "ACYUMバンキング",
-    depositWithdrawSecurely: "ACYUMトークンを安全に入金・出金できます。",
+    acyumFundTitle: "ACYUMファンド",
+    donateSecurely: "ALPH, ACYUM, または sWEA トークンを安全に寄付する。",
     pleaseConnectWallet: "バンキング機能にアクセスするにはウォレットを接続してください",
     yourWallet: "あなたのウォレット",
     balance: "残高",
@@ -424,5 +436,15 @@ export const translations = {
     transactionTypeWithdraw: "出金",
     transactionTypeDonation: "寄付",
     transactionTypeInterestPayout: "利息支払",
+
+    // sWEA Claim Request (New)
+    requestInitialSweaClaim: "初期sWEA請求リクエスト",
+    requestClaimDescription: "登録済みのAcyum IDを入力し、最初の{amount} sWEAトークンを請求するためのリクエストを送信してください。管理者のレビューが必要です。", // {amount} is a placeholder
+    yourAcyumId: "あなたのAcyum ID",
+    requestSweaClaimButton: "{amount} sWEA請求リクエスト", // {amount} is a placeholder
+    claimRequestSubmitted: "請求リクエスト送信済み！",
+    claimRequestSubmittedDescription: "リクエストは管理者のレビューのために送信されました。承認および処理後にsWEAを受け取ります。",
+    checkingEligibility: "資格を確認中...",
+    submittingRequest: "リクエストを送信中...",
   },
 }

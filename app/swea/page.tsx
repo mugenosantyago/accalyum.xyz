@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 import { SweaInfo } from './swea-info'
 import { SweaClaim } from './swea-claim'
-import SweaSwapClient from './swea-purchase'
 import { Separator } from '@/components/ui/separator'
 import Image from 'next/image'
 import { SweaVoteForm } from './SweaVoteForm'
@@ -38,8 +37,6 @@ export default function SweaPage() {
           <SweaClaim />
 
           <Separator className="my-12 bg-gradient-to-r from-transparent via-orange-600/50 to-transparent h-[1px]" />
-
-          <SweaSwapClient />
 
           <Separator className="my-12 bg-gradient-to-r from-transparent via-teal-600/50 to-transparent h-[1px]" />
 
