@@ -1279,6 +1279,8 @@ export default function AdminPage() {
                             <TableCell>
                               <Button
                                 size="sm"
+                                variant="outline"
+                                className="text-blue-500 border-blue-500 hover:bg-blue-950"
                                 onClick={() => handleProcessSweaClaim(request)}
                                 disabled={isProcessing || request.status !== 'pending'}
                               >
