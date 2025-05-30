@@ -125,72 +125,8 @@ export default function AcyumFundClient() {
   const bankTreasuryAddress = config.treasury.communist;
   const providerUrl = "https://node.alphaga.app/";
 
-  const [treasuryAlphBalance, setTreasuryAlphBalance] = useState<bigint | null>(null);
-  const [treasuryAcyumBalance, setTreasuryAcyumBalance] = useState<bigint | null>(null);
-  const [isTreasuryLoading, setIsTreasuryLoading] = useState(true);
-  const [treasuryError, setTreasuryError] = useState<string | null>(null);
-
-  // State for User's Net Deposited Bank Balance - Keep this state for displaying user's total donations if needed, rename later if necessary
-  const [userBankAlphBalance, setUserBankAlphBalance] = useState<bigint | null>(null); // Keep state for potential future use or display
-  const [userBankAcyumBalance, setUserBankAcyumBalance] = useState<bigint | null>(null); // Keep state for potential future use or display
-  const [userBankSweaBalance, setUserBankSweaBalance] = useState<bigint | null>(null); // Keep state for potential future use or display
-  const [isUserBankBalanceLoading, setIsUserBankBalanceLoading] = useState(false); // Keep state for potential future use or display
-  const [userBankBalanceError, setUserBankBalanceError] = useState<string | null>(null); // Keep state for potential future use or display
-
   // Fetch Treasury Balances - Moved outside useEffect and wrapped in useCallback
-  const fetchTreasuryBalances = useCallback(async () => {
-    let nodeProvider: NodeProvider | null = null;
-    if (providerUrl) { 
-       try {
-         nodeProvider = new NodeProvider(providerUrl);
-       } catch (initError) {
-         logger.error("Failed to initialize NodeProvider for treasury fetch:", initError);
-         setTreasuryError("Failed to initialize connection to node for treasury.");
-         setIsTreasuryLoading(false);
-         return;
-       }
-    } else {
-        setTreasuryError("Provider URL not configured for treasury.");
-        setIsTreasuryLoading(false);
-        return;
-    }
-
-    if (!nodeProvider || !bankTreasuryAddress) { 
-      if (!bankTreasuryAddress) setTreasuryError("Treasury address not configured.");
-      setIsTreasuryLoading(false);
-      return;
-    }
-
-    setIsTreasuryLoading(true);
-    setTreasuryError(null);
-    setTreasuryAlphBalance(null);
-    setTreasuryAcyumBalance(null);
-
-    try {
-      logger.info(`Fetching balances for treasury address: ${bankTreasuryAddress}`);
-      const balanceResult: AddressBalance = await nodeProvider.addresses.getAddressesAddressBalance(bankTreasuryAddress);
-      logger.debug("Treasury balance API result:", balanceResult);
-      
-      setTreasuryAlphBalance(BigInt(balanceResult.balance));
-
-      if (acyumTokenId && balanceResult.tokenBalances?.length) {
-        const treasuryAcyumInfo = balanceResult.tokenBalances.find((token: NodeTokenBalance) => token.id === acyumTokenId);
-        setTreasuryAcyumBalance(treasuryAcyumInfo ? BigInt(treasuryAcyumInfo.amount) : 0n);
-      } else {
-        setTreasuryAcyumBalance(0n);
-      }
-      logger.info(`Treasury balances set: ALPH=${treasuryAlphBalance ?? 'null'}, ACYUM=${treasuryAcyumBalance ?? 'null'}`);
-
-    } catch (error) {
-      logger.error(`Failed to fetch treasury balances for ${bankTreasuryAddress}:`, error);
-      const message = error instanceof Error ? error.message : "Could not load treasury balance";
-      setTreasuryError(message);
-      setTreasuryAlphBalance(null);
-      setTreasuryAcyumBalance(null);
-    } finally {
-      setIsTreasuryLoading(false);
-    }
-  }, [bankTreasuryAddress, providerUrl, acyumTokenId]); // Dependencies for useCallback
+  // Removed fetchTreasuryBalances function
 
   useEffect(() => {
     const fetchMarketData = async () => {
@@ -254,25 +190,12 @@ export default function AcyumFundClient() {
     }
   }, [acyumTokenId]);
 
-  useEffect(() => {
-    fetchTreasuryBalances(); // Call the memoized function
-    // Optional: Add a timer here to periodically refresh treasury balances if needed
-    // const intervalId = setInterval(fetchTreasuryBalances, 30000); // e.g., every 30 seconds
-    // return () => clearInterval(intervalId); 
-
-  }, [fetchTreasuryBalances]); // Dependency is the memoized function
-
   // Effect to fetch User's Bank Balance (Uses API) - Keep this useEffect for potential future use/display
   useEffect(() => {
     const fetchUserBankBalance = async () => {
       if (!address || !isConnected) {
-        setUserBankAlphBalance(null);
-        setUserBankAcyumBalance(null);
-        setUserBankSweaBalance(null);
         return;
       }
-      setIsUserBankBalanceLoading(true);
-      setUserBankBalanceError(null);
       logger.info(`Fetching bank balance ledger for user: ${address}`);
       try {
         const response = await fetch(`/api/bank/balance/${address}`);
@@ -281,20 +204,11 @@ export default function AcyumFundClient() {
           throw new Error(errorData.error || `Failed to fetch user bank balance: ${response.statusText}`);
         }
         const data = await response.json();
-        setUserBankAlphBalance(BigInt(data.alphBalance ?? '0'));
-        setUserBankAcyumBalance(BigInt(data.acyumBalance ?? '0'));
-        setUserBankSweaBalance(BigInt(data.sweaBalance ?? '0'));
         logger.info(`User bank balance fetched: ALPH=${data.alphBalance}, ACYUM=${data.acyumBalance}, sWEA=${data.sweaBalance}`);
 
       } catch (error) {
         logger.error("Failed to fetch user bank balance:", error);
         const message = error instanceof Error ? error.message : "Could not load deposited balance";
-        setUserBankBalanceError(message);
-        setUserBankAlphBalance(null);
-        setUserBankAcyumBalance(null);
-        setUserBankSweaBalance(null);
-      } finally {
-        setIsUserBankBalanceLoading(false);
       }
     };
 
@@ -383,8 +297,6 @@ export default function AcyumFundClient() {
         variant: "default",
       });
       setDonateAmount("");
-      // Refresh treasury balances after a delay
-      setTimeout(fetchTreasuryBalances, 5000);
 
     } catch (error) {
       logger.error("Error submitting ALPH donation transaction:", error);
@@ -447,8 +359,6 @@ export default function AcyumFundClient() {
         variant: "default",
       });
       setDonateAmount("");
-      // Refresh treasury balances after a delay
-      setTimeout(fetchTreasuryBalances, 5000);
 
     } catch (error) {
       logger.error("Error submitting ACYUM donation transaction:", error);
@@ -508,8 +418,6 @@ export default function AcyumFundClient() {
         variant: "default",
       });
       setDonateAmount("");
-      // Refresh treasury balances after a delay
-      setTimeout(fetchTreasuryBalances, 5000);
 
     } catch (error) {
       logger.error("Error submitting sWEA donation transaction:", error);
@@ -540,72 +448,10 @@ export default function AcyumFundClient() {
         <main className="flex-grow container mx-auto py-12 px-4">
           <h1 className="text-3xl font-bold text-center my-8">Donate to the ACYUM movement and mutual aid funding for indigenous communities</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Treasury Balances Card */}
-              <Card>
-                <CardHeader>
-                 <CardTitle>{t("acyumFundTreasuryBalancesTitle")}</CardTitle>
-                
-                </CardHeader>
-                <CardContent>
-                  {!isConnected ? (
-                    <div className="text-center py-6">
-                      <p className="mb-4 text-amber-600">{t("pleaseConnectWallet")}</p>
-                      <WalletConnectDisplay />
-                    </div>
-                  ) : (
-                    <>
-                      {/* Removed redundant wallet info display from this column */}
-                      {/* <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md mb-6"> ... </div> */}
-
-                      {/* Display Market Info Card */} 
-                      {!isMarketDataLoading && !marketDataError && (acyumMarketData || alphUsdPrice) && (
-                        <Card className="mb-6 bg-gray-850 border-gray-700">
-                          <CardHeader className="pb-2">
-                             <CardTitle className="text-lg">Market Info</CardTitle>
-                          </CardHeader>
-                          <CardContent className="grid grid-cols-2 gap-2 text-sm">
-                             {acyumMarketData && (
-                               <>
-                                 <p>ACYUM/ALPH Price:</p> 
-                                 <p className="text-right">{acyumMarketData.orderBookPrice?.toPrecision(4) ?? 'N/A'}</p>
-                               </>
-                             )}
-                             {acyumUsdPrice !== null && (
-                              <>
-                                <p>ACYUM/USD Price:</p> 
-                                <p className="text-right">${acyumUsdPrice.toFixed(4)}</p>
-                              </>
-                             )}
-                             {alphUsdPrice !== null && (
-                              <>
-                                <p>ALPH/USD Price:</p> 
-                                <p className="text-right">${alphUsdPrice.toFixed(4)}</p>
-                              </>
-                             )}
-                             {acyumMarketData && (
-                               <>
-                                 <p>Total Volume (ACYUM):</p> 
-                                 <p className="text-right">{acyumMarketData.totalVolume?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? 'N/A'}</p>
-                                 <p>24h Volume (ACYUM):</p> 
-                                 <p className="text-right">{acyumMarketData.dailyVolume?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? 'N/A'}</p>
-                               </>
-                             )}
-                             <p className="text-xs col-span-2 text-gray-400 pt-2">
-                               {acyumMarketData && (
-                                 <>Data from <a href={`https://candyswap.gg/token/${acyumMarketData.slug}`} target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400">CandySwap</a> {alphUsdPrice && "&"} </> 
-                               )}
-                               {alphUsdPrice && (
-                                <> <a href="https://www.coingecko.com/en/coins/alephium" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-400">CoinGecko</a></>
-                               )}
-                             </p>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            {/* Main Content Column */} 
+            {/* Treasury Balances Card - Removed */}
+            {/* The card that was here has been removed as requested. */}
+            {/* It previously displayed the treasury balances. */}
+            {/* Main Content Column */}
              <div className="md:col-span-2 space-y-6">
                 {/* User Wallet/Connection Card */}
                 {!isConnected ? (
@@ -796,6 +642,9 @@ export default function AcyumFundClient() {
              </div>
           </div> 
         </main>
+        <footer className="bg-gray-800 text-white text-center p-4">
+          <p>&copy; {new Date().getFullYear()} ACYUM. All rights reserved.</p>
+        </footer>
       </div>
     </ClientLayoutWrapper>
   )
