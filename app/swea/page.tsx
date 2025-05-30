@@ -38,8 +38,6 @@ export default function SweaPage() {
 
           <Separator className="my-12 bg-gradient-to-r from-transparent via-orange-600/50 to-transparent h-[1px]" />
 
-          <Separator className="my-12 bg-gradient-to-r from-transparent via-teal-600/50 to-transparent h-[1px]" />
-
           <SweaVoteForm />
 
           {/* TODO: Add sWEA Bank section later */}

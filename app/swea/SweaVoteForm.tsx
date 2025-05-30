@@ -57,8 +57,8 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!acyumId.trim() || !name.trim() || !message.trim()) { // Proposal ID (acyumId) is required
-      toast({ title: 'Validation Error', description: 'Proposal ID, Name, and Message fields are required.', variant: 'destructive' });
+    if (!acyumId.trim() || !name.trim() || !message.trim() || !userAcyumIdentifier.trim()) { // Make userAcyumIdentifier required
+      toast({ title: 'Validation Error', description: 'Proposal ID, Your ACYUM ID, Name, and Message fields are required.', variant: 'destructive' });
       return;
     }
     setIsSubmitting(true);
@@ -132,12 +132,13 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
             />
           </div>
           <div className="w-full">
-            <Label htmlFor="userAcyumIdentifier">Your ACYUM ID (Optional)</Label>
+            <Label htmlFor="userAcyumIdentifier">Your ACYUM ID</Label>
             <Input
               id="userAcyumIdentifier"
               value={userAcyumIdentifier}
               onChange={(e) => setUserAcyumIdentifier(e.target.value)}
               placeholder="Your registered ACYUM ID (e.g., ACYUM-XYZ123)"
+              required
             />
           </div>
           <div className="w-full">

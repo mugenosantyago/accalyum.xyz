@@ -14,12 +14,12 @@ export default function NightshadeSwapPage() {
     <ClientLayoutWrapper>
       {/* Removed ClientLayoutWrapper to make it a standalone page */}
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 p-4">
-        <a href="https://nightshade.finance/swap?token=ACYUM&action=buy" target="_blank" rel="noopener noreferrer">
+      <a href="https://nightshade.finance/swap?token=ACYUM&action=buy" target="_blank" rel="noopener noreferrer">
           <button className="w-64 h-64 text-xl font-semibold text-white bg-black rounded-lg shadow-lg hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition-transform transform hover:scale-105">
             Go to Nightshade Swap
-          </button>
-        </a>
-      </div>
+        </button>
+      </a>
+    </div>
     </ClientLayoutWrapper>
   );
 }

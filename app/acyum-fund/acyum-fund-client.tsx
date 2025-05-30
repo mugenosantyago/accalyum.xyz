@@ -216,14 +216,14 @@ export default function AcyumFundClient() {
 
   }, [address, isConnected]); // Dependencies for this useEffect
 
-  // --- Function to record transaction ---
+  // --- Function to record transaction --- 
   const recordDonation = async (token: 'ALPH' | 'ACYUM' | 'sWEA', amountInSmallestUnit: bigint, txId: string) => {
     logger.info(`Recording donation: ${formatBigIntAmount(amountInSmallestUnit, token === 'ALPH' ? 18 : (token === 'ACYUM' ? ACYUM_DECIMALS : S_WEA_DECIMALS))} ${token} with Tx ID ${txId}`);
     try {
         // Assuming there's an API endpoint to record donations
         const response = await fetch('/api/transactions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 userAddress: address, // Include user address
                 token: token,
@@ -233,7 +233,7 @@ export default function AcyumFundClient() {
                 // Add timestamp or other relevant info if needed - API handles timestamp
                 // initiative: initiativeId // Omit initiativeId for general fund donations
             }),
-        });
+      });
       if (!response.ok) {
             const errorText = await response.text();
             logger.error(`Failed to record donation on backend: ${response.status}`, errorText);
@@ -278,7 +278,7 @@ export default function AcyumFundClient() {
 
     try {
       const amountInSmallestUnit = BigInt(Math.floor(amountNum * (10 ** 18)));
-
+      
       const txResult = await signer.signAndSubmitTransferTx({
         signerAddress: address,
         destinations: [{
@@ -394,10 +394,10 @@ export default function AcyumFundClient() {
       const amountInSmallestUnit = BigInt(Math.floor(amountNum * (10 ** sweaDecimals)));
 
       logger.info(`Client: Signing sWEA donation of ${donateAmount} to ${bankTreasuryAddress}`);
-
+      
       // Use signAndSubmitTransferTx for direct token transfer
       const txResult = await signer.signAndSubmitTransferTx({
-         signerAddress: address,
+        signerAddress: address,
          destinations: [{
            address: bankTreasuryAddress, // Donate directly to the treasury address
            attoAlphAmount: DUST_AMOUNT, // Include DUST_AMOUNT for the ALPH part of the UTXO
@@ -451,7 +451,7 @@ export default function AcyumFundClient() {
             {/* Treasury Balances Card - Removed */}
             {/* The card that was here has been removed as requested. */}
             {/* It previously displayed the treasury balances. */}
-            {/* Main Content Column */}
+            {/* Main Content Column */} 
              <div className="md:col-span-2 space-y-6">
                 {/* User Wallet/Connection Card */}
                 {!isConnected ? (

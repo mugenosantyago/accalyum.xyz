@@ -1113,7 +1113,7 @@ export default function AdminPage() {
                         ))}
                       </TableBody>
                     </Table>
-                  )}
+                      )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -1246,46 +1246,57 @@ export default function AdminPage() {
             </TabsContent>
 
             <TabsContent value="swea-claims">
-              <Card>
+              <Card className="bg-gray-900 border-gray-800">
                 <CardHeader>
-                  <CardTitle>Pending sWEA Claim Requests</CardTitle>
-                  <CardDescription>Review and process sWEA claim requests from users.</CardDescription>
+                  <CardTitle>sWEA Claim Requests</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Review and process pending sWEA claim requests.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {isLoadingSweaClaimRequests ? (
-                    <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-[#FF6B35]" />
+                    </div>
                   ) : sweaClaimRequestsError ? (
-                    <div className="text-center py-6 text-red-500"><p>Error loading requests: {sweaClaimRequestsError}</p></div>
+                    <p className="text-center py-8 text-red-500">Error loading claims: {sweaClaimRequestsError}</p>
                   ) : pendingSweaClaimRequests.length === 0 ? (
-                    <div className="text-center py-8"><p>No pending sWEA claim requests.</p></div>
+                    <p className="text-center py-8 text-gray-500">No pending sWEA claim requests.</p>
                   ) : (
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead>Acyum ID</TableHead>
-                          <TableHead>Requester Address</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Requested At</TableHead>
-                          <TableHead>Actions</TableHead>
+                        <TableRow className="border-gray-800">
+                          <TableHead className="text-gray-400">Request ID</TableHead>
+                          <TableHead className="text-gray-400">ACYUM ID</TableHead>
+                          <TableHead className="text-gray-400">Requester Address</TableHead>
+                          <TableHead className="text-gray-400">Amount (sWEA)</TableHead>
+                          <TableHead className="text-gray-400">Status</TableHead>
+                          <TableHead className="text-gray-400">Requested At</TableHead>
+                          <TableHead className="text-gray-400">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {pendingSweaClaimRequests.map((request) => (
-                          <TableRow key={request._id}>
+                          <TableRow key={request._id} className="border-gray-800">
+                            <TableCell>{request._id.substring(0, 6)}...</TableCell>
                             <TableCell>{request.acyumId}</TableCell>
-                            <TableCell className="text-xs break-all">{request.requesterAddress}</TableCell>
-                            <TableCell>{request.amount} sWEA</TableCell>
+                            <TableCell>{request.requesterAddress.substring(0, 10)}...</TableCell>
+                            <TableCell>{formatBigIntAmount(BigInt(request.amount), sweaDecimals)}</TableCell>
+                            <TableCell>{request.status}</TableCell>
                             <TableCell>{new Date(request.createdAt).toLocaleString()}</TableCell>
                             <TableCell>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-blue-500 border-blue-500 hover:bg-blue-950"
-                                onClick={() => handleProcessSweaClaim(request)}
-                                disabled={isProcessing || request.status !== 'pending'}
-                              >
-                                {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Process Claim"}
-                              </Button>
+                              {request.status === 'pending' ? (
+                                <Button
+                                  onClick={() => handleProcessSweaClaim(request)}
+                                  disabled={isProcessing}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
+                                >
+                                  {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                  Process Claim
+                                </Button>
+                              ) : (
+                                <span className="text-gray-500">{request.status}</span>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
