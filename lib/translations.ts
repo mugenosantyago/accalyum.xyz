@@ -70,6 +70,7 @@ export const translations = {
     withdraw: "Withdraw",
     amount: "Amount",
     processing: "Processing...",
+    acyumFundTreasuryBalancesTitle: "Treasury Balances",
 
     // Trade Tokens Page
     acyumTokenExchange: "ACYUM Token Exchange",
@@ -203,6 +204,9 @@ export const translations = {
     claimRequestSubmittedDescription: "Your request has been sent for admin review. You will receive sWEA after approval and processing.",
     checkingEligibility: "Checking Eligibility...",
     submittingRequest: "Submitting Request...",
+
+    // Nightshade Swap Page (New)
+    goToNightshadeSwapButton: "Go to Nightshade Finance Swap",
   },
   ja: {
     // Navigation
@@ -276,6 +280,7 @@ export const translations = {
     withdraw: "出金",
     amount: "金額",
     processing: "処理中...",
+    acyumFundTreasuryBalancesTitle: "財務残高",
 
     // Trade Tokens Page
     acyumTokenExchange: "ACYUMトークン取引所",
@@ -446,5 +451,8 @@ export const translations = {
     claimRequestSubmittedDescription: "リクエストは管理者のレビューのために送信されました。承認および処理後にsWEAを受け取ります。",
     checkingEligibility: "資格を確認中...",
     submittingRequest: "リクエストを送信中...",
+
+    // Nightshade Swap Page (New)
+    goToNightshadeSwapButton: "Go to Nightshade Finance Swap",
   },
 }

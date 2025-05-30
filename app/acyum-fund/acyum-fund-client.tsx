@@ -543,8 +543,8 @@ export default function AcyumFundClient() {
             {/* Treasury Balances Card */}
               <Card>
                 <CardHeader>
-                 <CardTitle>Treasury Balances</CardTitle>
-                 <CardDescription>Current balances of ALPH, ACYUM, and sWEA in the communal treasury.</CardDescription>
+                 <CardTitle>{t("acyumFundTreasuryBalancesTitle")}</CardTitle>
+                
                 </CardHeader>
                 <CardContent>
                   {!isConnected ? (
