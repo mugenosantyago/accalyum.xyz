@@ -11,24 +11,24 @@ const inter = Inter({ subsets: ["latin"] })
 // Define metadata BEFORE the layout component
 export const metadata = {
   title: {
-    template: '%s | ACYUM',
-    default: 'ACYUM - Alephium DeFi Platform',
+    template: '%s | YUM',
+    default: 'YUM - Alephium DeFi Platform',
   },
-  description: 'ACYUM: Your gateway to decentralized finance on the Alephium blockchain. Explore token swaps, banking, mutual funding, and more.',
+  description: 'YUM: Your gateway to decentralized finance on the Alephium blockchain. Explore token swaps, banking, mutual funding, and more.',
   openGraph: {
-    title: 'ACYUM - Alephium DeFi Platform',
+    title: 'YUM - Alephium DeFi Platform',
     description: 'Decentralized finance on Alephium: Swap, Bank, Fund.',
     // Add a URL to your main logo image here
     // images: [`${process.env.NEXT_PUBLIC_BASE_URL || 'https://accalyum.xyz'}/images/og-logo.png`], 
     url: process.env.NEXT_PUBLIC_BASE_URL || 'https://accalyum.xyz',
-    siteName: 'ACYUM',
+    siteName: 'YUM',
     locale: 'en_US',
     type: 'website',
   },
   // Add Twitter card tags if desired
   // twitter: {
   //   card: 'summary_large_image',
-  //   title: 'ACYUM - Alephium DeFi Platform',
+  //   title: 'YUM - Alephium DeFi Platform',
   //   description: 'Decentralized finance on Alephium: Swap, Bank, Fund.',
   //   images: [`${process.env.NEXT_PUBLIC_BASE_URL || 'https://accalyum.xyz'}/images/twitter-logo.png`], 
   // },

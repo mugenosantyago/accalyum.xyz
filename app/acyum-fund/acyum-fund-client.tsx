@@ -27,7 +27,7 @@ import { Terminal } from "lucide-react"
 const ONE_ALPH = 10n ** 18n;
 const ALPH_TOKEN_ID = "0000000000000000000000000000000000000000000000000000000000000000";
 const DUST_AMOUNT = 10000n;
-const ACYUM_DECIMALS = 7; // Define decimals explicitly
+const YUM_DECIMALS = 7; // Define decimals explicitly
 
 // Add sWEA constants, pulling from config or using placeholders
 const S_WEA_TOKEN_ID = config.alephium.sweaTokenIdHex ?? "YOUR_SWEA_TOKEN_ID_HEX";
@@ -44,7 +44,7 @@ interface CandySwapTokenData {
   orderBookPrice?: number; 
   totalVolume?: number;
   dailyVolume?: number;
-  // Note: CandySwap API doesn't provide token decimals here, we assume it for ACYUM
+  // Note: CandySwap API doesn't provide token decimals here, we assume it for YUM
 }
 
 interface NodeTokenBalance {
@@ -119,7 +119,7 @@ export default function AcyumFundClient() {
   const [marketDataError, setMarketDataError] = useState<string | null>(null);
 
   const [donateAmount, setDonateAmount] = useState("")
-  const [donateTokenType, setDonateTokenType] = useState<"ALPH" | "ACYUM" | "sWEA">("ALPH")
+  const [donateTokenType, setDonateTokenType] = useState<"ALPH" | "YUM" | "sWEA">("ALPH")
   const [isProcessingDonation, setIsProcessingDonation] = useState(false)
 
   const bankTreasuryAddress = config.treasury.communist;
@@ -150,9 +150,10 @@ export default function AcyumFundClient() {
 
         if (acyumData) {
           setAcyumMarketData(acyumData);
-          logger.info("Fetched ACYUM market data from CandySwap:", acyumData);
+          logger.info("Fetched YUM market data from CandySwap:", acyumData);
         } else {
-          logger.warn(`ACYUM token ID (${acyumTokenId}) not found in CandySwap API response.`);
+          logger.warn(`YUM token ID (${acyumTokenId}) not found in CandySwap API response.`);
+          setMarketDataError("YUM data not found on CandySwap.");
         }
 
         // Process CoinGecko data
@@ -169,7 +170,7 @@ export default function AcyumFundClient() {
         }
         
         if (!acyumData) {
-           setMarketDataError("ACYUM data not found on CandySwap.");
+           setMarketDataError("YUM data not found on CandySwap.");
         }
 
       } catch (error) {
@@ -184,9 +185,9 @@ export default function AcyumFundClient() {
     if (acyumTokenId) {
       fetchMarketData();
     } else {
-      logger.warn("ACYUM Token ID not configured, skipping market data fetch.");
+      logger.warn("YUM Token ID not configured, skipping market data fetch.");
       setIsMarketDataLoading(false);
-      setMarketDataError("ACYUM Token ID not configured.");
+      setMarketDataError("YUM Token ID not configured.");
     }
   }, [acyumTokenId]);
 
@@ -204,7 +205,7 @@ export default function AcyumFundClient() {
           throw new Error(errorData.error || `Failed to fetch user bank balance: ${response.statusText}`);
         }
         const data = await response.json();
-        logger.info(`User bank balance fetched: ALPH=${data.alphBalance}, ACYUM=${data.acyumBalance}, sWEA=${data.sweaBalance}`);
+        logger.info(`User bank balance fetched: ALPH=${data.alphBalance}, YUM=${data.acyumBalance}, sWEA=${data.sweaBalance}`);
 
       } catch (error) {
         logger.error("Failed to fetch user bank balance:", error);
@@ -217,8 +218,8 @@ export default function AcyumFundClient() {
   }, [address, isConnected]); // Dependencies for this useEffect
 
   // --- Function to record transaction --- 
-  const recordDonation = async (token: 'ALPH' | 'ACYUM' | 'sWEA', amountInSmallestUnit: bigint, txId: string) => {
-    logger.info(`Recording donation: ${formatBigIntAmount(amountInSmallestUnit, token === 'ALPH' ? 18 : (token === 'ACYUM' ? ACYUM_DECIMALS : S_WEA_DECIMALS))} ${token} with Tx ID ${txId}`);
+  const recordDonation = async (token: 'ALPH' | 'YUM' | 'sWEA', amountInSmallestUnit: bigint, txId: string) => {
+    logger.info(`Recording donation: ${formatBigIntAmount(amountInSmallestUnit, token === 'ALPH' ? 18 : (token === 'YUM' ? YUM_DECIMALS : S_WEA_DECIMALS))} ${token} with Tx ID ${txId}`);
     try {
         // Assuming there's an API endpoint to record donations
         const response = await fetch('/api/transactions', {
@@ -316,22 +317,22 @@ export default function AcyumFundClient() {
       return;
     }
     if (!acyumTokenId || acyumTokenId === "") {
-        toast({ title: "Configuration Error", description: "ACYUM token ID is not configured.", variant: "destructive" });
+        toast({ title: "Configuration Error", description: "YUM token ID is not configured.", variant: "destructive" });
         return;
     }
     const amountNum = parseFloat(donateAmount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a positive ACYUM amount to donate.", variant: "destructive" });
+      toast({ title: "Invalid Amount", description: "Please enter a positive YUM amount to donate.", variant: "destructive" });
       return;
     }
     setIsProcessingDonation(true);
 
     try {
-      // ACYUM has 7 decimals based on config.alephium.acyumDecimals
+      // YUM has 7 decimals based on config.alephium.acyumDecimals
       const acyumDecimals = config.alephium.acyumDecimals ?? 7; // Use fallback if config is not set
       const amountInSmallestUnit = BigInt(Math.floor(amountNum * (10 ** acyumDecimals)));
 
-      logger.info(`Client: Signing ACYUM donation of ${donateAmount} to ${bankTreasuryAddress}`);
+      logger.info(`Client: Signing YUM donation of ${donateAmount} to ${bankTreasuryAddress}`);
 
       // Use the MakeDeposit script for tokens - assuming MakeDeposit is suitable for direct token transfer to an address
       // Note: If MakeDeposit script is specifically for interacting with a contract, this might need adjustment.
@@ -349,22 +350,22 @@ export default function AcyumFundClient() {
          }]
       });
 
-      logger.info(`Client: ACYUM Donation successful: Tx ID ${txResult.txId}`);
+      logger.info(`Client: YUM Donation successful: Tx ID ${txResult.txId}`);
 
-      recordDonation('ACYUM', amountInSmallestUnit, txResult.txId);
+      recordDonation('YUM', amountInSmallestUnit, txResult.txId);
 
       toast({
         title: "Success",
-        description: `ACYUM donation submitted (Tx: ${txResult.txId})`,
+        description: `YUM donation submitted (Tx: ${txResult.txId})`,
         variant: "default",
       });
       setDonateAmount("");
 
     } catch (error) {
-      logger.error("Error submitting ACYUM donation transaction:", error);
+      logger.error("Error submitting YUM donation transaction:", error);
       toast({
         title: "Donation Error",
-        description: error instanceof Error ? error.message : "Failed to submit ACYUM donation",
+        description: error instanceof Error ? error.message : "Failed to submit YUM donation",
         variant: "destructive",
       });
     } finally {
@@ -435,7 +436,7 @@ export default function AcyumFundClient() {
     e.preventDefault();
     if (donateTokenType === 'ALPH') {
       handleAlphDonate();
-    } else if (donateTokenType === 'ACYUM') {
+    } else if (donateTokenType === 'YUM') {
       handleAcyumDonate();
     } else if (donateTokenType === 'sWEA') { // Handle sWEA donations
       handleSweaDonate();
@@ -446,7 +447,7 @@ export default function AcyumFundClient() {
     <ClientLayoutWrapper>
       <div className="min-h-screen flex flex-col">
         <main className="flex-grow container mx-auto py-12 px-4">
-          <h1 className="text-3xl font-bold text-center my-8">Donate to the ACYUM movement and mutual aid funding for indigenous communities</h1>
+          <h1 className="text-3xl font-bold text-center my-8">Donate to the YUM movement and mutual aid funding for indigenous communities</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Treasury Balances Card - Removed */}
             {/* The card that was here has been removed as requested. */}
@@ -492,11 +493,11 @@ export default function AcyumFundClient() {
                                 Buy ALPH with fiat →
                               </a>
                             </div>
-                            {/* ACYUM Balance */}
+                            {/* YUM Balance */}
                             <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
-                              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">ACYUM Balance</p>
-                              <p className="text-xl font-bold text-gray-900 dark:text-white">{displayAcyumBalance ?? '0'} ACYUM</p>
-                              {/* Display ACYUM Market Value */}
+                              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">YUM Balance</p>
+                              <p className="text-xl font-bold text-gray-900 dark:text-white">{displayAcyumBalance ?? '0'} YUM</p>
+                              {/* Display YUM Market Value */}
                               {acyumMarketData?.orderBookPrice !== undefined && alphUsdPrice !== null && displayAcyumBalance && (
                                 <>
                                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -532,7 +533,7 @@ export default function AcyumFundClient() {
                      <Tabs defaultValue="ALPH" className="w-full">
                        <TabsList className="grid w-full grid-cols-3">
                          <TabsTrigger value="ALPH" onClick={() => setDonateTokenType('ALPH')}>ALPH</TabsTrigger>
-                         <TabsTrigger value="ACYUM" onClick={() => setDonateTokenType('ACYUM')}>ACYUM</TabsTrigger>
+                         <TabsTrigger value="YUM" onClick={() => setDonateTokenType('YUM')}>YUM</TabsTrigger>
                          <TabsTrigger value="sWEA" onClick={() => setDonateTokenType('sWEA')}>sWEA</TabsTrigger>
                       </TabsList>
                        <TabsContent value="ALPH">
@@ -567,10 +568,10 @@ export default function AcyumFundClient() {
                           </Button>
                         </form>
                       </TabsContent>
-                       <TabsContent value="ACYUM">
+                       <TabsContent value="YUM">
                          <form onSubmit={handleDonateSubmit} className="space-y-4 mt-4">
                            <div className="space-y-2">
-                             <Label htmlFor="acyumAmountDonate">ACYUM Amount to Donate</Label>
+                             <Label htmlFor="acyumAmountDonate">YUM Amount to Donate</Label>
                              <Input
                                id="acyumAmountDonate"
                                type="number"
@@ -582,9 +583,9 @@ export default function AcyumFundClient() {
                                required
                                className="bg-gray-800 border-gray-700 text-lg"
                              />
-                             {/* Display user's ACYUM balance */}
+                             {/* Display user's YUM balance */}
                              {displayAcyumBalance !== null && acyumTokenId && ( // Check acyumTokenId exists before displaying balance
-                                 <p className="text-sm text-gray-400">Your balance: {displayAcyumBalance} ACYUM</p>
+                                 <p className="text-sm text-gray-400">Your balance: {displayAcyumBalance} YUM</p>
                             )}
                          </div>
                            <Button
@@ -595,7 +596,7 @@ export default function AcyumFundClient() {
                              {isProcessingDonation ? (
                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                              ) : <ArrowUp className="mr-2 h-4 w-4" />} {/* Keep arrow up for 'sending' */}
-                             Donate ACYUM
+                             Donate YUM
                            </Button>
                          </form>
                        </TabsContent>
@@ -644,13 +645,13 @@ export default function AcyumFundClient() {
 
                 {/* Add Bank Ledger Component - Update props */}
                 {isConnected && address && (
-                   <BankLedger address={address} bankName="ACYUM Fund Donations" /> // Pass address and a descriptive name
+                   <BankLedger address={address} bankName="YUM Fund Donations" /> // Pass address and a descriptive name
                 )}
              </div>
           </div> 
         </main>
         <footer className="bg-gray-800 text-white text-center p-4">
-          <p>&copy; {new Date().getFullYear()} ACYUM. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} YUM. All rights reserved.</p>
         </footer>
       </div>
     </ClientLayoutWrapper>

@@ -76,9 +76,9 @@ export async function POST(request: NextRequest) {
     /*
     await sendEmail({
       to: "accalyuhh@gmail.com", // Updated to the user's email
-      subject: "New ACYUM ID Registration Pending Approval",
+      subject: "New YUM ID Registration Pending Approval",
       html: `
-        <h1>New ACYUM ID Registration</h1>
+        <h1>New YUM ID Registration</h1>
         <p>A new user has registered and is pending approval:</p>
         <ul>
           <li><strong>Username:</strong> ${username}</li>
@@ -95,11 +95,11 @@ export async function POST(request: NextRequest) {
     // Send confirmation email to user
     await sendEmail({
       to: email,
-      subject: "ACYUM ID Registration Received",
+      subject: "YUM ID Registration Received",
       html: `
-        <h1>ACYUM ID Registration Received</h1>
+        <h1>YUM ID Registration Received</h1>
         <p>Dear ${firstName},</p>
-        <p>Thank you for registering for an ACYUM ID. Your registration is pending approval by our administrators.</p>
+        <p>Thank you for registering for a YUM ID. Your registration is pending approval by our administrators.</p>
         <p>You will receive another email once your registration has been reviewed.</p>
         <p>Registration Details:</p>
         <ul>

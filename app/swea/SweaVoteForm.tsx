@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
 import { config } from '@/lib/config';
-import { useBalance } from '@/components/balance-provider'; // To check ACYUM balance
+import { useBalance } from '@/components/balance-provider'; // To check YUM balance
 import { Loader2 } from 'lucide-react';
 
 interface SweaVoteFormProps {
@@ -20,10 +20,10 @@ interface SweaVoteFormProps {
 export function SweaVoteForm({}: SweaVoteFormProps) {
   const { toast } = useToast();
   const { account, connectionStatus } = useWallet();
-  const { acyumBalance: userAcyumTokenBalance } = useBalance(); // Get ACYUM balance from provider
+  const { acyumBalance: userAcyumTokenBalance } = useBalance(); // Get YUM balance from provider
 
   const [acyumId, setAcyumId] = useState(''); // This will be the Proposal ID
-  const [userAcyumIdentifier, setUserAcyumIdentifier] = useState(''); // New state for User's ACYUM ID
+  const [userAcyumIdentifier, setUserAcyumIdentifier] = useState(''); // New state for User's YUM ID
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,7 +58,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!acyumId.trim() || !name.trim() || !message.trim() || !userAcyumIdentifier.trim()) { // Make userAcyumIdentifier required
-      toast({ title: 'Validation Error', description: 'Proposal ID, Your ACYUM ID, Name, and Message fields are required.', variant: 'destructive' });
+      toast({ title: 'Validation Error', description: 'Proposal ID, Your YUM ID, Name, and Message fields are required.', variant: 'destructive' });
       return;
     }
     setIsSubmitting(true);
@@ -132,12 +132,12 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
             />
           </div>
           <div className="w-full">
-            <Label htmlFor="userAcyumIdentifier">Your ACYUM ID</Label>
+            <Label htmlFor="userAcyumIdentifier">Your YUM ID</Label>
             <Input
               id="userAcyumIdentifier"
               value={userAcyumIdentifier}
               onChange={(e) => setUserAcyumIdentifier(e.target.value)}
-              placeholder="Your registered ACYUM ID (e.g., ACYUM-XYZ123)"
+              placeholder="Your registered YUM ID (e.g., YUM-XYZ123)"
               required
             />
           </div>

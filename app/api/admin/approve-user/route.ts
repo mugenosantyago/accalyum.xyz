@@ -34,13 +34,13 @@ export async function POST(request: NextRequest) {
     // Send approval email to user
     await sendEmail({
       to: user.email,
-      subject: "ACYUM ID Approved",
+      subject: "YUM ID Approved",
       html: `
-        <h1>ACYUM ID Approved</h1>
+        <h1>YUM ID Approved</h1>
         <p>Dear ${user.firstName},</p>
-        <p>Congratulations! Your ACYUM ID has been approved.</p>
-        <p>You can now access all features of the ACYUM platform using your wallet address.</p>
-        <p>Your ACYUM ID: ${user.username}</p>
+        <p>Congratulations! Your YUM ID has been approved.</p>
+        <p>You can now access all features of the YUM platform using your wallet address.</p>
+        <p>Your YUM ID: ${user.username}</p>
         <p>Thank you for joining our community!</p>
       `,
     })

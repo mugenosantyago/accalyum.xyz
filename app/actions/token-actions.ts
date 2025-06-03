@@ -50,7 +50,7 @@ export async function getTokenBalanceAction(address: string, tokenId: string): P
        // Get decimals from config.alephium based on known token IDs
        let decimals = 18; // Default to ALPH decimals
        if (tokenId === config.alephium.acyumTokenIdHex) {
-         decimals = config.alephium.acyumDecimals ?? 7; // Default ACYUM decimals
+         decimals = config.alephium.acyumDecimals ?? 7; // Default YUM decimals
        } else if (tokenId === config.alephium.sweaTokenIdHex) {
          decimals = config.alephium.sweaDecimals ?? 9; // Default sWEA decimals
        } else {
@@ -93,7 +93,7 @@ export async function getAcyumTokenId(): Promise<string> {
 }
 
 export async function getAcyumToken(): Promise<string> {
-  return process.env.ACYUM_TOKEN || ""
+  return process.env.YUM_TOKEN || ""
 }
 
 // Keep existing treasury/faucet actions for now, but they might become redundant

@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 // Add metadata for the homepage
 export const metadata: Metadata = {
   title: 'Home',
-  description: 'Welcome to ACYUM, your portal to decentralized finance features like token swapping, banking, and mutual funding on the Alephium blockchain.',
+  description: 'Welcome to YUM, your portal to decentralized finance features like token swapping, banking, and mutual funding on the Alephium blockchain.',
 };
 
 export default function Home() {

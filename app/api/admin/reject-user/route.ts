@@ -35,11 +35,11 @@ export async function POST(request: NextRequest) {
     // Send rejection email to user
     await sendEmail({
       to: user.email,
-      subject: "ACYUM ID Registration Rejected",
+      subject: "YUM ID Registration Rejected",
       html: `
-        <h1>ACYUM ID Registration Rejected</h1>
+        <h1>YUM ID Registration Rejected</h1>
         <p>Dear ${user.firstName},</p>
-        <p>We regret to inform you that your ACYUM ID registration has been rejected.</p>
+        <p>We regret to inform you that your YUM ID registration has been rejected.</p>
         ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ""}
         <p>If you believe this is an error or would like to provide additional information, please contact our support team.</p>
       `,

@@ -9,7 +9,7 @@ interface Transaction {
   _id?: string; // Optional _id
   address: string; // User's Alephium address
   type: "deposit" | "withdraw" | "donation" | "interest_payout"; // Include all types from model
-  token: 'ALPH' | 'ACYUM' | 'sWEA'; // Added token
+  token: 'ALPH' | 'YUM' | 'sWEA'; // Added token
   amount: string;
   txId: string;
   initiative?: string; // Optional initiative field
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
        logger.warn('API: Invalid transaction type in POST request', { type });
        return NextResponse.json({ error: 'Invalid transaction type' }, { status: 400 });
     }
-    if (!['ALPH', 'ACYUM', 'sWEA'].includes(token)) {
+    if (!['ALPH', 'YUM', 'sWEA'].includes(token)) {
        logger.warn('API: Invalid token type in POST request', { token });
        return NextResponse.json({ error: 'Invalid token type' }, { status: 400 });
     }

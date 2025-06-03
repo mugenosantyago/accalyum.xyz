@@ -22,12 +22,12 @@ export const translations = {
 
     // Main Content
     acyum: "ACYUM",
-    acyumFullName: "American Communist Youth Uprising Movement",
+    acyumFullName: "Youth Uprising Movement",
 
     // About Section
     aboutAcyum: "About ACYUM",
     aboutDescription:
-      "ACYUM (American Communist Youth Uprising Movement) is a socialist token built on the Alephium blockchain, dedicated to funding socialist movements, community centers, and mutual aid networks. This token serves as both a digital currency and a symbol of resistance.",
+      "ACYUM (Youth Uprising Movement) is a socialist token built on the Alephium blockchain, dedicated to funding socialist movements, community centers, and mutual aid networks. This token serves as both a digital currency and a symbol of resistance.",
     aboutMission:
       "Our mission is to create a decentralized community that empowers individuals through blockchain technology. We believe in transparency, inclusivity, and the power of collective action to drive positive change.",
     aboutVision:
@@ -207,7 +207,7 @@ export const translations = {
     goToNightshadeSwapButton: "Go to Nightshade Finance Swap",
 
     // ACYUM Fund Description
-    acyumFundDescription: "The American Communist Youth Uprising Movement is dedicated to funding socialist infrastructure and mutual aid for all struggling groups across the globe. acyumFund is a way to cryptographically send fund via a more eco-friendly algorithm, we utilize these funds to create tangible change whether it be converting to USDT to send to Palestinians struggling, or paying for communal infrastructure such as food, housing, militant protest, arts, security & protections. Proposals are voted on via the sWEA page for fund allocation.",
+    acyumFundDescription: "The Youth Uprising Movement is dedicated to funding socialist infrastructure and mutual aid for all struggling groups across the globe. acyumFund is a way to cryptographically send funds to support these initiatives.",
   },
   ja: {
     // Navigation
@@ -232,12 +232,12 @@ export const translations = {
 
     // Main Content
     acyum: "ACYUM",
-    acyumFullName: "アメリカ共産主義青年蜂起運動",
+    acyumFullName: "Youth Uprising Movement",
 
     // About Section
     aboutAcyum: "ACYUMについて",
     aboutDescription:
-      "ACYUM（アメリカ共産主義青年蜂起運動）は、Alephiumブロックチェーン上に構築された社会主義トークンで、社会主義運動、コミュニティセンター、相互扶助ネットワークへの資金提供に専念しています。このトークンはデジタル通貨としての役割と抵抗のシンボルとしての両方の役割を果たします。",
+      "ACYUM（Youth Uprising Movement）は、Alephiumブロックチェーン上に構築された社会主義トークンで、社会主義運動、コミュニティセンター、相互扶助ネットワークへの資金提供に専念しています。このトークンはデジタル通貨としての役割と抵抗のシンボルとしての両方の役割を果たします。",
     aboutMission:
       "私たちの使命は、ブロックチェーン技術を通じて個人に力を与える分散型コミュニティを作ることです。私たちは透明性、包括性、そして前向きな変化を促進するための集団行動の力を信じています。",
     aboutVision:

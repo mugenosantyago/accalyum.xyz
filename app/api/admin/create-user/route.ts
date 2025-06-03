@@ -51,13 +51,13 @@ export async function POST(request: NextRequest) {
     // Send welcome email to user
     await sendEmail({
       to: email,
-      subject: "Welcome to ACYUM",
+      subject: "Welcome to YUM",
       html: `
-        <h1>Welcome to ACYUM</h1>
+        <h1>Welcome to YUM</h1>
         <p>Dear ${firstName},</p>
-        <p>An ACYUM ID has been created for you by an administrator.</p>
-        <p>Your ACYUM ID: ${username}</p>
-        <p>You can now access all features of the ACYUM platform using your wallet address.</p>
+        <p>A YUM ID has been created for you by an administrator.</p>
+        <p>Your YUM ID: ${username}</p>
+        <p>You can now access all features of the YUM platform using your wallet address.</p>
         <p>Thank you for joining our community!</p>
       `,
     })

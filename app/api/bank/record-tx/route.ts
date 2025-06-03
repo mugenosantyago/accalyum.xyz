@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     if (!['deposit', 'withdraw'].includes(type)) {
       return NextResponse.json({ error: 'Invalid transaction type' }, { status: 400 });
     }
-    if (!['ALPH', 'ACYUM', 'sWEA'].includes(token)) {
+    if (!['ALPH', 'YUM', 'sWEA'].includes(token)) {
       return NextResponse.json({ error: 'Invalid token type' }, { status: 400 });
     }
     // Validate amount is a non-negative number representable string (basic check)

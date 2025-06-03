@@ -7,9 +7,9 @@ import { NodeProvider } from '@alephium/web3';
 import { TokenFaucet } from '@/artifacts/ts'; // Import the TokenFaucet artifact
 
 // Constants from config or define directly
-const ACYUM_TOKEN_ID = config.alephium.acyumTokenIdHex;
+const YUM_TOKEN_ID = config.alephium.acyumTokenIdHex;
 const S_WEA_TOKEN_ID = config.alephium.sweaTokenIdHex;
-const ACYUM_DECIMALS = config.alephium.acyumDecimals;
+const YUM_DECIMALS = config.alephium.acyumDecimals;
 const S_WEA_DECIMALS = config.alephium.sweaDecimals;
 
 const REWARD_VALUE = 0.099;
@@ -17,15 +17,15 @@ const PROVIDER_URL = config.alephium.providerUrl; // Should be defined in your c
 const BACKEND_DUST_AMOUNT = 10000n; // Default dust amount, same as DUST_AMOUNT from @alephium/web3
 
 // Reward Faucet Addresses - using existing faucet addresses from config
-const ACYUM_REWARD_FAUCET_ADDRESS = config.alephium.acyumFaucetAddress; // Corrected based on linter suggestion
+const YUM_REWARD_FAUCET_ADDRESS = config.alephium.acyumFaucetAddress; // Corrected based on linter suggestion
 const S_WEA_REWARD_FAUCET_ADDRESS = config.alephium.sweaFaucetAddress;   // Corrected based on linter suggestion
 
 // Calculate reward amounts in smallest units
-const REWARD_AMOUNT_ACYUM_SMALLEST_UNIT = BigInt(Math.floor(REWARD_VALUE * (10 ** ACYUM_DECIMALS)));
+const REWARD_AMOUNT_YUM_SMALLEST_UNIT = BigInt(Math.floor(REWARD_VALUE * (10 ** YUM_DECIMALS)));
 const REWARD_AMOUNT_SWEA_SMALLEST_UNIT = BigInt(Math.floor(REWARD_VALUE * (10 ** S_WEA_DECIMALS)));
 
 // Helper function to calculate net balance for a specific token from transactions
-function calculateNetBalance(transactions: Pick<IBankTransaction, 'token' | 'type' | 'amount'>[], tokenSymbol: 'ALPH' | 'ACYUM' | 'sWEA'): bigint {
+function calculateNetBalance(transactions: Pick<IBankTransaction, 'token' | 'type' | 'amount'>[], tokenSymbol: 'ALPH' | 'YUM' | 'sWEA'): bigint {
   let netBalance = 0n;
   transactions.forEach(tx => {
     if (tx.token !== tokenSymbol) return;
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
   logger.info('API: Starting reward distribution process via Faucet...');
 
-  if (!ACYUM_REWARD_FAUCET_ADDRESS || !S_WEA_REWARD_FAUCET_ADDRESS) {
+  if (!YUM_REWARD_FAUCET_ADDRESS || !S_WEA_REWARD_FAUCET_ADDRESS) {
     logger.error('Critical: Reward faucet addresses are not configured in config.alephium.acyumFaucetAddress or config.alephium.sweaFaucetAddress.');
     return NextResponse.json({ error: 'Reward faucet addresses not configured server-side.' }, { status: 500 });
   }
@@ -90,35 +90,35 @@ export async function POST(request: Request) {
       ).lean();
 
       const alphBalance = calculateNetBalance(userTransactions, 'ALPH');
-      const acyumBalance = calculateNetBalance(userTransactions, 'ACYUM');
+      const acyumBalance = calculateNetBalance(userTransactions, 'YUM');
       const sweaBalance = calculateNetBalance(userTransactions, 'sWEA');
 
-      // Check eligibility: Must have a positive balance of ALPH, ACYUM, or sWEA
+      // Check eligibility: Must have a positive balance of ALPH, YUM, or sWEA
       if (alphBalance <= 0n && acyumBalance <= 0n && sweaBalance <= 0n) {
         continue; // Not eligible
       }
       usersEligible++;
 
-      let rewardTokenSymbol: 'ACYUM' | 'sWEA';
+      let rewardTokenSymbol: 'YUM' | 'sWEA';
       let rewardAmountSmallestUnit: bigint;
       let targetFaucetAddress: string | undefined;
 
       if (acyumBalance > sweaBalance) {
-        rewardTokenSymbol = 'ACYUM';
-        rewardAmountSmallestUnit = REWARD_AMOUNT_ACYUM_SMALLEST_UNIT;
-        targetFaucetAddress = ACYUM_REWARD_FAUCET_ADDRESS;
+        rewardTokenSymbol = 'YUM';
+        rewardAmountSmallestUnit = REWARD_AMOUNT_YUM_SMALLEST_UNIT;
+        targetFaucetAddress = YUM_REWARD_FAUCET_ADDRESS;
       } else if (sweaBalance > acyumBalance) {
         rewardTokenSymbol = 'sWEA';
         rewardAmountSmallestUnit = REWARD_AMOUNT_SWEA_SMALLEST_UNIT;
         targetFaucetAddress = S_WEA_REWARD_FAUCET_ADDRESS;
       } else { // Equal balances (including both 0 if only ALPH is held), or only ALPH is held
-        rewardTokenSymbol = 'ACYUM'; // Default to ACYUM
-        rewardAmountSmallestUnit = REWARD_AMOUNT_ACYUM_SMALLEST_UNIT;
-        targetFaucetAddress = ACYUM_REWARD_FAUCET_ADDRESS;
+        rewardTokenSymbol = 'YUM'; // Default to YUM
+        rewardAmountSmallestUnit = REWARD_AMOUNT_YUM_SMALLEST_UNIT;
+        targetFaucetAddress = YUM_REWARD_FAUCET_ADDRESS;
       }
       
       if (!targetFaucetAddress) {
-        logger.warn(`Skipping user ${address} due to missing Faucet Address for ${rewardTokenSymbol}. ACYUM Faucet: ${ACYUM_REWARD_FAUCET_ADDRESS}, sWEA Faucet: ${S_WEA_REWARD_FAUCET_ADDRESS}`);
+        logger.warn(`Skipping user ${address} due to missing Faucet Address for ${rewardTokenSymbol}. YUM Faucet: ${YUM_REWARD_FAUCET_ADDRESS}, sWEA Faucet: ${S_WEA_REWARD_FAUCET_ADDRESS}`);
         continue;
       }
 

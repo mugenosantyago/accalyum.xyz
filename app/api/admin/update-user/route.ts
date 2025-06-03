@@ -77,13 +77,13 @@ export async function POST(request: NextRequest) {
         // Send approval email to user
         await sendEmail({
           to: email,
-          subject: "ACYUM ID Approved",
+          subject: "YUM ID Approved",
           html: `
-            <h1>ACYUM ID Approved</h1>
+            <h1>YUM ID Approved</h1>
             <p>Dear ${firstName || existingUser.firstName},</p>
-            <p>Congratulations! Your ACYUM ID has been approved.</p>
-            <p>You can now access all features of the ACYUM platform using your wallet address.</p>
-            <p>Your ACYUM ID: ${username || existingUser.username}</p>
+            <p>Congratulations! Your YUM ID has been approved.</p>
+            <p>You can now access all features of the YUM platform using your wallet address.</p>
+            <p>Your YUM ID: ${username || existingUser.username}</p>
             <p>Thank you for joining our community!</p>
           `,
         })
@@ -91,11 +91,11 @@ export async function POST(request: NextRequest) {
         // Send rejection email to user
         await sendEmail({
           to: email,
-          subject: "ACYUM ID Registration Rejected",
+          subject: "YUM ID Registration Rejected",
           html: `
-            <h1>ACYUM ID Registration Rejected</h1>
+            <h1>YUM ID Registration Rejected</h1>
             <p>Dear ${firstName || existingUser.firstName},</p>
-            <p>We regret to inform you that your ACYUM ID registration has been rejected.</p>
+            <p>We regret to inform you that your YUM ID registration has been rejected.</p>
             <p>If you believe this is an error or would like to provide additional information, please contact our support team.</p>
           `,
         })

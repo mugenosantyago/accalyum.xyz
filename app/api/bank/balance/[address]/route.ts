@@ -66,7 +66,7 @@ export async function GET(request: Request, { params }: { params: { address: str
     
     // Fetch all relevant transactions for the user, including sWEA
     const userTransactions = await BankTransaction.find(
-      { address: address, token: { $in: ['ALPH', 'ACYUM', 'sWEA'] } },
+      { address: address, token: { $in: ['ALPH', 'YUM', 'sWEA'] } },
       { token: 1, type: 1, amount: 1, _id: 0 }
     ).lean().catch((queryError) => {
       logger.error('API: Error executing transaction query:', queryError);
@@ -86,10 +86,10 @@ export async function GET(request: Request, { params }: { params: { address: str
 
     // Calculate net balances for all three tokens
     const alphBalance = calculateNetBalance(userTransactions, 'ALPH');
-    const acyumBalance = calculateNetBalance(userTransactions, 'ACYUM');
+    const acyumBalance = calculateNetBalance(userTransactions, 'YUM');
     const sweaBalance = calculateNetBalance(userTransactions, 'sWEA');
 
-    logger.info(`API: Calculated net balance for ${address}: ALPH=${alphBalance}, ACYUM=${acyumBalance}, sWEA=${sweaBalance}`);
+    logger.info(`API: Calculated net balance for ${address}: ALPH=${alphBalance}, YUM=${acyumBalance}, sWEA=${sweaBalance}`);
 
     // Return all balances as strings
     return NextResponse.json({
