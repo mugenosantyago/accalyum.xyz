@@ -5,6 +5,8 @@ import { SweaClaim } from './swea-claim'
 import { Separator } from '@/components/ui/separator'
 import Image from 'next/image'
 import { SweaVoteForm } from './SweaVoteForm'
+import { Button } from '@/components/ui/button'
+import { ArrowUpRight } from 'lucide-react'
 
 // Add metadata for the sWEA page
 export const metadata: Metadata = {
@@ -31,6 +33,23 @@ export default function SweaPage() {
           </div>
 
           <SweaInfo />
+          
+          <div className="flex justify-center my-8">
+            <Button
+              asChild
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-200 hover:scale-105"
+            >
+              <a 
+                href="https://nightshade.finance/swap?token=SWEA&action=buy" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2"
+              >
+                Buy sWEA on Nightshade
+                <ArrowUpRight className="h-4 w-4" />
+              </a>
+            </Button>
+          </div>
           
           <Separator className="my-12 bg-gradient-to-r from-transparent via-purple-600/50 to-transparent h-[1px]" />
           
