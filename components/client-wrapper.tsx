@@ -95,8 +95,8 @@ export function ClientWrapper({ children }: { children: ReactNode }) {
         walletConnectOptions={{
           projectId: projectId,
           metadata: {
-            name: "ACYUM Network",
-            description: "ACYUM Network dApp",
+            name: "YUM Network",
+            description: "YUM Network dApp",
             url: "https://accalyum.xyz",
             icons: ["https://accalyum.xyz/images/logo.png"],
           },

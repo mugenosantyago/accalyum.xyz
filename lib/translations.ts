@@ -3,10 +3,10 @@ export const translations = {
     // Navigation
     home: "Home",
     idRegistration: "ID Registration",
-    acyumBank: "Acyum Bank (Old)",
-    acyumFund: "ACYUM Fund",
+    acyumBank: "YUM Bank (Old)",
+    acyumFund: "YUM Fund",
     sweaBank: "sWEA Bank",
-    tradeTokens: "acyumSwap",
+    tradeTokens: "yumSwap",
     mutualFunding: "Mutual Funding",
     tokens: "Tokens",
     transactions: "Transactions",
@@ -15,19 +15,19 @@ export const translations = {
     connectWallet: "Connect Wallet",
 
     // Hero Section
-    welcomeToAccalyum: "Welcome to the Accalyum Network",
+    welcomeToAccalyum: "Welcome to the YUM Network",
     communityDriven:
       "A community-driven token built on the Alephium blockchain, designed to empower social causes and mutual aid.",
     registerNow: "Register Now",
 
     // Main Content
-    acyum: "ACYUM",
+    acyum: "YUM",
     acyumFullName: "Youth Uprising Movement",
 
     // About Section
-    aboutAcyum: "About ACYUM",
+    aboutAcyum: "About YUM",
     aboutDescription:
-      "ACYUM (Youth Uprising Movement) is a socialist token built on the Alephium blockchain, dedicated to funding socialist movements, community centers, and mutual aid networks. This token serves as both a digital currency and a symbol of resistance.",
+      "YUM (Youth Uprising Movement) is a socialist token built on the Alephium blockchain, dedicated to funding socialist movements, community centers, and mutual aid networks. This token serves as both a digital currency and a symbol of resistance.",
     aboutMission:
       "Our mission is to create a decentralized community that empowers individuals through blockchain technology. We believe in transparency, inclusivity, and the power of collective action to drive positive change.",
     aboutVision:
@@ -36,16 +36,16 @@ export const translations = {
     // Funding Section
     fundingSocialist: "Funding Socialist Infrastructure",
     fundingDescription:
-      "The main ACYUM banks are dedicated to using accumulated funds to create infrastructure separate from capitalist systems. These resources directly support socialist and liberation movements across the globe, funding community centers, cooperative businesses, educational initiatives.",
+      "The main YUM banks are dedicated to using accumulated funds to create infrastructure separate from capitalist systems. These resources directly support socialist and liberation movements across the globe, funding community centers, cooperative businesses, educational initiatives.",
 
     // Acquisition Section
     acquisitionAndDistribution: "Acquisition and Distribution",
     acquisitionDescription:
-      "ACYUM is purchased with Alephium (ALPH), connecting it to an environmentally conscious blockchain that consumes significantly less energy than traditional proof-of-work systems. This alignment with ecological values reflects ACYUM's commitment to building a sustainable future.",
+      "YUM is purchased with Alephium (ALPH), connecting it to an environmentally conscious blockchain that consumes significantly less energy than traditional proof-of-work systems. This alignment with ecological values reflects YUM's commitment to building a sustainable future.",
 
     // ID Registration Page
-    registerYourAcyumId: "Register Your ACYUM ID",
-    connectWalletCreateIdentity: "Connect your wallet and create your ACYUM identity to access all platform features.",
+    registerYourAcyumId: "Register Your YUM ID",
+    connectWalletCreateIdentity: "Connect your wallet and create your YUM identity to access all platform features.",
     username: "Username",
     email: "Email",
     firstName: "First Name",
@@ -60,9 +60,9 @@ export const translations = {
     register: "Register",
     registering: "Registering...",
 
-    // ACYUM Bank Page
-    acyumFundTitle: "ACYUM Fund",
-    donateSecurely: "Donate ALPH, ACYUM, or sWEA tokens securely.",
+    // YUM Bank Page
+    acyumFundTitle: "YUM Fund",
+    donateSecurely: "Donate ALPH, YUM, or sWEA tokens securely.",
     pleaseConnectWallet: "Please connect your wallet to access banking features",
     yourWallet: "Your Wallet",
     balance: "Balance",
@@ -73,15 +73,15 @@ export const translations = {
     acyumFundTreasuryBalancesTitle: "Treasury Balances",
 
     // Trade Tokens Page
-    acyumTokenExchange: "ACYUM Token Exchange",
-    buyAndSell: "Buy and sell ACYUM tokens with ALPH.",
+    acyumTokenExchange: "YUM Token Exchange",
+    buyAndSell: "Buy and sell YUM tokens with ALPH.",
     accessTradingFeatures: "Please connect your wallet to access trading features",
     buy: "Buy",
     sell: "Sell",
     youWillReceive: "You will receive",
     exchangeRate: "Exchange Rate",
-    buyAcyum: "Buy ACYUM",
-    sellAcyum: "Sell ACYUM",
+    buyAcyum: "Buy YUM",
+    sellAcyum: "Sell YUM",
 
     // Mutual Funding Page
     activeInitiatives: "Active Initiatives",
@@ -157,11 +157,11 @@ export const translations = {
     sweaDescEqualDistribution: "Everyone who joins the sWEA community receives an equal allocation of tokens, ensuring fair initial access.",
     sweaDescWealthConcentration: "To maintain fairness, no single wallet address is permitted to hold more than 1% of the total sWEA token supply.",
     sweaDescCollectiveOwnership: "Approximately 11.9% (5 trillion out of 42 trillion) of the total sWEA tokens is held securely in a community-controlled treasury.",
-    sweaDescGovernance: "ACYUM ID holders can vote on proposals via the sWEA page.",
+    sweaDescGovernance: "YUM ID holders can vote on proposals via the sWEA page.",
     sweaNote: "Note: The specific implementation details (e.g., joining process, treasury management, governance activation) depend on the deployed smart contract.",
     // Swap Component (sweaSwap)
     sweaPurchaseTitle: "Purchase sWEA",
-    sweaPurchaseDescription: "Acquire sWEA using ALPH or ACYUM. Price is community-governed.",
+    sweaPurchaseDescription: "Acquire sWEA using ALPH or YUM. Price is community-governed.",
     sweaConnectWalletPrompt: "Please connect your wallet to purchase sWEA",
     sweaYourBalances: "Your Balances:",
     sweaConfigurePrompt: " (Configure sWEA)",
@@ -170,12 +170,12 @@ export const translations = {
     sweaAmountToPayLabel: "Amount to Pay",
     sweaYouReceiveLabel: "You Receive (sWEA)",
     sweaCurrentRateLabel: "Current Rate (Community Governed):",
-    sweaAcyumRateNote: "(ACYUM rate not yet determined)",
+    sweaAcyumRateNote: "(YUM rate not yet determined)",
     sweaPriceInfo: "Price set initially, adjustable by community vote.",
     sweaPurchaseButton: "Purchase sWEA",
     sweaProcessing: "Processing...",
     // Error Messages
-    sweaErrorRateNotSet: "ACYUM swap rate not set.",
+    sweaErrorRateNotSet: "YUM swap rate not set.",
     sweaErrorConfigNeeded: "sWEA token details not configured.",
     sweaErrorInsufficientBalance: "Insufficient ${token} balance", // Placeholder
     sweaErrorInvalidAmount: "Invalid amount",
@@ -195,8 +195,8 @@ export const translations = {
 
     // sWEA Claim Request (New)
     requestInitialSweaClaim: "Request Initial sWEA Claim",
-    requestClaimDescription: "Enter your registered Acyum ID and submit a request to claim your first {amount} sWEA tokens. Admin review is required.", // {amount} is a placeholder
-    yourAcyumId: "Your Acyum ID",
+    requestClaimDescription: "Enter your registered YUM ID and submit a request to claim your first {amount} sWEA tokens. Admin review is required.", // {amount} is a placeholder
+    yourAcyumId: "Your YUM ID",
     requestSweaClaimButton: "Request {amount} sWEA Claim", // {amount} is a placeholder
     claimRequestSubmitted: "Claim Request Submitted!",
     claimRequestSubmittedDescription: "Your request has been sent for admin review. You will receive sWEA after approval and processing.",
@@ -206,17 +206,17 @@ export const translations = {
     // Nightshade Swap Page (New)
     goToNightshadeSwapButton: "Go to Nightshade Finance Swap",
 
-    // ACYUM Fund Description
-    acyumFundDescription: "The Youth Uprising Movement is dedicated to funding socialist infrastructure and mutual aid for all struggling groups across the globe. acyumFund is a way to cryptographically send funds to support these initiatives.",
+    // YUM Fund Description
+    acyumFundDescription: "The Youth Uprising Movement is dedicated to funding socialist infrastructure and mutual aid for all struggling groups across the globe. YUM Fund is a way to cryptographically send funds to support these initiatives.",
   },
   ja: {
     // Navigation
     home: "ホーム",
     idRegistration: "ID登録",
-    acyumBank: "Acyum銀行 (旧)",
-    acyumFund: "ACYUMファンド",
+    acyumBank: "YUM銀行 (旧)",
+    acyumFund: "YUMファンド",
     sweaBank: "sWEA銀行",
-    tradeTokens: "acyumSwap",
+    tradeTokens: "yumSwap",
     mutualFunding: "相互資金",
     tokens: "トークン",
     transactions: "取引履歴",
@@ -225,19 +225,19 @@ export const translations = {
     connectWallet: "ウォレット接続",
 
     // Hero Section
-    welcomeToAccalyum: "Accalyumネットワークへようこそ",
+    welcomeToAccalyum: "YUMネットワークへようこそ",
     communityDriven:
       "Alephiumブロックチェーン上に構築されたコミュニティ主導のトークンで、社会的大義と相互扶助を支援するために設計されています。",
     registerNow: "今すぐ登録",
 
     // Main Content
-    acyum: "ACYUM",
+    acyum: "YUM",
     acyumFullName: "Youth Uprising Movement",
 
     // About Section
-    aboutAcyum: "ACYUMについて",
+    aboutAcyum: "YUMについて",
     aboutDescription:
-      "ACYUM（Youth Uprising Movement）は、Alephiumブロックチェーン上に構築された社会主義トークンで、社会主義運動、コミュニティセンター、相互扶助ネットワークへの資金提供に専念しています。このトークンはデジタル通貨としての役割と抵抗のシンボルとしての両方の役割を果たします。",
+      "YUM（Youth Uprising Movement）は、Alephiumブロックチェーン上に構築された社会主義トークンで、社会主義運動、コミュニティセンター、相互扶助ネットワークへの資金提供に専念しています。このトークンはデジタル通貨としての役割と抵抗のシンボルとしての両方の役割を果たします。",
     aboutMission:
       "私たちの使命は、ブロックチェーン技術を通じて個人に力を与える分散型コミュニティを作ることです。私たちは透明性、包括性、そして前向きな変化を促進するための集団行動の力を信じています。",
     aboutVision:
@@ -246,17 +246,17 @@ export const translations = {
     // Funding Section
     fundingSocialist: "社会主義インフラへの資金提供",
     fundingDescription:
-      "主要なACYUMバンクは、資本主義システムとは別のインフラを作成するために蓄積された資金を使用することに専念しています。これらのリソースは、世界中の社会主義解放運動を直接支援し、コミュニティセンター、協同組合ビジネス、教育イニシアチブに資金を提供します。",
+      "主要なYUMバンクは、資本主義システムとは別のインフラを作成するために蓄積された資金を使用することに専念しています。これらのリソースは、世界中の社会主義解放運動を直接支援し、コミュニティセンター、協同組合ビジネス、教育イニシアチブに資金を提供します。",
 
     // Acquisition Section
     acquisitionAndDistribution: "取得と配布",
     acquisitionDescription:
-      "ACYUMはAlephium（ALPH）で購入され、従来の作業証明システムよりも大幅に少ないエネルギーを消費する環境に配慮したブロックチェーンに接続されています。この生態学的価値との整合性は、持続可能な未来を構築するというACYUMのコミットメントを反映しています。",
+      "YUMはAlephium（ALPH）で購入され、従来の作業証明システムよりも大幅に少ないエネルギーを消費する環境に配慮したブロックチェーンに接続されています。この生態学的価値との整合性は、持続可能な未来を構築するというYUMのコミットメントを反映しています。",
 
     // ID Registration Page
-    registerYourAcyumId: "ACYUM IDを登録する",
+    registerYourAcyumId: "YUM IDを登録する",
     connectWalletCreateIdentity:
-      "ウォレットを接続してACYUMアイデンティティを作成し、すべてのプラットフォーム機能にアクセスしましょう。",
+      "ウォレットを接続してYUMアイデンティティを作成し、すべてのプラットフォーム機能にアクセスしましょう。",
     username: "ユーザー名",
     email: "メールアドレス",
     firstName: "名",
@@ -271,9 +271,9 @@ export const translations = {
     register: "登録",
     registering: "登録中...",
 
-    // ACYUM Bank Page
-    acyumFundTitle: "ACYUMファンド",
-    donateSecurely: "ALPH, ACYUM, または sWEA トークンを安全に寄付する。",
+    // YUM Bank Page
+    acyumFundTitle: "YUMファンド",
+    donateSecurely: "ALPH, YUM, または sWEA トークンを安全に寄付する。",
     pleaseConnectWallet: "バンキング機能にアクセスするにはウォレットを接続してください",
     yourWallet: "あなたのウォレット",
     balance: "残高",
@@ -284,15 +284,15 @@ export const translations = {
     acyumFundTreasuryBalancesTitle: "財務残高",
 
     // Trade Tokens Page
-    acyumTokenExchange: "ACYUMトークン取引所",
-    buyAndSell: "ALPHでACYUMトークンを売買します。",
+    acyumTokenExchange: "YUMトークン取引所",
+    buyAndSell: "ALPHでYUMトークンを売買します。",
     accessTradingFeatures: "取引機能にアクセスするにはウォレットを接続してください",
     buy: "購入",
     sell: "売却",
     youWillReceive: "受け取る金額",
     exchangeRate: "為替レート",
-    buyAcyum: "ACYUM購入",
-    sellAcyum: "ACYUM売却",
+    buyAcyum: "YUM購入",
+    sellAcyum: "YUM売却",
 
     // Mutual Funding Page
     activeInitiatives: "アクティブなイニシアチブ",
@@ -361,7 +361,7 @@ export const translations = {
     connected: "接続済み",
     disconnect: "切断",
     alphBalance: "ALPH残高",
-    acyumBalance: "ACYUM残高",
+    acyumBalance: "YUM残高",
     insufficientBalance: "残高不足",
     enterAmount: "金額を入力",
     selectToken: "トークンを選択",
@@ -405,11 +405,11 @@ export const translations = {
     sweaDescEqualDistribution: "sWEAコミュニティに参加するすべての人が均等なトークン割り当てを受け取り、公正な初期アクセスを保証します。",
     sweaDescWealthConcentration: "公平性を維持するために、単一のウォレットアドレスがsWEAトークン総供給量の1％以上を保有することは許可されていません。",
     sweaDescCollectiveOwnership: "sWEAトークン総数の約11.9％（42兆のうち5兆）が、コミュニティ管理の財務に安全に保管されています。",
-    sweaDescGovernance: "ACYUM ID holders can vote on proposals via the sWEA page.",
+    sweaDescGovernance: "YUM ID holders can vote on proposals via the sWEA page.",
     sweaNote: "注：特定の実装の詳細（例：参加プロセス、財務管理、ガバナンスの有効化）は、デプロイされたスマートコントラクトに依存します。",
     // Swap Component (sweaSwap)
     sweaPurchaseTitle: "sWEA購入",
-    sweaPurchaseDescription: "ALPHまたはACYUMを使用してsWEAを取得します。価格はコミュニティ管理です。",
+    sweaPurchaseDescription: "ALPHまたはYUMを使用してsWEAを取得します。価格はコミュニティ管理です。",
     sweaConnectWalletPrompt: "sWEAを購入するにはウォレットを接続してください",
     sweaYourBalances: "あなたの残高:",
     sweaConfigurePrompt: " (sWEAを設定)",
@@ -418,12 +418,12 @@ export const translations = {
     sweaAmountToPayLabel: "支払額",
     sweaYouReceiveLabel: "受け取る金額 (sWEA)",
     sweaCurrentRateLabel: "現在のレート (コミュニティ管理):",
-    sweaAcyumRateNote: "(ACYUMレートはまだ決定されていません)",
+    sweaAcyumRateNote: "(YUMレートはまだ決定されていません)",
     sweaPriceInfo: "価格は最初に設定され、コミュニティ投票で調整可能です。",
     sweaPurchaseButton: "sWEA購入",
     sweaProcessing: "処理中...",
     // Error Messages
-    sweaErrorRateNotSet: "ACYUMスワップレートが設定されていません。",
+    sweaErrorRateNotSet: "YUMスワップレートが設定されていません。",
     sweaErrorConfigNeeded: "sWEAトークンの詳細が設定されていません。",
     sweaErrorInsufficientBalance: "残高不足: ${token}", // Placeholder
     sweaErrorInvalidAmount: "無効な金額",
@@ -443,8 +443,8 @@ export const translations = {
 
     // sWEA Claim Request (New)
     requestInitialSweaClaim: "初期sWEA請求リクエスト",
-    requestClaimDescription: "登録済みのAcyum IDを入力し、最初の{amount} sWEAトークンを請求するためのリクエストを送信してください。管理者のレビューが必要です。", // {amount} is a placeholder
-    yourAcyumId: "あなたのAcyum ID",
+    requestClaimDescription: "登録済みのYUM IDを入力し、最初の{amount} sWEAトークンを請求するためのリクエストを送信してください。管理者のレビューが必要です。", // {amount} is a placeholder
+    yourAcyumId: "あなたのYUM ID",
     requestSweaClaimButton: "{amount} sWEA請求リクエスト", // {amount} is a placeholder
     claimRequestSubmitted: "請求リクエスト送信済み！",
     claimRequestSubmittedDescription: "リクエストは管理者のレビューのために送信されました。承認および処理後にsWEAを受け取ります。",
@@ -454,7 +454,7 @@ export const translations = {
     // Nightshade Swap Page (New)
     goToNightshadeSwapButton: "Go to Nightshade Finance Swap",
 
-    // ACYUM Fund Description
-    acyumFundDescription: "アメリカ共産主義青年蜂起運動は、世界中のすべての苦闘するグループのための社会主義インフラと相互扶助に資金を提供することに専念しています。acyumFundは、より環境に優しいアルゴリズムを通じて暗号的に資金を送る方法です。私たちはこれらの資金を、パレスチナの苦闘する人々にUSDTを送るための変換や、食料、住宅、過激な抗議、芸術、セキュリティと保護などのコミュニティインフラの支払いなど、具体的な変化を生み出すために活用しています。提案はsWEAページを通じて投票されます。",
+    // YUM Fund Description
+    acyumFundDescription: "アメリカ共産主義青年蜂起運動は、世界中のすべての苦闘するグループのための社会主義インフラと相互扶助に資金を提供することに専念しています。YUM Fundは、より環境に優しいアルゴリズムを通じて暗号的に資金を送る方法です。私たちはこれらの資金を、パレスチナの苦闘する人々にUSDTを送るための変換や、食料、住宅、過激な抗議、芸術、セキュリティと保護などのコミュニティインフラの支払いなど、具体的な変化を生み出すために活用しています。提案はsWEAページを通じて投票されます。",
   },
 }

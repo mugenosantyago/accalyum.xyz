@@ -13,7 +13,7 @@ export function Footer() {
             <div className="relative w-10 h-10 rounded-full overflow-hidden border border-[#FF6B35]/30">
               <Image src="/images/logo.png" alt="" fill className="object-cover" aria-hidden="true" />
             </div>
-            <h2 className="text-2xl font-bold gradient-text">ACYUM</h2>
+            <h2 className="text-2xl font-bold gradient-text">YUM</h2>
           </div>
 
           <div className="flex space-x-8">
@@ -30,7 +30,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; {new Date().getFullYear()} ACYUM. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} YUM. All rights reserved.</p>
         </div>
       </div>
     </footer>

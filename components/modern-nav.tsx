@@ -60,10 +60,10 @@ export function ModernNav() {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-3">
             <div className="relative w-10 h-10 rounded-full overflow-hidden border border-[#FF6B35]/50 glow">
-              <Image src="/images/logo.png" alt="ACYUM" fill className="object-cover" />
+              <Image src="/images/logo.png" alt="YUM" fill className="object-cover" />
             </div>
             {/* Hide text on mobile, show on md and up */}
-            <span className="font-bold text-2xl gradient-text hidden md:block">ACYUM</span>
+            <span className="font-bold text-2xl gradient-text hidden md:block">YUM</span>
           </Link>
 
           <div className="flex items-center gap-2 md:gap-4">
@@ -118,7 +118,7 @@ export function ModernNav() {
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
             <div className="absolute inset-y-0 right-0 w-full max-w-xs bg-gray-900 border-l border-gray-800 flex flex-col">
               <div className="flex justify-between items-center p-4 border-b border-gray-800">
-                <h2 className="text-xl font-bold gradient-text">ACYUM</h2>
+                <h2 className="text-xl font-bold gradient-text">YUM</h2>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:text-white"

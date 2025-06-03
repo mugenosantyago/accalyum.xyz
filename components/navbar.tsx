@@ -19,12 +19,12 @@ export function Navbar() {
   return (
     <header className="bg-black border-b border-gray-800 py-4">
       <div className="container mx-auto px-4 flex justify-between items-center">
-        <Link href="/" className="flex items-center space-x-2" aria-label="ACYUM Home">
+        <Link href="/" className="flex items-center space-x-2" aria-label="YUM Home">
           <div className="relative w-10 h-10 rounded-full overflow-hidden">
             <Image src="/images/logo.png" alt="" fill className="object-cover" aria-hidden="true" />
           </div>
           {/* Hide text on mobile, show on md and up */}
-          <span className="font-bold text-xl text-[#FF6B35] hidden md:block">ACYUM</span>
+          <span className="font-bold text-xl text-[#FF6B35] hidden md:block">YUM</span>
         </Link>
 
         {/* Desktop Navigation */}
