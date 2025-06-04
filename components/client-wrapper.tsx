@@ -71,14 +71,14 @@ export function ClientWrapper({ children }: { children: ReactNode }) {
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-gray-800"></div>
-              <span className="font-bold text-2xl gradient-text hidden md:block">ACYUM</span>
+              <span className="font-bold text-2xl gradient-text hidden md:block">Accalyum Network</span>
             </div>
           </div>
         </div>
         {children}
         <div className="bg-gray-900 py-8 mt-16">
           <div className="container mx-auto px-4">
-            <p className="text-center text-gray-500">© {new Date().getFullYear()} ACYUM Network</p>
+            <p className="text-center text-gray-500">© {new Date().getFullYear()} Accalyum Network</p>
           </div>
         </div>
       </>
@@ -95,8 +95,8 @@ export function ClientWrapper({ children }: { children: ReactNode }) {
         walletConnectOptions={{
           projectId: projectId,
           metadata: {
-            name: "ACYUM Network",
-            description: "ACYUM Network dApp",
+            name: "Accalyum Network",
+            description: "Accalyum Network dApp",
             url: "https://accalyum.xyz",
             icons: ["https://accalyum.xyz/images/logo.png"],
           },

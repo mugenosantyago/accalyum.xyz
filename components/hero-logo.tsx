@@ -16,7 +16,7 @@ export function HeroLogo() {
         delay: 0.2,
       }}
     >
-      <Image src="/images/logo.png" alt="ACYUM Logo" fill className="object-cover" />
+      <Image src="/images/logo.png" alt="YUM Logo" fill className="object-cover" />
     </motion.div>
   )
 }

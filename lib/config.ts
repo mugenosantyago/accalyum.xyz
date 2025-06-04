@@ -53,7 +53,7 @@ export const config = {
 
 // Site configuration for metadata
 export const siteConfig = {
-  name: "ACYUM Network",
+  name: "YUM Network",
   description:
     "A community-driven socialist token built on the Alephium blockchain, designed to empower social causes and mutual aid.",
   url: "https://accalyum.xyz",

@@ -15,7 +15,7 @@ export const translations = {
     connectWallet: "Connect Wallet",
 
     // Hero Section
-    welcomeToAccalyum: "Welcome to the ACYUM Network",
+    welcomeToAccalyum: "Welcome to the Accalyum Network",
     communityDriven:
       "A community-driven token built on the Alephium blockchain, designed to empower social causes and mutual aid.",
     registerNow: "Register Now",
@@ -207,7 +207,7 @@ export const translations = {
     goToNightshadeSwapButton: "Go to Nightshade Finance Swap",
 
     // YUM Fund Description
-    acyumFundDescription: "The Youth Uprising Movement is dedicated to funding socialist infrastructure and mutual aid for all struggling groups across the globe. YUM Fund is a way to cryptographically send funds to support these initiatives.",
+    acyumFundDescription: "The Youth Uprising Movement is dedicated to funding socialist infrastructure and mutual aid for all struggling groups across the globe. Accalyum Fund is a way to cryptographically send funds to support these initiatives.",
   },
   ja: {
     // Navigation
@@ -225,7 +225,7 @@ export const translations = {
     connectWallet: "ウォレット接続",
 
     // Hero Section
-    welcomeToAccalyum: "YUMネットワークへようこそ",
+    welcomeToAccalyum: "Accalyumネットワークへようこそ",
     communityDriven:
       "Alephiumブロックチェーン上に構築されたコミュニティ主導のトークンで、社会的大義と相互扶助を支援するために設計されています。",
     registerNow: "今すぐ登録",
@@ -455,6 +455,6 @@ export const translations = {
     goToNightshadeSwapButton: "Go to Nightshade Finance Swap",
 
     // YUM Fund Description
-    acyumFundDescription: "アメリカ共産主義青年蜂起運動は、世界中のすべての苦闘するグループのための社会主義インフラと相互扶助に資金を提供することに専念しています。YUM Fundは、より環境に優しいアルゴリズムを通じて暗号的に資金を送る方法です。私たちはこれらの資金を、パレスチナの苦闘する人々にUSDTを送るための変換や、食料、住宅、過激な抗議、芸術、セキュリティと保護などのコミュニティインフラの支払いなど、具体的な変化を生み出すために活用しています。提案はsWEAページを通じて投票されます。",
+    acyumFundDescription: "Youth Uprising Movementは、世界中のすべての苦闘するグループのための社会主義インフラと相互扶助に資金を提供することに専念しています。Accalyum Fundは、これらのイニシアチブを支援するために暗号的に資金を送る方法です。",
   },
 }

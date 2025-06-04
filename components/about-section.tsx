@@ -9,15 +9,15 @@ export function AboutSection() {
   // Define the content directly in the component to avoid translation issues
   const content = {
     en: {
-      aboutAcyum: "About ACYUM",
+      aboutAcyum: "About YUM",
       aboutDescription:
-        "ACYUM (American Communist Youth Uprising Movement) is a socialist token built on the Alephium blockchain, dedicated to funding socialist movements, community centers, and mutual aid networks. This token serves as both a digital currency and a symbol of resistance.",
+        "YUM (Youth Uprising Movement) is a socialist token built on the Alephium blockchain, dedicated to funding socialist movements, community centers, and mutual aid networks. This token serves as both a digital currency and a symbol of resistance.",
       fundingSocialist: "Funding Socialist Infrastructure",
       fundingDescription:
-        "The main ACYUM banks are dedicated to using accumulated funds to create infrastructure separate from capitalist systems. These resources directly support socialist and liberation movements across the globe, funding community centers, cooperative businesses, educational initiatives.",
+        "The main YUM banks are dedicated to using accumulated funds to create infrastructure separate from capitalist systems. These resources directly support socialist and liberation movements across the globe, funding community centers, cooperative businesses, educational initiatives.",
       acquisitionAndDistribution: "Acquisition and Distribution",
       acquisitionDescription:
-        "ACYUM is purchased with Alephium (ALPH), connecting it to an environmentally conscious blockchain that consumes significantly less energy than traditional proof-of-work systems. This alignment with ecological values reflects ACYUM's commitment to building a sustainable future.",
+        "YUM is purchased with Alephium (ALPH), connecting it to an environmentally conscious blockchain that consumes significantly less energy than traditional proof-of-work systems. This alignment with ecological values reflects YUM's commitment to building a sustainable future.",
       aboutMission: "Our Mission",
       aboutVision:
         "We envision a future where financial systems are accessible to all, where communities can self-organize to address social challenges, and where technology serves as a force for good in the world. Our mission is to create a decentralized community that empowers individuals through blockchain technology. We believe in transparency, inclusivity, and the power of collective action to drive positive change.",
