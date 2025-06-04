@@ -3,7 +3,7 @@
 import { config } from "@/lib/config"
 import { NodeProvider } from "@alephium/web3"
 
-const PROVIDER_URL: string | undefined = config.alephium.providerUrl
+const PROVIDER_URL: string | undefined = config.alephium.nodeUrl
 
 // Initialize the node provider
 let nodeProvider: NodeProvider | null = null
@@ -49,8 +49,8 @@ export async function getTokenBalanceAction(address: string, tokenId: string): P
     if (token) {
        // Get decimals from config.alephium based on known token IDs
        let decimals = 18; // Default to ALPH decimals
-       if (tokenId === config.alephium.acyumTokenIdHex) {
-         decimals = config.alephium.acyumDecimals ?? 7; // Default YUM decimals
+       if (tokenId === config.alephium.yumTokenIdHex) {
+         decimals = config.alephium.yumDecimals ?? 4; // Default YUM decimals
        } else if (tokenId === config.alephium.sweaTokenIdHex) {
          decimals = config.alephium.sweaDecimals ?? 9; // Default sWEA decimals
        } else {
@@ -88,11 +88,11 @@ async function getAlphBalanceAction(address: string): Promise<{ success: boolean
   }
 }
 
-export async function getAcyumTokenId(): Promise<string> {
-  return config.alephium.acyumTokenIdHex || ""
+export async function getYumTokenId(): Promise<string> {
+  return config.alephium.yumTokenIdHex || ""
 }
 
-export async function getAcyumToken(): Promise<string> {
+export async function getYumToken(): Promise<string> {
   return process.env.YUM_TOKEN || ""
 }
 

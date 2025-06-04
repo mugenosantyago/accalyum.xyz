@@ -56,7 +56,7 @@ const getExplorerUrl = (txId: string): string => {
 interface LedgerEntry {
   id: string;
   type: 'deposit' | 'withdraw';
-  token: 'ALPH' | 'ACYUM' | 'sWEA';
+  token: 'ALPH' | 'YUM' | 'sWEA';
   amount: string; // Amount in smallest unit (string)
   txId: string;
   timestamp: Date;
@@ -65,7 +65,7 @@ interface LedgerEntry {
 // --- Component Props ---
 interface BankLedgerProps {
   address: string | null; 
-  bankName: string; // e.g., "ACYUM Bank" or "sWEA Bank"
+  bankName: string; // e.g., "YUM Bank" or "sWEA Bank"
 }
 
 // --- Component Implementation ---
@@ -78,7 +78,7 @@ export function BankLedger({ address, bankName }: BankLedgerProps) {
   // Token constants for decimals
   const tokenDecimals: { [key: string]: number } = {
     ALPH: 18,
-    ACYUM: config.alephium.acyumDecimals ?? 7,
+    YUM: config.alephium.yumDecimals ?? 4,
     sWEA: config.alephium.sweaDecimals ?? 18,
   };
 
@@ -113,7 +113,7 @@ export function BankLedger({ address, bankName }: BankLedgerProps) {
 
   const getTokenIcon = (token: string) => {
       switch(token) {
-          case 'ACYUM': return "/images/logo.png";
+          case 'YUM': return "/images/logo.png";
           case 'sWEA': return "/IMG_5086_Original.jpg";
           default: return null; // No icon for ALPH currently
       }

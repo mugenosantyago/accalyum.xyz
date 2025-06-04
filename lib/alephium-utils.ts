@@ -1,4 +1,4 @@
-import { web3 } from "@alephium/web3"
+import { Address, ContractId } from "@alephium/web3"
 
 // Add the token faucet configuration
 export const tokenFaucetConfig = {
@@ -25,19 +25,19 @@ export function formatAlphBalance(balance: string): string {
   }
 }
 
-// Format ACYUM balance for display
-export function formatAcyumBalance(balance: string): string {
+// Format YUM balance for display - Changed from ACYUM
+export function formatYumBalance(balance: string): string { // Changed from formatAcyumBalance
   if (!balance) return "0.00"
 
   try {
-    // ACYUM has 7 decimal places
-    const balanceNum = Number.parseFloat(balance) / 10 ** 7
+    // YUM has 4 decimal places - Changed from 7
+    const balanceNum = Number.parseFloat(balance) / 10 ** 4 // Changed from 7
     return balanceNum.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
   } catch (error) {
-    console.error("Error formatting ACYUM balance:", error)
+    console.error("Error formatting YUM balance:", error) // Changed from ACYUM
     return "0.00"
   }
 }
@@ -54,8 +54,8 @@ export const AlephiumUtils = {
 
     try {
       // Check if it's a valid base58 address
-      if (web3.Address.isBase58(address)) {
-        const addressObj = web3.Address.fromBase58(address)
+      if (Address.isBase58(address)) {
+        const addressObj = Address.fromBase58(address)
         return {
           isValid: true,
           isContract: addressObj.isContractAddress(),
@@ -64,7 +64,7 @@ export const AlephiumUtils = {
       }
 
       // Check if it's a valid hex contract ID
-      if (web3.ContractId.isHexString(address)) {
+      if (ContractId.isHexString(address)) {
         return {
           isValid: true,
           isContract: true,
@@ -91,14 +91,14 @@ export const AlephiumUtils = {
     if (!address) return -1
 
     try {
-      if (web3.Address.isBase58(address)) {
-        return web3.Address.getGroup(address)
+      if (Address.isBase58(address)) {
+        return Address.getGroup(address)
       }
 
-      if (web3.ContractId.isHexString(address)) {
-        const contractId = web3.ContractId.fromHexString(address)
-        const contractAddress = web3.Address.contract(contractId)
-        return web3.Address.getGroup(contractAddress.toBase58())
+      if (ContractId.isHexString(address)) {
+        const contractId = ContractId.fromHexString(address)
+        const contractAddress = Address.contract(contractId)
+        return Address.getGroup(contractAddress.toBase58())
       }
 
       return -1
@@ -114,11 +114,11 @@ export const AlephiumUtils = {
     }
 
     try {
-      if (!web3.ContractId.isHexString(contractId)) {
+      if (!ContractId.isHexString(contractId)) {
         throw new Error("Invalid contract ID format")
       }
-      const contractIdObj = web3.ContractId.fromHexString(contractId)
-      return web3.Address.contract(contractIdObj).toBase58()
+      const contractIdObj = ContractId.fromHexString(contractId)
+      return Address.contract(contractIdObj).toBase58()
     } catch (error) {
       console.error("Error converting contract ID to address:", error)
       throw error
@@ -131,10 +131,10 @@ export const AlephiumUtils = {
     }
 
     try {
-      if (!web3.Address.isBase58(address)) {
+      if (!Address.isBase58(address)) {
         throw new Error("Invalid address format")
       }
-      const addressObj = web3.Address.fromBase58(address)
+      const addressObj = Address.fromBase58(address)
       if (!addressObj.isContractAddress()) {
         throw new Error("Address is not a contract address")
       }

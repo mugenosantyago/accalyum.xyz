@@ -9,7 +9,7 @@ interface EmailOptions {
   from?: string
 }
 
-export async function sendEmail({ to, subject, html, from = "ACYUM <noreply@acyum.com>" }: EmailOptions) {
+export async function sendEmail({ to, subject, html, from = "YUM <noreply@yum.com>" }: EmailOptions) {
   if (!process.env.RESEND_API_KEY) {
     console.warn("RESEND_API_KEY not set, skipping email send")
     return { success: false, message: "Email service not configured" }

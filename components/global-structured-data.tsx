@@ -9,7 +9,7 @@ export function GlobalStructuredData() {
     name: "Accalyum Network",
     url: baseUrl,
     logo: `${baseUrl}/images/logo.png`,
-    sameAs: ["https://twitter.com/acyum_network", "https://github.com/acyum", "https://discord.gg/acyum"],
+    sameAs: ["https://x.com/alephionline", "https://discord.gg/yum"],
     description:
       "A community-driven socialist token built on the Alephium blockchain, designed to empower social causes and mutual aid.",
   }
@@ -33,8 +33,8 @@ export function GlobalStructuredData() {
       {
         "@type": "ListItem",
         position: 3,
-        name: "Acyum Bank",
-        item: `${baseUrl}/acyum-bank`,
+        name: "YUM Bank",
+        item: `${baseUrl}/yum-bank`,
       },
       {
         "@type": "ListItem",

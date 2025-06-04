@@ -39,7 +39,7 @@ import { getContractByCodeHash, registerContract } from "./contracts";
 // Custom types for the contract
 export namespace PostManagerTypes {
   export type Fields = {
-    acyumTokenId: HexString;
+    yumTokenId: HexString;
     postFee: bigint;
     treasury: Address;
   };
@@ -58,7 +58,7 @@ export namespace PostManagerTypes {
       params: Omit<CallContractParams<{}>, "args">;
       result: CallContractResult<bigint>;
     };
-    getAcyumTokenId: {
+    getYumTokenId: {
       params: Omit<CallContractParams<{}>, "args">;
       result: CallContractResult<HexString>;
     };
@@ -88,7 +88,7 @@ export namespace PostManagerTypes {
       params: Omit<SignExecuteContractMethodParams<{}>, "args">;
       result: SignExecuteScriptTxResult;
     };
-    getAcyumTokenId: {
+    getYumTokenId: {
       params: Omit<SignExecuteContractMethodParams<{}>, "args">;
       result: SignExecuteScriptTxResult;
     };
@@ -130,13 +130,13 @@ class Factory extends ContractFactory<
     ): Promise<TestContractResultWithoutMaps<bigint>> => {
       return testMethod(this, "getPostFee", params, getContractByCodeHash);
     },
-    getAcyumTokenId: async (
+    getYumTokenId: async (
       params: Omit<
         TestContractParamsWithoutMaps<PostManagerTypes.Fields, never>,
         "testArgs"
       >
     ): Promise<TestContractResultWithoutMaps<HexString>> => {
-      return testMethod(this, "getAcyumTokenId", params, getContractByCodeHash);
+      return testMethod(this, "getYumTokenId", params, getContractByCodeHash);
     },
     createPost: async (
       params: TestContractParamsWithoutMaps<
@@ -207,13 +207,13 @@ export class PostManagerInstance extends ContractInstance {
         getContractByCodeHash
       );
     },
-    getAcyumTokenId: async (
-      params?: PostManagerTypes.CallMethodParams<"getAcyumTokenId">
-    ): Promise<PostManagerTypes.CallMethodResult<"getAcyumTokenId">> => {
+    getYumTokenId: async (
+      params?: PostManagerTypes.CallMethodParams<"getYumTokenId">
+    ): Promise<PostManagerTypes.CallMethodResult<"getYumTokenId">> => {
       return callMethod(
         PostManager,
         this,
-        "getAcyumTokenId",
+        "getYumTokenId",
         params === undefined ? {} : params,
         getContractByCodeHash
       );
@@ -237,10 +237,10 @@ export class PostManagerInstance extends ContractInstance {
     ): Promise<PostManagerTypes.SignExecuteMethodResult<"getPostFee">> => {
       return signExecuteMethod(PostManager, this, "getPostFee", params);
     },
-    getAcyumTokenId: async (
-      params: PostManagerTypes.SignExecuteMethodParams<"getAcyumTokenId">
-    ): Promise<PostManagerTypes.SignExecuteMethodResult<"getAcyumTokenId">> => {
-      return signExecuteMethod(PostManager, this, "getAcyumTokenId", params);
+    getYumTokenId: async (
+      params: PostManagerTypes.SignExecuteMethodParams<"getYumTokenId">
+    ): Promise<PostManagerTypes.SignExecuteMethodResult<"getYumTokenId">> => {
+      return signExecuteMethod(PostManager, this, "getYumTokenId", params);
     },
     createPost: async (
       params: PostManagerTypes.SignExecuteMethodParams<"createPost">

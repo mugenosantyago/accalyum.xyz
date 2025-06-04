@@ -119,8 +119,8 @@ export class AlephiumWeb3 {
                 instance.setWalletConnectConfig({
                   projectId: config.alephium.walletConnectProjectId,
                   metadata: {
-                    name: "ACYUM Network",
-                    description: "ACYUM Network dApp",
+                    name: "YUM Network",
+                    description: "YUM Network dApp",
                     url: typeof window !== "undefined" ? window.location.origin : "https://accalyum.xyz",
                     icons: ["https://accalyum.xyz/images/logo.png"],
                   },
@@ -496,276 +496,243 @@ export class AlephiumWeb3 {
   }
 
   public async getBalance(address: string): Promise<string> {
+    if (!this.nodeProvider) {
+      throw new Error("Node provider not initialized.")
+    }
+    console.log(`Fetching balance for address: ${address}`)
     try {
-      if (!this.nodeProvider) {
-        await AlephiumWeb3.initialize()
-        if (!this.nodeProvider) {
-          throw new Error("Node provider initialization failed")
-        }
-      }
-
-      // Check if the method exists
-      if (
-        !this.nodeProvider.addresses ||
-        typeof this.nodeProvider.addresses.getAddressesAddressBalance !== "function"
-      ) {
-        console.warn("getAddressesAddressBalance method is not available in this version of the Alephium library")
-        return "0"
-      }
-
       const balance = await this.nodeProvider.addresses.getAddressesAddressBalance(address)
-      return balance.balance
+      return balance.balance // Return ALPH balance
     } catch (error) {
-      console.error("Failed to get balance:", error)
-      if (this.connectionMethod === ConnectionMethod.WalletConnect) {
-        console.error("WalletConnect balance fetch error details:", error);
-      }
-      return "0" // Return 0 instead of throwing to avoid breaking the UI
+      console.error(`Error fetching balance for ${address}:`, error)
+      throw error
     }
   }
 
-  public async getAcyumBalance(address: string): Promise<string> {
+  public async getYumBalance(address: string): Promise<string> {
+    if (!this.nodeProvider) {
+      throw new Error("Node provider not initialized.")
+    }
+    console.log(`Fetching YUM balance for address: ${address}`)
     try {
-      if (!this.nodeProvider) {
-        await AlephiumWeb3.initialize()
-        if (!this.nodeProvider) {
-          throw new Error("Node provider initialization failed")
+      const balance: AddressBalance = await this.nodeProvider.addresses.getAddressesAddressBalance(address)
+      let yumBalance = BigInt(0)
+
+      // Use config.alephium.yumTokenIdHex for consistency
+      const normalizedTokenId = config.alephium.yumTokenIdHex.startsWith("0x")
+        ? config.alephium.yumTokenIdHex.slice(2)
+        : config.alephium.yumTokenIdHex
+
+      // Check tokenBalances array first (new structure)
+      if (Array.isArray(balance.tokenBalances)) {
+        const yumToken = balance.tokenBalances.find((token) => token.id === normalizedTokenId)
+        if (yumToken) {
+          yumBalance += BigInt(yumToken.amount)
+        }
+      } else if (typeof balance.tokenBalances === "object") {
+        // Fallback for older API or different structure if tokenBalances is an object
+        if (balance.tokenBalances[normalizedTokenId]) {
+          yumBalance += BigInt(balance.tokenBalances[normalizedTokenId])
         }
       }
 
-      // Check if the method exists
-      if (
-        !this.nodeProvider.addresses ||
-        typeof this.nodeProvider.addresses.getAddressesAddressBalance !== "function"
-      ) {
-        console.warn("getAddressesAddressBalance method is not available in this version of the Alephium library")
-        return "0"
-      }
-
-      const balance = (await this.nodeProvider.addresses.getAddressesAddressBalance(address)) as AddressBalance
-
-      let acyumBalance = BigInt(0)
-      const normalizedTokenId = config.alephium.acyumTokenIdHex.startsWith("0x")
-        ? config.alephium.acyumTokenIdHex.slice(2)
-        : config.alephium.acyumTokenIdHex
-
-      if (balance.tokenBalances) {
-        if (Array.isArray(balance.tokenBalances)) {
-          const token = balance.tokenBalances.find(
-            (t: TokenBalance) => t.id.toLowerCase() === normalizedTokenId.toLowerCase(),
-          )
-          if (token) {
-            acyumBalance += BigInt(token.amount)
+      // Also check locked balances
+      if (Array.isArray(balance.lockedBalances)) {
+        balance.lockedBalances.forEach((locked) => {
+          if (locked.tokens && locked.tokens[normalizedTokenId]) {
+            yumBalance += BigInt(locked.tokens[normalizedTokenId])
           }
-        } else if (normalizedTokenId in balance.tokenBalances) {
-          acyumBalance += BigInt(balance.tokenBalances[normalizedTokenId])
-        }
+        })
       }
-
-      if (balance.lockedBalances) {
-        for (const locked of balance.lockedBalances) {
-          if (locked.tokens && normalizedTokenId in locked.tokens) {
-            acyumBalance += BigInt(locked.tokens[normalizedTokenId])
-          }
-        }
-      }
-
-      return acyumBalance.toString()
+      return yumBalance.toString()
     } catch (error) {
-      console.error("Error fetching ACYUM balance:", error)
-      return "0"
+      console.error("Error fetching YUM balance:", error)
+      throw error
     }
   }
 
-  // Update the transfer method to validate addresses
   public async transfer(to: string, amount: string): Promise<string> {
-    if (!this.isConnected()) {
-      throw new Error("Wallet not connected")
+    if (!this.provider || !this.connectedAddress) {
+      throw new Error("Wallet not connected.")
     }
 
-    if (!this.provider && typeof window !== "undefined" && window.alephium) {
-      this.provider = window.alephium
+    // Validate the recipient address
+    if (!AlephiumUtils.validateAddress(to).isValid) {
+      throw new Error("Invalid recipient address.")
     }
 
-    if (!this.provider) {
-      throw new Error("No provider available")
+    console.log(`Transferring ALPH: ${amount} to ${to}`)
+    try {
+      const txResult = await this.provider.signAndSubmitTransferTx({
+        signerAddress: this.connectedAddress,
+        destinations: [
+          {
+            address: to,
+            attoAlphAmount: BigInt(amount),
+          },
+        ],
+      })
+      console.log(`ALPH transfer successful: Tx ID ${txResult.txId}`)
+      return txResult.txId
+    } catch (error) {
+      console.error("Error transferring ALPH:", error)
+      throw error
     }
-
-    // Validate recipient address
-    const addressValidation = AlephiumUtils.validateAddress(to)
-    if (!addressValidation.isValid) {
-      throw new Error("Invalid recipient address")
-    }
-
-    // Don't allow transfers to contract addresses
-    if (addressValidation.isContract) {
-      throw new Error("Cannot transfer ALPH directly to a contract address")
-    }
-
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      throw new Error("Invalid amount")
-    }
-
-    const fromAddress = this.connectedAddress || (await this.provider.getSelectedAccount())
-
-    // Execute the transaction
-    const txId = await this.provider.signAndSubmitTransferTx({
-      from: fromAddress,
-      to,
-      amount,
-    })
-
-    return txId
   }
 
-  // Update the transferAcyum method to validate addresses
-  public async transferAcyum(to: string, amount: string): Promise<string> {
-    if (!this.isConnected()) {
-      throw new Error("Wallet not connected")
+  public async transferYum(to: string, amount: string): Promise<string> {
+    if (!this.provider || !this.connectedAddress) {
+      throw new Error("Wallet not connected.")
     }
 
-    if (!this.provider && typeof window !== "undefined" && window.alephium) {
-      this.provider = window.alephium
+    // Validate the recipient address
+    if (!AlephiumUtils.validateAddress(to).isValid) {
+      throw new Error("Invalid recipient address.")
     }
 
-    if (!this.provider) {
-      throw new Error("No provider available")
+    if (!config.alephium.yumTokenIdHex) {
+      throw new Error("YUM token ID not configured")
+    }
+    console.log(`Transferring YUM: ${amount} to ${to}`)
+    try {
+      const txResult = await this.provider.signAndSubmitTransferTx({
+        signerAddress: this.connectedAddress,
+        destinations: [
+          {
+            address: to,
+            attoAlphAmount: 10000n, // DUST_AMOUNT for the ALPH part of the UTXO
+            tokens: [{ id: config.alephium.yumTokenIdHex, amount: BigInt(amount) }],
+          },
+        ],
+      })
+      console.log(`YUM transfer successful: Tx ID ${txResult.txId}`)
+      return txResult.txId
+    } catch (error) {
+      console.error("Error transferring YUM:", error)
+      throw error
+    }
+  }
+
+  public async transferSwea(to: string, amount: string): Promise<string> {
+    if (!this.provider || !this.connectedAddress) {
+      throw new Error("Wallet not connected.")
     }
 
-    // Validate recipient address
-    const addressValidation = AlephiumUtils.validateAddress(to)
-    if (!addressValidation.isValid) {
-      throw new Error("Invalid recipient address")
+    // Validate the recipient address
+    if (!AlephiumUtils.validateAddress(to).isValid) {
+      throw new Error("Invalid recipient address.")
     }
 
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      throw new Error("Invalid amount")
+    if (!config.alephium.sweaTokenIdHex) {
+      throw new Error("sWEA token ID not configured")
     }
-
-    if (!config.alephium.acyumTokenIdHex) {
-      throw new Error("ACYUM token ID not configured")
+    console.log(`Transferring sWEA: ${amount} to ${to}`)
+    try {
+      const txResult = await this.provider.signAndSubmitTransferTx({
+        signerAddress: this.connectedAddress,
+        destinations: [
+          {
+            address: to,
+            attoAlphAmount: 10000n, // DUST_AMOUNT for the ALPH part of the UTXO
+            tokens: [{ id: config.alephium.sweaTokenIdHex, amount: BigInt(amount) }],
+          },
+        ],
+      })
+      console.log(`sWEA transfer successful: Tx ID ${txResult.txId}`)
+      return txResult.txId
+    } catch (error) {
+      console.error("Error transferring sWEA:", error)
+      throw error
     }
-
-    const fromAddress = this.connectedAddress || (await this.provider.getSelectedAccount())
-
-    // Execute the transaction
-    const txId = await this.provider.signAndSubmitTransferTx({
-      from: fromAddress,
-      to,
-      amount: "0",
-      tokens: [{ id: config.alephium.acyumTokenIdHex, amount }],
-    })
-
-    return txId
   }
 
   public async deposit(amount: string): Promise<string> {
-    if (!this.isConnected()) {
-      throw new Error("Wallet not connected")
+    if (!this.provider || !this.connectedAddress) {
+      throw new Error("Wallet not connected.")
     }
-
-    if (!this.provider && typeof window !== "undefined" && window.alephium) {
-      this.provider = window.alephium
-    }
-
-    if (!this.provider) {
-      throw new Error("No provider available")
-    }
-
-    // Validate parameters
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      throw new Error("Invalid amount")
-    }
-
     if (!config.alephium.depositContractAddress) {
-      throw new Error("Contract address not configured")
+      throw new Error("Deposit contract address not configured.")
     }
 
-    if (!config.alephium.acyumTokenIdHex) {
-      throw new Error("ACYUM token ID not configured")
+    console.log(`Depositing ALPH: ${amount} to ${config.alephium.depositContractAddress}`)
+    try {
+      const txResult = await this.provider.signAndSubmitExecuteScriptTx({
+        signerAddress: this.connectedAddress,
+        script: makeDepositJson.bytecodeTemplate,
+        attoAlphAmount: BigInt(amount),
+      })
+      console.log(`ALPH deposit successful: Tx ID ${txResult.txId}`)
+      return txResult.txId
+    } catch (error) {
+      console.error("Error depositing ALPH:", error)
+      throw error
     }
-
-    // Execute the transaction
-    const txId = await this.provider.signAndSubmitExecuteScriptTx({
-      bytecode: makeDepositJson.bytecodeTemplate,
-      args: {
-        depositContract: config.alephium.depositContractAddress,
-        amount,
-      },
-      tokens: [{ id: config.alephium.acyumTokenIdHex, amount }],
-    })
-
-    return txId
   }
 
   public async withdraw(amount: string): Promise<string> {
-    if (!this.isConnected()) {
-      throw new Error("Wallet not connected")
+    if (!this.provider || !this.connectedAddress) {
+      throw new Error("Wallet not connected.")
+    }
+    if (!config.alephium.depositContractAddress) {
+      throw new Error("Deposit contract address not configured.")
     }
 
-    if (!this.provider && typeof window !== "undefined" && window.alephium) {
-      this.provider = window.alephium
+    console.log(`Withdrawing ALPH: ${amount} from ${config.alephium.depositContractAddress}`)
+    try {
+      const txResult = await this.provider.signAndSubmitExecuteScriptTx({
+        signerAddress: this.connectedAddress,
+        script: withdrawJson.bytecodeTemplate,
+        attoAlphAmount: 0n,
+        tokens: [{ id: config.alephium.yumTokenIdHex, amount: BigInt(amount) }],
+      })
+      console.log(`ALPH withdrawal successful: Tx ID ${txResult.txId}`)
+      return txResult.txId
+    } catch (error) {
+      console.error("Error withdrawing ALPH:", error)
+      throw error
     }
-
-    if (!this.provider) {
-      throw new Error("No provider available")
-    }
-
-    // Validate parameters
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      throw new Error("Invalid amount")
-    }
-
-    if (!config.alephium.acyumTokenIdHex) {
-      throw new Error("ACYUM token ID not configured")
-    }
-
-    // Execute the transaction
-    const txId = await this.provider.signAndSubmitExecuteScriptTx({
-      bytecode: withdrawJson.bytecodeTemplate,
-      args: {
-        token: config.alephium.acyumTokenIdHex,
-        amount,
-      },
-    })
-
-    return txId
   }
 
-  public async waitForTransactionConfirmation(txId: string, confirmations = 1, timeoutMs = 60000): Promise<boolean> {
+  public async waitForTransactionConfirmation(
+    txId: string,
+    confirmations = 1,
+    timeoutMs = 60000
+  ): Promise<boolean> {
     if (!this.nodeProvider) {
-      await AlephiumWeb3.initialize()
-      if (!this.nodeProvider) {
-        throw new Error("Node provider initialization failed")
-      }
+      throw new Error("Node provider not initialized.")
     }
-
-    // Check if the method exists
-    if (!this.nodeProvider.transactions || typeof this.nodeProvider.transactions.getTransactionsStatus !== "function") {
-      console.warn("getTransactionsStatus method is not available in this version of the Alephium library")
-      return false
-    }
-
+    console.log(`Waiting for ${confirmations} confirmations for Tx ID: ${txId}`)
     const startTime = Date.now()
 
-    while (Date.now() - startTime < timeoutMs) {
-      try {
-        const status = await this.nodeProvider.transactions.getTransactionsStatus({ txId })
-        if (status.confirmations >= confirmations) {
-          return true
+    return new Promise((resolve, reject) => {
+      const checkConfirmation = async () => {
+        try {
+          const txStatus = await this.nodeProvider!.transactions.getTransactionsStatus({ txId: txId })
+          if (txStatus.confirmations && txStatus.confirmations >= confirmations) {
+            console.log(`Transaction ${txId} confirmed with ${txStatus.confirmations} confirmations.`)
+            resolve(true)
+          } else if (Date.now() - startTime > timeoutMs) {
+            console.warn(`Timeout waiting for transaction ${txId} to be confirmed.`)
+            resolve(false)
+          } else {
+            setTimeout(checkConfirmation, 4000)
+          }
+        } catch (error) {
+          console.error(`Error checking transaction status for ${txId}:`, error)
+          if (Date.now() - startTime > timeoutMs) {
+            console.warn(`Timeout due to error while waiting for transaction ${txId}.`)
+            resolve(false)
+          } else {
+            setTimeout(checkConfirmation, 4000)
+          }
         }
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-      } catch (error) {
-        console.error("Error checking transaction status:", error)
-        // Continue trying despite errors
       }
-    }
-
-    throw new Error("Transaction confirmation timeout")
+      checkConfirmation()
+    })
   }
 
   public isConnected(): boolean {
-    return this.connectionMethod !== ConnectionMethod.None && this.connectedAddress !== null
+    return this.connectionMethod !== ConnectionMethod.None && !!this.connectedAddress
   }
 
   public getConnectionMethod(): ConnectionMethod {
@@ -781,17 +748,13 @@ export class AlephiumWeb3 {
   }
 
   public disconnect(): void {
+    this.provider = null
     this.connectionMethod = ConnectionMethod.None
     this.connectedAddress = null
-    this.provider = null
     this.networkName = null
-
-    // Check if the method exists
-    if (this.nodeProvider && typeof this.nodeProvider.setCurrentNodeProvider === "function") {
-      this.nodeProvider.setCurrentNodeProvider(null)
+    if (typeof window !== "undefined" && window.alephium) {
+      // window.alephium.disconnect() // No standard disconnect method
     }
-
-    console.log("Wallet disconnected")
   }
 }
 

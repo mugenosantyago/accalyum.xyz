@@ -1,19 +1,21 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { useWalletDetector } from "./use-wallet-detector"
 import { logger } from "@/lib/logger"
 import { useToast } from "@/components/ui/use-toast"
 import { config } from "@/lib/config"
+import { useWallet } from "@alephium/web3-react"
 
 export function useWalletTransactions() {
-  const { isConnected, address, checkConnection } = useWalletDetector()
+  const { signer, account, connectionStatus } = useWallet()
+  const address = account?.address ?? null
+  const isConnected = connectionStatus === 'connected' && !!address;
   const [isProcessing, setIsProcessing] = useState(false)
   const { toast } = useToast()
 
   const transfer = useCallback(
     async (to: string, amount: string): Promise<string | undefined> => {
-      if (!isConnected || !address) {
+      if (!isConnected || !address || !signer) {
         toast({
           title: "Error",
           description: "Wallet not connected",
@@ -22,22 +24,15 @@ export function useWalletTransactions() {
         return
       }
 
-      if (!window.alephium) {
-        toast({
-          title: "Error",
-          description: "Alephium wallet not available",
-          variant: "destructive",
-        })
-        return
-      }
-
       setIsProcessing(true)
 
       try {
-        const txId = await window.alephium.signAndSubmitTransferTx({
-          from: address,
-          to,
-          amount,
+        const txId = await signer.signAndSubmitTransferTx({
+          signerAddress: address,
+          destinations: [{
+            address: to,
+            attoAlphAmount: BigInt(amount)
+          }]
         })
 
         toast({
@@ -62,12 +57,12 @@ export function useWalletTransactions() {
         setIsProcessing(false)
       }
     },
-    [isConnected, address, toast],
+    [isConnected, address, signer, toast],
   )
 
   const deposit = useCallback(
     async (amount: string): Promise<string | undefined> => {
-      if (!isConnected || !address) {
+      if (!isConnected || !address || !signer) {
         toast({
           title: "Error",
           description: "Wallet not connected",
@@ -76,16 +71,7 @@ export function useWalletTransactions() {
         return
       }
 
-      if (!window.alephium) {
-        toast({
-          title: "Error",
-          description: "Alephium wallet not available",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (!config.alephium.contractAddress) {
+      if (!config.alephium.depositContractAddress) {
         toast({
           title: "Error",
           description: "Contract address not configured",
@@ -94,10 +80,10 @@ export function useWalletTransactions() {
         return
       }
 
-      if (!config.alephium.acyumTokenId) {
+      if (!config.alephium.yumTokenIdHex) {
         toast({
           title: "Error",
-          description: "ACYUM token ID not configured",
+          description: "YUM token ID not configured",
           variant: "destructive",
         })
         return
@@ -109,18 +95,19 @@ export function useWalletTransactions() {
         // Import the bytecode template dynamically
         const makeDepositJson = await import("@/contracts/make-deposit-json").then((mod) => mod.default)
 
-        const txId = await window.alephium.signAndSubmitExecuteScriptTx({
+        const txId = await signer.signAndSubmitExecuteScriptTx({
+          signerAddress: address,
           bytecode: makeDepositJson.bytecodeTemplate,
           args: {
-            depositContract: config.alephium.contractAddress,
+            depositContract: config.alephium.depositContractAddress,
             amount,
           },
-          tokens: [{ id: config.alephium.acyumTokenId, amount }],
+          tokens: [{ id: config.alephium.yumTokenIdHex, amount: BigInt(amount) }],
         })
 
         toast({
           title: "Deposit Successful",
-          description: `Successfully deposited ${amount} ALPH`,
+          description: `Successfully deposited ${amount} YUM`,
           variant: "default",
         })
 
@@ -140,12 +127,12 @@ export function useWalletTransactions() {
         setIsProcessing(false)
       }
     },
-    [isConnected, address, toast],
+    [isConnected, address, signer, toast],
   )
 
   const withdraw = useCallback(
     async (amount: string): Promise<string | undefined> => {
-      if (!isConnected || !address) {
+      if (!isConnected || !address || !signer) {
         toast({
           title: "Error",
           description: "Wallet not connected",
@@ -154,19 +141,10 @@ export function useWalletTransactions() {
         return
       }
 
-      if (!window.alephium) {
+      if (!config.alephium.yumTokenIdHex) {
         toast({
           title: "Error",
-          description: "Alephium wallet not available",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (!config.alephium.acyumTokenId) {
-        toast({
-          title: "Error",
-          description: "ACYUM token ID not configured",
+          description: "YUM token ID not configured",
           variant: "destructive",
         })
         return
@@ -178,17 +156,18 @@ export function useWalletTransactions() {
         // Import the bytecode template dynamically
         const withdrawJson = await import("@/contracts/withdraw-json").then((mod) => mod.default)
 
-        const txId = await window.alephium.signAndSubmitExecuteScriptTx({
+        const txId = await signer.signAndSubmitExecuteScriptTx({
+          signerAddress: address,
           bytecode: withdrawJson.bytecodeTemplate,
           args: {
-            token: config.alephium.acyumTokenId,
-            amount,
+            token: config.alephium.yumTokenIdHex,
+            amount: BigInt(amount),
           },
         })
 
         toast({
           title: "Withdrawal Successful",
-          description: `Successfully withdrew ${amount} ACYUM`,
+          description: `Successfully withdrew ${amount} YUM`,
           variant: "default",
         })
 
@@ -208,7 +187,7 @@ export function useWalletTransactions() {
         setIsProcessing(false)
       }
     },
-    [isConnected, address, toast],
+    [isConnected, address, signer, toast],
   )
 
   return {
@@ -218,6 +197,5 @@ export function useWalletTransactions() {
     transfer,
     deposit,
     withdraw,
-    checkConnection,
   }
 }

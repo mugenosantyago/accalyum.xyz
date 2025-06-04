@@ -145,7 +145,7 @@ export interface User {
   email: string
   isAdmin: boolean
   createdAt: Date
-  acyumId?: string
+  yumId?: string
 }
 
 // Initiative types

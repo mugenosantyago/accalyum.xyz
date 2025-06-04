@@ -15,7 +15,7 @@ export type SwapRequestData = Omit<ISwapRequest, '_id' | '__v' | 'timestamp' > &
 // This avoids inheriting Mongoose Document methods from ISwapRequest via SwapRequestData
 export interface SwapRequestInputData {
     userAddress: string;
-    targetToken: 'ACYUM' | 'sWEA';
+    targetToken: 'YUM' | 'sWEA';
     amountAlph: number;
     depositAmountAttos?: string; // Optional for creation
     amountTargetToken?: string; // Optional for creation

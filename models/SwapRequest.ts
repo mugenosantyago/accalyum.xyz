@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Model, models } from 'mongoose';
 // Define the interface for the SwapRequest document
 export interface ISwapRequest extends Document {
   userAddress: string;
-  targetToken: 'ACYUM' | 'sWEA';
+  targetToken: 'YUM' | 'sWEA';
   amountAlph: number; // Store the requested ALPH amount (human-readable)
   depositAmountAttos?: string; // Store the actual deposited amount in Attos (BigInt as string)
   amountTargetToken?: string; // Store calculated target amount in smallest unit (BigInt as string)
@@ -18,7 +18,7 @@ export interface ISwapRequest extends Document {
 // Mongoose Schema definition
 const SwapRequestSchema: Schema<ISwapRequest> = new Schema({
   userAddress: { type: String, required: true, index: true },
-  targetToken: { type: String, required: true, enum: ['ACYUM', 'sWEA'] },
+  targetToken: { type: String, required: true, enum: ['YUM', 'sWEA'] },
   amountAlph: { type: Number, required: true },
   depositAmountAttos: { type: String }, // Store BigInt as string
   amountTargetToken: { type: String }, // Store BigInt as string

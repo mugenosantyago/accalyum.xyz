@@ -4,14 +4,14 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import { AlephiumWeb3 } from "@/lib/alephium"
 import type { NodeProvider } from "@alephium/web3"
 import { config } from "@/lib/config"
-import { getAcyumTokenId } from "@/app/actions/token-actions"
+import { getYumTokenId } from "@/app/actions/token-actions"
 
 interface AlephiumContextType {
   nodeProvider: NodeProvider | null
   isInitialized: boolean
   network: string
-  contractAddress: string
-  acyumTokenId: string
+  depositContractAddress: string
+  yumTokenIdHex: string
   error: string | null
 }
 
@@ -19,8 +19,8 @@ const AlephiumContext = createContext<AlephiumContextType>({
   nodeProvider: null,
   isInitialized: false,
   network: config.alephium.network,
-  contractAddress: config.alephium.contractAddress,
-  acyumTokenId: "",
+  depositContractAddress: config.alephium.depositContractAddress,
+  yumTokenIdHex: "",
   error: null,
 })
 
@@ -29,8 +29,8 @@ export function AlephiumProvider({ children }: { children: ReactNode }) {
     nodeProvider: null,
     isInitialized: false,
     network: config.alephium.network,
-    contractAddress: config.alephium.contractAddress,
-    acyumTokenId: "",
+    depositContractAddress: config.alephium.depositContractAddress,
+    yumTokenIdHex: "",
     error: null,
   })
 
@@ -41,13 +41,13 @@ export function AlephiumProvider({ children }: { children: ReactNode }) {
         const { nodeProvider } = await AlephiumWeb3.initialize()
 
         // Fetch the token ID from the server
-        const tokenId = await getAcyumTokenId()
+        const tokenId = await getYumTokenId()
 
         setState({
           ...state,
           nodeProvider,
           isInitialized: true,
-          acyumTokenId: tokenId,
+          yumTokenIdHex: tokenId,
           error: null,
         })
       } catch (error) {

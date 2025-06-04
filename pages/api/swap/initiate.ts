@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { logger } from '@/lib/logger';
 
 const initiateSwapSchema = z.object({
-  targetToken: z.enum(['ACYUM', 'sWEA']),
+  targetToken: z.enum(['YUM', 'sWEA']),
   amountAlph: z.number().positive("ALPH amount must be positive"),
   userAddress: z.string().min(1, "User address is required"),
   depositTxId: z.string().optional(),

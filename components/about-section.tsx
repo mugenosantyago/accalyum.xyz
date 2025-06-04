@@ -23,15 +23,15 @@ export function AboutSection() {
         "We envision a future where financial systems are accessible to all, where communities can self-organize to address social challenges, and where technology serves as a force for good in the world. Our mission is to create a decentralized community that empowers individuals through blockchain technology. We believe in transparency, inclusivity, and the power of collective action to drive positive change.",
     },
     ja: {
-      aboutAcyum: "ACYUMについて",
+      aboutAcyum: "YUMについて",
       aboutDescription:
-        "ACYUM（アメリカ共産主義青年蜂起運動）は、Alephiumブロックチェーン上に構築された社会主義トークンで、社会主義運動、コミュニティセンター、相互扶助ネットワークへの資金提供に専念しています。このトークンはデジタル通貨としての役割と抵抗のシンボルとしての両方の役割を果たします。",
+        "YUM（ユース・アップライジング・ムーブメント）は、Alephiumブロックチェーン上に構築された社会主義トークンで、社会主義運動、コミュニティセンター、相互扶助ネットワークへの資金提供に専念しています。このトークンはデジタル通貨としての役割と抵抗のシンボルとしての両方の役割を果たします。",
       fundingSocialist: "社会主義インフラへの資金提供",
       fundingDescription:
-        "主要なACYUMバンクは、資本主義システムとは別のインフラを作成するために蓄積された資金を使用することに専念しています。これらのリソースは、世界中の社会主義解放運動を直接支援し、コミュニティセンター、協同組合ビジネス、教育イニシアチブに資金を提供します。",
+        "主要なYUMバンクは、資本主義システムとは別のインフラを作成するために蓄積された資金を使用することに専念しています。これらのリソースは、世界中の社会主義解放運動を直接支援し、コミュニティセンター、協同組合ビジネス、教育イニシアチブに資金を提供しています。",
       acquisitionAndDistribution: "取得と配布",
       acquisitionDescription:
-        "ACYUMはAlephium（ALPH）で購入され、従来の作業証明システムよりも大幅に少ないエネルギーを消費する環境に配慮したブロックチェーンに接続されています。この生態学的価値との整合性は、持続可能な未来を構築するというACYUMのコミットメントを反映しています。",
+        "YUMはAlephium（ALPH）で購入され、従来の作業証明システムよりも大幅に少ないエネルギーを消費する環境に配慮したブロックチェーンに接続されています。この生態学的価値との整合性は、持続可能な未来を構築するというYUMのコミットメントを反映しています。",
       aboutMission: "私たちの使命",
       aboutVision:
         "私たちは、金融システムがすべての人にアクセス可能で、コミュニティが社会的課題に対処するために自己組織化でき、テクノロジーが世界の善の力として機能する未来を想像しています。私たちの使命は、ブロックチェーン技術を通じて個人に力を与える分散型コミュニティを作ることです。私たちは透明性、包括性、そして前向きな変化を促進するための集団行動の力を信じています。",

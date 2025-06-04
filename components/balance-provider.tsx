@@ -32,10 +32,10 @@ interface TokenBalance {
 
 interface BalanceContextType {
   alphBalance: string | null;
-  acyumBalance: string | null;
+  yumBalance: string | null;
   sweaBalance: string | null; // Add sWEA balance
   alphUsdValue: string | null; // Add ALPH USD value
-  acyumUsdValue: string | null; // Add ACYUM USD value
+  yumUsdValue: string | null; // Add YUM USD value
   sweaUsdValue: string | null; // Add sWEA USD value
   isLoadingBalances: boolean;
   balanceError: string | null;
@@ -44,10 +44,10 @@ interface BalanceContextType {
 
 const BalanceContext = createContext<BalanceContextType>({
   alphBalance: null,
-  acyumBalance: null,
+  yumBalance: null,
   sweaBalance: null, // Add sWEA balance
   alphUsdValue: null,
-  acyumUsdValue: null,
+  yumUsdValue: null,
   sweaUsdValue: null,
   isLoadingBalances: true,
   balanceError: null,
@@ -60,10 +60,10 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
   const isConnected = connectionStatus === 'connected' && !!address;
 
   const [alphBalance, setAlphBalance] = useState<string | null>(null);
-  const [acyumBalance, setAcyumBalance] = useState<string | null>(null);
+  const [yumBalance, setYumBalance] = useState<string | null>(null);
   const [sweaBalance, setSweaBalance] = useState<string | null>(null); // Add sWEA state
   const [alphRawBigInt, setAlphRawBigInt] = useState<bigint | null>(null); // Store raw ALPH for USD calc
-  const [acyumRawBigInt, setAcyumRawBigInt] = useState<bigint | null>(null); // Store raw ACYUM for USD calc
+  const [yumRawBigInt, setYumRawBigInt] = useState<bigint | null>(null); // Store raw YUM for USD calc
   const [sweaRawBigInt, setSweaRawBigInt] = useState<bigint | null>(null); // Store raw sWEA for USD calc
   const [alphUsdPrice, setAlphUsdPrice] = useState<number | null>(null);
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
@@ -71,12 +71,12 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
   const [fetchTrigger, setFetchTrigger] = useState(0);
 
   // Token IDs and Decimals from config
-  const acyumTokenId = config.alephium.acyumTokenIdHex; // Corrected: Use acyumTokenIdHex
+  const yumTokenId = config.alephium.yumTokenIdHex; // Corrected: Use yumTokenIdHex
   const sweaTokenId = config.alephium.sweaTokenIdHex;
-  const ACYUM_DECIMALS = config.alephium.acyumDecimals; // Use config
+  const YUM_DECIMALS = config.alephium.yumDecimals; // Use config
   const SWEA_DECIMALS = config.alephium.sweaDecimals; // Use config
   const ALPH_DECIMALS = 18;
-  const ACYUM_ALPH_RATE = 0.7; // 1 ALPH = 0.7 ACYUM -> 1 ACYUM = 1/0.7 ALPH
+  const YUM_ALPH_RATE = 0.7; // 1 ALPH = 0.7 YUM -> 1 YUM = 1/0.7 ALPH
   const SWEA_ALPH_RATE = 1.0; // 1 ALPH = 1 sWEA -> 1 sWEA = 1 ALPH
 
   const refetchBalances = () => {
@@ -87,10 +87,10 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
     const fetchBalances = async () => {
       if (!isConnected || !address || !nodeProvider) {
         setAlphBalance(null);
-        setAcyumBalance(null);
+        setYumBalance(null);
         setSweaBalance(null); // Reset sWEA
         setAlphRawBigInt(null);
-        setAcyumRawBigInt(null);
+        setYumRawBigInt(null);
         setSweaRawBigInt(null);
         setIsLoadingBalances(false);
         setBalanceError(null);
@@ -100,10 +100,10 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       setIsLoadingBalances(true);
       setBalanceError(null);
       setAlphBalance(null);
-      setAcyumBalance(null);
+      setYumBalance(null);
       setSweaBalance(null); // Reset sWEA
       setAlphRawBigInt(null);
-      setAcyumRawBigInt(null);
+      setYumRawBigInt(null);
       setSweaRawBigInt(null);
       logger.info(`Fetching balances for address: ${address}`);
 
@@ -121,25 +121,25 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
         setAlphBalance(formattedAlph);
         logger.info(`Fetched ALPH balance: ${formattedAlph}`);
 
-        // Find and Format ACYUM Balance from token balances
-        if (acyumTokenId && ACYUM_DECIMALS !== undefined) {
+        // Find and Format YUM Balance from token balances
+        if (yumTokenId && YUM_DECIMALS !== undefined) {
             // Type for token should now be inferred correctly
-            const acyumInfo = balanceResult.tokenBalances?.find(token => token.id === acyumTokenId);
-            if (acyumInfo) {
-                const acyumRaw = BigInt(acyumInfo.amount);
-                setAcyumRawBigInt(acyumRaw);
-                const formattedAcyum = formatBalance(acyumRaw, ACYUM_DECIMALS);
-                setAcyumBalance(formattedAcyum);
-                logger.info(`Fetched ACYUM balance: ${formattedAcyum}`);
+            const yumInfo = balanceResult.tokenBalances?.find(token => token.id === yumTokenId);
+            if (yumInfo) {
+                const yumRaw = BigInt(yumInfo.amount);
+                setYumRawBigInt(yumRaw);
+                const formattedYum = formatBalance(yumRaw, YUM_DECIMALS);
+                setYumBalance(formattedYum);
+                logger.info(`Fetched YUM balance: ${formattedYum}`);
             } else {
-                setAcyumBalance('0'); // Set to 0 if token not found
-                setAcyumRawBigInt(0n);
-                logger.info(`ACYUM token (${acyumTokenId}) not found for address ${address}.`);
+                setYumBalance('0'); // Set to 0 if token not found
+                setYumRawBigInt(0n);
+                logger.info(`YUM token (${yumTokenId}) not found for address ${address}.`);
             }
         } else {
-          setAcyumBalance(null); // Set to null if config is missing
-          setAcyumRawBigInt(null);
-          logger.warn("ACYUM Token ID or Decimals not configured, cannot fetch ACYUM balance.");
+          setYumBalance(null); // Set to null if config is missing
+          setYumRawBigInt(null);
+          logger.warn("YUM Token ID or Decimals not configured, cannot fetch YUM balance.");
         }
 
         // Find and Format sWEA Balance from token balances
@@ -167,10 +167,10 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
         logger.error("Error fetching balances:", error);
         setBalanceError(error instanceof Error ? error.message : "Failed to fetch balances");
         setAlphBalance(null);
-        setAcyumBalance(null);
+        setYumBalance(null);
         setSweaBalance(null); // Reset sWEA on error
         setAlphRawBigInt(null);
-        setAcyumRawBigInt(null);
+        setYumRawBigInt(null);
         setSweaRawBigInt(null);
       } finally {
         setIsLoadingBalances(false);
@@ -178,7 +178,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
     };
 
     fetchBalances();
-  }, [address, isConnected, nodeProvider, acyumTokenId, sweaTokenId, ACYUM_DECIMALS, SWEA_DECIMALS, fetchTrigger]); // Add dependencies
+  }, [address, isConnected, nodeProvider, yumTokenId, sweaTokenId, YUM_DECIMALS, SWEA_DECIMALS, fetchTrigger]); // Add dependencies
 
   // Fetch ALPH USD price
   useEffect(() => {
@@ -214,12 +214,12 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       return alphAmount * alphUsdPrice;
   }, [alphRawBigInt, alphUsdPrice]);
 
-  const calculatedAcyumUsdValue = useMemo(() => {
-    if (acyumRawBigInt === null || alphUsdPrice === null || ACYUM_DECIMALS === undefined) return null;
-    const acyumAmount = parseFloat(formatBalance(acyumRawBigInt, ACYUM_DECIMALS).replace(/,/g, ''));
-    const acyumInAlph = acyumAmount / ACYUM_ALPH_RATE; // Convert ACYUM amount to equivalent ALPH amount
-    return acyumInAlph * alphUsdPrice;
-  }, [acyumRawBigInt, alphUsdPrice, ACYUM_DECIMALS]);
+  const calculatedYumUsdValue = useMemo(() => {
+    if (yumRawBigInt === null || alphUsdPrice === null || YUM_DECIMALS === undefined) return null;
+    const yumAmount = parseFloat(formatBalance(yumRawBigInt, YUM_DECIMALS).replace(/,/g, ''));
+    const yumInAlph = yumAmount / YUM_ALPH_RATE; // Convert YUM amount to equivalent ALPH amount
+    return yumInAlph * alphUsdPrice;
+  }, [yumRawBigInt, alphUsdPrice, YUM_DECIMALS]);
 
   const calculatedSweaUsdValue = useMemo(() => {
     if (sweaRawBigInt === null || alphUsdPrice === null || SWEA_DECIMALS === undefined) return null;
@@ -230,17 +230,17 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
 
   const contextValue = useMemo(() => ({
     alphBalance,
-    acyumBalance,
-    sweaBalance, // Add sWEA to context
-    alphUsdValue: formatUsdValue(calculatedAlphUsdValue),
-    acyumUsdValue: formatUsdValue(calculatedAcyumUsdValue),
-    sweaUsdValue: formatUsdValue(calculatedSweaUsdValue),
+    yumBalance,
+    sweaBalance,
     isLoadingBalances,
     balanceError,
+    alphUsdValue: formatUsdValue(calculatedAlphUsdValue),
+    yumUsdValue: formatUsdValue(calculatedYumUsdValue),
+    sweaUsdValue: formatUsdValue(calculatedSweaUsdValue),
     refetchBalances,
   }), [
-    alphBalance, acyumBalance, sweaBalance, 
-    calculatedAlphUsdValue, calculatedAcyumUsdValue, calculatedSweaUsdValue,
+    alphBalance, yumBalance, sweaBalance, 
+    calculatedAlphUsdValue, calculatedYumUsdValue, calculatedSweaUsdValue,
     isLoadingBalances, balanceError
   ]); // Add dependencies
 

@@ -35,10 +35,10 @@ export function Navbar() {
           <Link href="/id-registration" className="text-gray-300 hover:text-[#FF6B35]">
             {t("idRegistration")}
           </Link>
-          <Link href="/acyum-bank" className="text-gray-300 hover:text-[#FF6B35]">
-            {t("acyumBank")}
+          <Link href="/yum-bank" className="text-gray-300 hover:text-[#FF6B35]">
+            {t("yumBank")}
           </Link>
-          <Link href="/acyum-swap" className="text-gray-300 hover:text-[#FF6B35]">
+          <Link href="/nightshade-swap" className="text-gray-300 hover:text-[#FF6B35]">
             {t("tradeTokens")}
           </Link>
           <Link href="/mutual-funding" className="text-gray-300 hover:text-[#FF6B35]">
@@ -105,10 +105,10 @@ export function Navbar() {
             <Link href="/id-registration" className="text-gray-300 hover:text-[#FF6B35] py-2">
               {t("idRegistration")}
             </Link>
-            <Link href="/acyum-bank" className="text-gray-300 hover:text-[#FF6B35] py-2">
-              {t("acyumBank")}
+            <Link href="/yum-bank" className="text-gray-300 hover:text-[#FF6B35] py-2">
+              {t("yumBank")}
             </Link>
-            <Link href="/acyum-swap" className="text-gray-300 hover:text-[#FF6B35] py-2">
+            <Link href="/nightshade-swap" className="text-gray-300 hover:text-[#FF6B35] py-2">
               {t("tradeTokens")}
             </Link>
             <Link href="/mutual-funding" className="text-gray-300 hover:text-[#FF6B35] py-2">

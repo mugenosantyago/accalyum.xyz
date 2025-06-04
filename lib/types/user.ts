@@ -8,7 +8,7 @@ export interface User {
   email: string;
   isAdmin?: boolean; // Optional based on usage
   createdAt?: Date; // Optional based on usage
-  acyumId?: string;
+  yumId?: string;
   hasClaimedInitialSwea?: boolean;
   // Add other fields from your 'users' collection as needed
 } 
