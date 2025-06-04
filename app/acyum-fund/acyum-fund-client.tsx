@@ -27,7 +27,7 @@ import { Terminal } from "lucide-react"
 const ONE_ALPH = 10n ** 18n;
 const ALPH_TOKEN_ID = "0000000000000000000000000000000000000000000000000000000000000000";
 const DUST_AMOUNT = 10000n;
-const YUM_DECIMALS = 7; // Define decimals explicitly
+const YUM_DECIMALS = 4; // Define decimals explicitly
 
 // Add sWEA constants, pulling from config or using placeholders
 const S_WEA_TOKEN_ID = config.alephium.sweaTokenIdHex ?? "YOUR_SWEA_TOKEN_ID_HEX";

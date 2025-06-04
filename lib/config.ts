@@ -14,7 +14,7 @@ export const config = {
     walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
 
     acyumTokenIdHex: process.env.NEXT_PUBLIC_ACYUM_TOKEN_ID_HEX ?? "", // Default to empty string if not set
-    acyumDecimals: parseInt(process.env.NEXT_PUBLIC_ACYUM_DECIMALS || "7", 10),
+    acyumDecimals: parseInt(process.env.NEXT_PUBLIC_ACYUM_DECIMALS || "4", 10),
     acyumFaucetAddress: process.env.NEXT_PUBLIC_ACYUM_FAUCET_ADDRESS || "vWvXtZRY7X5z1amCJ9U1rTzJ9SvbX6TUnchxhLgsbV3G", // Updated Faucet Address fallback
     
     // sWEA Configuration
