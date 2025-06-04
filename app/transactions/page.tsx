@@ -3,9 +3,9 @@ import TransactionsClient from './transactions-client' // Import the new client 
 
 // Add metadata for the Transactions page
 export const metadata: Metadata = {
-  title: 'Transactions', // Uses template: "Transactions | ACYUM"
-  description: 'View your transaction history on the Alephium blockchain associated with your connected wallet address via the ACYUM platform.',
-  keywords: ['Alephium', 'ACYUM', 'Transactions', 'History', 'Blockchain', 'Explorer', 'Crypto'],
+  title: 'Transactions', // Uses template: "Transactions | YUM"
+  description: 'View your transaction history on the Alephium blockchain associated with your connected wallet address via the YUM platform.',
+  keywords: ['Alephium', 'YUM', 'Transactions', 'History', 'Blockchain', 'Explorer', 'Crypto'],
 };
 
 // Server Component Page

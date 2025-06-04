@@ -5,9 +5,9 @@ export interface IBankTransaction {
   _id?: Types.ObjectId;
   address: string; // User's Alephium address
   type: 'deposit' | 'withdraw' | 'interest_payout' | 'donation';
-  token: 'ALPH' | 'ACYUM' | 'sWEA';
+  token: 'ALPH' | 'YUM' | 'sWEA';
   // Store amount as string to handle large numbers accurately
-  // This will represent the amount in the smallest unit (attoALPH or ACYUM smallest unit)
+  // This will represent the amount in the smallest unit (attoALPH or YUM smallest unit)
   amount: string;
   txId: string; // Transaction ID from Alephium
   timestamp: Date; // Timestamp of when the record was created
@@ -30,7 +30,7 @@ const BankTransactionSchema: Schema<IBankTransaction> = new Schema({
   token: { 
     type: String, 
     required: true, 
-    enum: ['ALPH', 'ACYUM', 'sWEA'],
+    enum: ['ALPH', 'YUM', 'sWEA'],
     index: true 
   },
   amount: { 

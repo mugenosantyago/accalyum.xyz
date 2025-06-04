@@ -33,8 +33,8 @@ const YUM_DECIMALS = 7; // Define decimals explicitly
 const S_WEA_TOKEN_ID = config.alephium.sweaTokenIdHex ?? "YOUR_SWEA_TOKEN_ID_HEX";
 const S_WEA_DECIMALS = config.alephium.sweaDecimals ?? 18;
 
-// Re-declare acyumTokenId constant for use throughout the component
-const acyumTokenId = config.alephium.acyumTokenIdHex;
+// Re-declare yumTokenId constant for use throughout the component
+const yumTokenId = config.alephium.yumTokenIdHex;
 
 interface CandySwapTokenData {
   id: string; 
@@ -92,7 +92,7 @@ function formatBigIntAmount(amount: bigint | undefined | null, decimals: number,
 }
 
 // Renamed component
-export default function AcyumFundClient() {
+export default function YumFundClient() {
   const { t } = useLanguage()
   const { toast } = useToast()
   
@@ -107,13 +107,13 @@ export default function AcyumFundClient() {
   
   const { 
     alphBalance: displayAlphBalance,
-    acyumBalance: displayAcyumBalance,
+    yumBalance: displayYumBalance,
     sweaBalance: displaySweaBalance,
     isLoadingBalances,
     balanceError
   } = useBalance();
 
-  const [acyumMarketData, setAcyumMarketData] = useState<CandySwapTokenData | null>(null);
+  const [yumMarketData, setYumMarketData] = useState<CandySwapTokenData | null>(null);
   const [alphUsdPrice, setAlphUsdPrice] = useState<number | null>(null);
   const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
   const [marketDataError, setMarketDataError] = useState<string | null>(null);
@@ -132,7 +132,7 @@ export default function AcyumFundClient() {
     const fetchMarketData = async () => {
       setIsMarketDataLoading(true);
       setMarketDataError(null);
-      setAcyumMarketData(null);
+      setYumMarketData(null);
       setAlphUsdPrice(null);
 
       try {
@@ -146,13 +146,13 @@ export default function AcyumFundClient() {
           throw new Error(`CandySwap API error! status: ${tokenListRes.status}`);
         }
         const candySwapData: CandySwapTokenData[] = await tokenListRes.json();
-        const acyumData = candySwapData.find(token => token.collectionTicker === acyumTokenId);
+        const yumData = candySwapData.find(token => token.collectionTicker === yumTokenId);
 
-        if (acyumData) {
-          setAcyumMarketData(acyumData);
-          logger.info("Fetched YUM market data from CandySwap:", acyumData);
+        if (yumData) {
+          setYumMarketData(yumData);
+          logger.info("Fetched YUM market data from CandySwap:", yumData);
         } else {
-          logger.warn(`YUM token ID (${acyumTokenId}) not found in CandySwap API response.`);
+          logger.warn(`YUM token ID (${yumTokenId}) not found in CandySwap API response.`);
           setMarketDataError("YUM data not found on CandySwap.");
         }
 
@@ -169,7 +169,7 @@ export default function AcyumFundClient() {
            throw new Error('Invalid data format from CoinGecko API');
         }
         
-        if (!acyumData) {
+        if (!yumData) {
            setMarketDataError("YUM data not found on CandySwap.");
         }
 
@@ -182,14 +182,14 @@ export default function AcyumFundClient() {
       }
     };
 
-    if (acyumTokenId) {
+    if (yumTokenId) {
       fetchMarketData();
     } else {
       logger.warn("YUM Token ID not configured, skipping market data fetch.");
       setIsMarketDataLoading(false);
       setMarketDataError("YUM Token ID not configured.");
     }
-  }, [acyumTokenId]);
+  }, [yumTokenId]);
 
   // Effect to fetch User's Bank Balance (Uses API) - Keep this useEffect for potential future use/display
   useEffect(() => {
@@ -205,7 +205,7 @@ export default function AcyumFundClient() {
           throw new Error(errorData.error || `Failed to fetch user bank balance: ${response.statusText}`);
         }
         const data = await response.json();
-        logger.info(`User bank balance fetched: ALPH=${data.alphBalance}, YUM=${data.acyumBalance}, sWEA=${data.sweaBalance}`);
+        logger.info(`User bank balance fetched: ALPH=${data.alphBalance}, YUM=${data.yumBalance}, sWEA=${data.sweaBalance}`);
 
       } catch (error) {
         logger.error("Failed to fetch user bank balance:", error);
@@ -260,8 +260,8 @@ export default function AcyumFundClient() {
     }
   };
 
-  const acyumUsdPrice = acyumMarketData?.orderBookPrice && alphUsdPrice
-    ? acyumMarketData.orderBookPrice * alphUsdPrice
+  const yumUsdPrice = yumMarketData?.orderBookPrice && alphUsdPrice
+    ? yumMarketData.orderBookPrice * alphUsdPrice
     : null;
 
   const handleAlphDonate = async () => {
@@ -311,12 +311,12 @@ export default function AcyumFundClient() {
     }
   }
 
-  const handleAcyumDonate = async () => {
+  const handleYumDonate = async () => {
     if (!isConnected || !address || !signer) {
       toast({ title: "Wallet Not Connected", description: "Please connect your wallet first.", variant: "destructive" });
       return;
     }
-    if (!acyumTokenId || acyumTokenId === "") {
+    if (!yumTokenId || yumTokenId === "") {
         toast({ title: "Configuration Error", description: "YUM token ID is not configured.", variant: "destructive" });
         return;
     }
@@ -328,9 +328,9 @@ export default function AcyumFundClient() {
     setIsProcessingDonation(true);
 
     try {
-      // YUM has 7 decimals based on config.alephium.acyumDecimals
-      const acyumDecimals = config.alephium.acyumDecimals ?? 7; // Use fallback if config is not set
-      const amountInSmallestUnit = BigInt(Math.floor(amountNum * (10 ** acyumDecimals)));
+      // YUM has 7 decimals based on config.alephium.yumDecimals
+      const yumDecimals = config.alephium.yumDecimals ?? 7; // Use fallback if config is not set
+      const amountInSmallestUnit = BigInt(Math.floor(amountNum * (10 ** yumDecimals)));
 
       logger.info(`Client: Signing YUM donation of ${donateAmount} to ${bankTreasuryAddress}`);
 
@@ -344,7 +344,7 @@ export default function AcyumFundClient() {
            address: bankTreasuryAddress, // Donate directly to the treasury address
            attoAlphAmount: DUST_AMOUNT, // Include DUST_AMOUNT for the ALPH part of the UTXO
            tokens: [{
-               id: acyumTokenId,
+               id: yumTokenId,
                amount: amountInSmallestUnit
            }]
          }]
@@ -437,7 +437,7 @@ export default function AcyumFundClient() {
     if (donateTokenType === 'ALPH') {
       handleAlphDonate();
     } else if (donateTokenType === 'YUM') {
-      handleAcyumDonate();
+      handleYumDonate();
     } else if (donateTokenType === 'sWEA') { // Handle sWEA donations
       handleSweaDonate();
     }
@@ -496,16 +496,16 @@ export default function AcyumFundClient() {
                             {/* YUM Balance */}
                             <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
                               <p className="text-sm font-medium text-gray-600 dark:text-gray-300">YUM Balance</p>
-                              <p className="text-xl font-bold text-gray-900 dark:text-white">{displayAcyumBalance ?? '0'} YUM</p>
+                              <p className="text-xl font-bold text-gray-900 dark:text-white">{displayYumBalance ?? '0'} YUM</p>
                               {/* Display YUM Market Value */}
-                              {acyumMarketData?.orderBookPrice !== undefined && alphUsdPrice !== null && displayAcyumBalance && (
+                              {yumMarketData?.orderBookPrice !== undefined && alphUsdPrice !== null && displayYumBalance && (
                                 <>
                                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    ≈ {(Number(displayAcyumBalance.replace(/,/g, '')) * acyumMarketData.orderBookPrice).toFixed(2)} ALPH
+                                    ≈ {(Number(displayYumBalance.replace(/,/g, '')) * yumMarketData.orderBookPrice).toFixed(2)} ALPH
                                   </p>
-                                  {acyumUsdPrice !== null && (
+                                  {yumUsdPrice !== null && (
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                      ≈ ${(Number(displayAcyumBalance.replace(/,/g, '')) * acyumUsdPrice).toFixed(2)} USD
+                                      ≈ ${(Number(displayYumBalance.replace(/,/g, '')) * yumUsdPrice).toFixed(2)} USD
                                     </p>
                                   )}
                                 </>
@@ -571,9 +571,9 @@ export default function AcyumFundClient() {
                        <TabsContent value="YUM">
                          <form onSubmit={handleDonateSubmit} className="space-y-4 mt-4">
                            <div className="space-y-2">
-                             <Label htmlFor="acyumAmountDonate">YUM Amount to Donate</Label>
+                             <Label htmlFor="yumAmountDonate">YUM Amount to Donate</Label>
                              <Input
-                               id="acyumAmountDonate"
+                               id="yumAmountDonate"
                                type="number"
                                step="any"
                                min="0.0000001"
@@ -584,8 +584,8 @@ export default function AcyumFundClient() {
                                className="bg-gray-800 border-gray-700 text-lg"
                              />
                              {/* Display user's YUM balance */}
-                             {displayAcyumBalance !== null && acyumTokenId && ( // Check acyumTokenId exists before displaying balance
-                                 <p className="text-sm text-gray-400">Your balance: {displayAcyumBalance} YUM</p>
+                             {displayYumBalance !== null && yumTokenId && ( // Check yumTokenId exists before displaying balance
+                                 <p className="text-sm text-gray-400">Your balance: {displayYumBalance} YUM</p>
                             )}
                          </div>
                            <Button
@@ -637,7 +637,7 @@ export default function AcyumFundClient() {
                     {/* Deposit/Withdraw Tabs - This starts here */} 
                     <div className="mt-8 text-center text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
                       <p className="text-sm leading-relaxed">
-                        {t("acyumFundDescription")}
+                        {t("yumFundDescription")}
                       </p>
                     </div>
                   </>

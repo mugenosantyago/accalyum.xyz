@@ -4,14 +4,25 @@ import mongoose, { Types } from 'mongoose';
 import { logger } from '@/lib/logger';
 import BankTransaction, { IBankTransaction } from '@/models/BankTransaction'; // Import model and interface
 
-// Define the shape of the ledger entry returned by the API
+// Define a simple interface for ledger entries for clarity in this file
 interface LedgerEntry {
-  id: string;
-  type: 'deposit' | 'withdraw' | 'interest_payout'; // Updated to match BankTransaction type
-  token: 'ALPH' | 'ACYUM' | 'sWEA';
+  id: string; // Use _id from MongoDB
+  type: 'deposit' | 'withdraw' | 'interest_payout' | 'donation'; // Include 'donation'
+  token: 'ALPH' | 'YUM' | 'sWEA';
   amount: string; // Amount in smallest unit (string)
   txId: string;
   timestamp: Date;
+}
+
+interface BankTransaction {
+  _id: string;
+  address: string;
+  type: 'deposit' | 'withdraw' | 'donation' | 'interest_payout';
+  token: 'ALPH' | 'YUM' | 'sWEA'; // Updated to include sWEA
+  amount: string;
+  txId: string;
+  timestamp: string;
+  initiative?: string; // Optional for donations
 }
 
 export async function GET(request: Request, { params }: { params: { address: string } }) {

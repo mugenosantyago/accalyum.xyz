@@ -3,9 +3,9 @@ import IdRegistrationClient from './id-registration-client' // Import the new cl
 
 // Add metadata for the ID Registration page
 export const metadata: Metadata = {
-  title: 'ID Registration', // Uses template: "ID Registration | ACYUM"
-  description: 'Register your unique ID on the Alephium blockchain through the ACYUM platform. Secure your digital identity.',
-  keywords: ['Alephium', 'ACYUM', 'ID Registration', 'Identity', 'Blockchain', 'DID', 'Crypto'],
+  title: 'ID Registration', // Uses template: "ID Registration | YUM"
+  description: 'Register your unique ID on the Alephium blockchain through the YUM platform. Secure your digital identity.',
+  keywords: ['Alephium', 'YUM', 'ID Registration', 'Identity', 'Blockchain', 'DID', 'Crypto'],
 };
 
 // Server Component Page

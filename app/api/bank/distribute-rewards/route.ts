@@ -7,17 +7,17 @@ import { NodeProvider } from '@alephium/web3';
 import { TokenFaucet } from '@/artifacts/ts'; // Import the TokenFaucet artifact
 
 // Constants from config or define directly
-const YUM_TOKEN_ID = config.alephium.acyumTokenIdHex;
+const YUM_TOKEN_ID = config.alephium.yumTokenIdHex;
 const S_WEA_TOKEN_ID = config.alephium.sweaTokenIdHex;
-const YUM_DECIMALS = config.alephium.acyumDecimals;
+const YUM_DECIMALS = config.alephium.yumDecimals;
 const S_WEA_DECIMALS = config.alephium.sweaDecimals;
 
 const REWARD_VALUE = 0.099;
-const PROVIDER_URL = config.alephium.providerUrl; // Should be defined in your config
+const PROVIDER_URL = config.alephium.nodeUrl; // Should be defined in your config
 const BACKEND_DUST_AMOUNT = 10000n; // Default dust amount, same as DUST_AMOUNT from @alephium/web3
 
 // Reward Faucet Addresses - using existing faucet addresses from config
-const YUM_REWARD_FAUCET_ADDRESS = config.alephium.acyumFaucetAddress; // Corrected based on linter suggestion
+const YUM_REWARD_FAUCET_ADDRESS = config.alephium.yumFaucetAddress; // Corrected based on linter suggestion
 const S_WEA_REWARD_FAUCET_ADDRESS = config.alephium.sweaFaucetAddress;   // Corrected based on linter suggestion
 
 // Calculate reward amounts in smallest units
@@ -55,11 +55,11 @@ export async function POST(request: Request) {
   logger.info('API: Starting reward distribution process via Faucet...');
 
   if (!YUM_REWARD_FAUCET_ADDRESS || !S_WEA_REWARD_FAUCET_ADDRESS) {
-    logger.error('Critical: Reward faucet addresses are not configured in config.alephium.acyumFaucetAddress or config.alephium.sweaFaucetAddress.');
+    logger.error('Critical: Reward faucet addresses are not configured in config.alephium.yumFaucetAddress or config.alephium.sweaFaucetAddress.');
     return NextResponse.json({ error: 'Reward faucet addresses not configured server-side.' }, { status: 500 });
   }
    if (!PROVIDER_URL) {
-    logger.error('Critical: Alephium provider URL is not configured in config.alephium.providerUrl.');
+    logger.error('Critical: Alephium provider URL is not configured in config.alephium.nodeUrl.');
     return NextResponse.json({ error: 'Alephium provider URL not configured server-side.' }, { status: 500 });
   }
 
@@ -90,11 +90,11 @@ export async function POST(request: Request) {
       ).lean();
 
       const alphBalance = calculateNetBalance(userTransactions, 'ALPH');
-      const acyumBalance = calculateNetBalance(userTransactions, 'YUM');
+      const yumBalance = calculateNetBalance(userTransactions, 'YUM');
       const sweaBalance = calculateNetBalance(userTransactions, 'sWEA');
 
       // Check eligibility: Must have a positive balance of ALPH, YUM, or sWEA
-      if (alphBalance <= 0n && acyumBalance <= 0n && sweaBalance <= 0n) {
+      if (alphBalance <= 0n && yumBalance <= 0n && sweaBalance <= 0n) {
         continue; // Not eligible
       }
       usersEligible++;
@@ -103,11 +103,11 @@ export async function POST(request: Request) {
       let rewardAmountSmallestUnit: bigint;
       let targetFaucetAddress: string | undefined;
 
-      if (acyumBalance > sweaBalance) {
+      if (yumBalance > sweaBalance) {
         rewardTokenSymbol = 'YUM';
         rewardAmountSmallestUnit = REWARD_AMOUNT_YUM_SMALLEST_UNIT;
         targetFaucetAddress = YUM_REWARD_FAUCET_ADDRESS;
-      } else if (sweaBalance > acyumBalance) {
+      } else if (sweaBalance > yumBalance) {
         rewardTokenSymbol = 'sWEA';
         rewardAmountSmallestUnit = REWARD_AMOUNT_SWEA_SMALLEST_UNIT;
         targetFaucetAddress = S_WEA_REWARD_FAUCET_ADDRESS;

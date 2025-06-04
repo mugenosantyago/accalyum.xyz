@@ -2,10 +2,10 @@ import mongoose, { Schema, Document, models, Model } from 'mongoose';
 
 export interface ISweaProposal extends Document {
   submitterAddress: string;
-  acyumProposalId: string; // ID related to the proposal/vote itself
+  yumProposalId: string; // ID related to the proposal/vote itself
   submitterName: string;
   voteMessage: string;
-  userAcyumIdentifier?: string; // Optional user's ACYUM-XYZ123 style ID
+  userYumIdentifier?: string; // Optional user's YUM-XYZ123 style ID
   status: 'new' | 'reviewed' | 'actioned' | 'rejected'; // Example statuses
   createdAt: Date;
   reviewedAt?: Date;
@@ -14,10 +14,10 @@ export interface ISweaProposal extends Document {
 
 const SweaProposalSchema: Schema<ISweaProposal> = new Schema({
   submitterAddress: { type: String, required: true, index: true },
-  acyumProposalId: { type: String, required: true, index: true },
+  yumProposalId: { type: String, required: true, index: true },
   submitterName: { type: String, required: true },
   voteMessage: { type: String, required: true },
-  userAcyumIdentifier: { type: String, sparse: true }, // Optional
+  userYumIdentifier: { type: String, sparse: true }, // Optional
   status: { type: String, enum: ['new', 'reviewed', 'actioned', 'rejected'], default: 'new' },
   createdAt: { type: Date, default: Date.now },
   reviewedAt: { type: Date },

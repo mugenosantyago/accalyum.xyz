@@ -15,7 +15,7 @@ export const translations = {
     connectWallet: "Connect Wallet",
 
     // Hero Section
-    welcomeToAccalyum: "Welcome to the Accalyum Network",
+    welcomeToAccalyum: "Welcome to the AccalYUM Network",
     communityDriven:
       "A community-driven token built on the Alephium blockchain, designed to empower social causes and mutual aid.",
     registerNow: "Register Now",
@@ -137,6 +137,7 @@ export const translations = {
     back: "Back",
     next: "Next",
     submit: "Submit",
+    adminVoteProposalSubmission: "Admin vote/proposal submission.",
 
     // Header
     launchApp: "Launch App",
@@ -161,6 +162,7 @@ export const translations = {
     sweaNote: "Note: The specific implementation details (e.g., joining process, treasury management, governance activation) depend on the deployed smart contract.",
     // Swap Component (sweaSwap)
     sweaPurchaseTitle: "Purchase sWEA",
+    sweaGovernanceDescription: "Participate in sWEA governance. Requires holding YUM token and 1 sWEA payment.",
     sweaPurchaseDescription: "Acquire sWEA using ALPH or YUM. Price is community-governed.",
     sweaConnectWalletPrompt: "Please connect your wallet to purchase sWEA",
     sweaYourBalances: "Your Balances:",
@@ -197,11 +199,20 @@ export const translations = {
     requestInitialSweaClaim: "Request Initial sWEA Claim",
     requestClaimDescription: "Enter your registered YUM ID and submit a request to claim your first {amount} sWEA tokens. Admin review is required.", // {amount} is a placeholder
     yourYumId: "Your YUM ID",
+    pleaseEnterYourYumId: "Please enter your YUM ID",
+    enterYourRegisteredYumId: "Enter your registered YUM ID",
     requestSweaClaimButton: "Request {amount} sWEA Claim", // {amount} is a placeholder
     claimRequestSubmitted: "Claim Request Submitted!",
     claimRequestSubmittedDescription: "Your request has been sent for admin review. You will receive sWEA after approval and processing.",
     checkingEligibility: "Checking Eligibility...",
     submittingRequest: "Submitting Request...",
+
+    // SWEA Vote Form (New)
+    proposalId: "Proposal ID",
+    enterProposalId: "Enter the ID of the proposal or vote (e.g., SWP-001)",
+    yourName: "Your Name",
+    yourNameOrAlias: "Your name or alias",
+    messageJustification: "Message / Justification",
 
     // Nightshade Swap Page (New)
     goToNightshadeSwapButton: "Go to Nightshade Finance Swap",
@@ -226,7 +237,7 @@ export const translations = {
     connectWallet: "ウォレットを接続",
 
     // Hero Section
-    welcomeToAccalyum: "Accalyumネットワークへようこそ",
+    welcomeToAccalyum: "AccalYUMネットワークへようこそ",
     communityDriven: "Alephiumブロックチェーン上に構築されたコミュニティ主導のトークンで、社会的な大義と相互扶助を支援するために設計されています。",
     registerNow: "今すぐ登録",
 
@@ -338,7 +349,7 @@ export const translations = {
     loading: "読み込み中...",
     error: "エラー",
     success: "成功",
-    tryAgain: "もう一度試す",
+    tryAgain: "再試行",
     cancel: "キャンセル",
     save: "保存",
     edit: "編集",
@@ -346,7 +357,8 @@ export const translations = {
     confirm: "確認",
     back: "戻る",
     next: "次へ",
-    submit: "提出",
+    submit: "送信",
+    adminVoteProposalSubmission: "管理者投票/提案の提出。",
 
     // Header
     launchApp: "アプリを起動",
@@ -368,9 +380,10 @@ export const translations = {
     sweaDescWealthConcentration: "公平性を維持するため、単一のウォレットアドレスがsWEAトークン総供給量の1%以上を保有することは許可されていません。",
     sweaDescCollectiveOwnership: "sWEAトークン総量の約11.9%（42兆のうち5兆）は、コミュニティ管理の財務に安全に保管されています。",
     sweaDescGovernance: "YUM ID保持者は、sWEAページから提案に投票できます。",
-    sweaNote: "注記：具体的な実装の詳細（例：参加プロセス、財務管理、ガバナンスの有効化）は、展開されたスマートコントラクトに依存します。",
+    sweaNote: "注：特定の実装詳細（例：参加プロセス、財務管理、ガバナンスのアクティベーション）は、デプロイされたスマートコントラクトに依存します。",
     // Swap Component (sweaSwap)
     sweaPurchaseTitle: "sWEAを購入",
+    sweaGovernanceDescription: "sWEAガバナンスに参加します。YUMトークンの保有と1 sWEAの支払いが必要です。",
     sweaPurchaseDescription: "ALPHまたはYUMを使用してsWEAを取得します。価格はコミュニティによって管理されます。",
     sweaConnectWalletPrompt: "sWEAを購入するにはウォレットを接続してください",
     sweaYourBalances: "あなたの残高：",
@@ -405,16 +418,25 @@ export const translations = {
 
     // sWEA Claim Request (New)
     requestInitialSweaClaim: "初期sWEA請求をリクエスト",
-    requestClaimDescription: "登録済みのYUM IDを入力し、最初の{amount} sWEAトークンを請求するリクエストを送信します。管理者のレビューが必要です。",
+    requestClaimDescription: "登録済みのYUM IDを入力し、最初の{amount} sWEAトークンを請求するリクエストを送信してください。管理者によるレビューが必要です。", // {amount}はプレースホルダー
     yourYumId: "あなたのYUM ID",
-    requestSweaClaimButton: "{amount} sWEA請求をリクエスト", // {amount} is a placeholder
-    claimRequestSubmitted: "請求リクエスト送信済み！",
+    pleaseEnterYourYumId: "YUM IDを入力してください",
+    enterYourRegisteredYumId: "登録済みのYUM IDを入力してください",
+    requestSweaClaimButton: "{amount} sWEA請求をリクエスト", // {amount}はプレースホルダー
+    claimRequestSubmitted: "請求リクエストが送信されました！",
     claimRequestSubmittedDescription: "リクエストは管理者のレビューのために送信されました。承認および処理後にsWEAを受け取ります。",
     checkingEligibility: "資格を確認中...",
     submittingRequest: "リクエストを送信中...",
 
+    // SWEA Vote Form (New)
+    proposalId: "提案ID",
+    enterProposalId: "提案または投票のIDを入力してください（例：SWP-001）",
+    yourName: "あなたの名前",
+    yourNameOrAlias: "あなたの名前またはエイリアス",
+    messageJustification: "メッセージ/正当化",
+
     // Nightshade Swap Page (New)
-    goToNightshadeSwapButton: "Go to Nightshade Finance Swap",
+    goToNightshadeSwapButton: "ナイトシェードファイナンススワップへ",
     goToNightshadeSwapButtonDescription: "Click the button below to be redirected to Nightshade Finance to buy and sell YUM tokens.",
 
     // YUM Fund Description

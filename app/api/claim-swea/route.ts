@@ -14,7 +14,7 @@ import { User } from '@/lib/types/user'; // Import the shared User type
 //   email: string;
 //   isAdmin: boolean;
 //   createdAt: Date;
-//   acyumId?: string;
+//   yumId?: string;
 //   hasClaimedInitialSwea?: boolean;
 // }
 
@@ -25,36 +25,36 @@ export async function POST(request: Request) {
     let requestBody;
     try {
         requestBody = await request.json();
-        if (!requestBody.acyumId || !requestBody.claimingAddress) {
-            logger.warn("POST /api/claim-swea: Bad Request - Missing acyumId or claimingAddress");
-            return NextResponse.json({ message: 'Bad Request: Missing acyumId or claimingAddress' }, { status: 400 });
+        if (!requestBody.yumId || !requestBody.claimingAddress) {
+            logger.warn("POST /api/claim-swea: Bad Request - Missing yumId or claimingAddress");
+            return NextResponse.json({ message: 'Bad Request: Missing yumId or claimingAddress' }, { status: 400 });
         }
     } catch (e) {
         logger.warn("POST /api/claim-swea: Bad Request - Invalid JSON body");
         return NextResponse.json({ message: 'Bad Request: Invalid JSON body' }, { status: 400 });
     }
 
-    const { acyumId, claimingAddress } = requestBody;
-    logger.info(`POST /api/claim-swea: Eligibility check for Acyum ID: ${acyumId}, Address: ${claimingAddress}`);
+    const { yumId, claimingAddress } = requestBody;
+    logger.info(`POST /api/claim-swea: Eligibility check for YUM ID: ${yumId}, Address: ${claimingAddress}`);
 
     try {
         const db = await getDb();
         const usersCollection = db.collection<User>('users');
 
-        // 1. Find User by Acyum ID and Address
+        // 1. Find User by YUM ID and Address
         const user = await usersCollection.findOne({
-            acyumId: acyumId,
+            yumId: yumId,
             address: claimingAddress,
         });
 
         if (!user) {
-            logger.warn(`POST /api/claim-swea: User not found or address mismatch for Acyum ID: ${acyumId}, Address: ${claimingAddress}`);
-            return NextResponse.json({ eligible: false, message: 'User not found, or wallet address does not match the registered Acyum ID.' }, { status: 404 });
+            logger.warn(`POST /api/claim-swea: User not found or address mismatch for YUM ID: ${yumId}, Address: ${claimingAddress}`);
+            return NextResponse.json({ eligible: false, message: 'User not found, or wallet address does not match the registered YUM ID.' }, { status: 404 });
         }
 
         // 2. Check if Already Claimed
         if (user.hasClaimedInitialSwea) {
-            logger.info(`POST /api/claim-swea: User ${claimingAddress} (Acyum ID: ${acyumId}) has already claimed.`);
+            logger.info(`POST /api/claim-swea: User ${claimingAddress} (YUM ID: ${yumId}) has already claimed.`);
             return NextResponse.json({ eligible: false, message: 'You have already claimed your initial sWEA.' }, { status: 409 }); // 409 Conflict
         }
 
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
         );
 
         if (updateResult.modifiedCount !== 1) {
-            logger.error(`POST /api/claim-swea: Failed to update claim status in DB for user ${claimingAddress} (Acyum ID: ${acyumId}). Eligibility check failed.`);
+            logger.error(`POST /api/claim-swea: Failed to update claim status in DB for user ${claimingAddress} (YUM ID: ${yumId}). Eligibility check failed.`);
             // If DB update fails, don't allow the claim to proceed.
             return NextResponse.json({ eligible: false, message: 'Server error: Could not update claim status. Please try again.' }, { status: 500 });
         }

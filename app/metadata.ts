@@ -55,7 +55,7 @@ export const defaultMetadata: Metadata = {
     description:
       "A community-driven socialist token built on the Alephium blockchain, designed to empower social causes and mutual aid.",
     images: [`${baseUrl}/images/twitter-image.jpg`],
-    creator: "@acyum_network",
+    creator: "@yum_network",
   },
   icons: {
     icon: "/favicon.ico",

@@ -15,7 +15,7 @@ interface Transaction {
   _id: string;
   address: string;
   type: "deposit" | "withdraw" | "donation" | "interest_payout" | "vote_payment";
-  token: 'ALPH' | 'ACYUM' | 'sWEA';
+  token: 'ALPH' | 'YUM' | 'sWEA';
   amount: string;
   txId: string;
   initiative?: string;

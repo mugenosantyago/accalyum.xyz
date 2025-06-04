@@ -22,9 +22,9 @@ export async function sendContactEmail(data: ContactFormData) {
     const { name, email, subject, message } = data
 
     const { data: emailData, error } = await resend.emails.send({
-      from: "ACYUM Contact <noreply@acyum.com>",
+      from: "YUM Contact <noreply@yum.com>",
       to: "accalyuhh@gmail.com", // Updated to the user's email
-      reply_to: email,
+      replyTo: email,
       subject: `Contact Form: ${subject}`,
       html: `
         <h1>New Contact Form Submission</h1>

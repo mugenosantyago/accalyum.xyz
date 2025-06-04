@@ -11,7 +11,7 @@ import { User } from "@/lib/types/user"
 //   email: string;
 //   isAdmin: boolean;
 //   createdAt: Date;
-//   acyumId?: string;
+//   yumId?: string;
 //   hasClaimedInitialSwea?: boolean;
 // }
 
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     const db = await getDb()
     const users = await db
       .collection<User>("users")
-      .find({ acyumId: { $exists: true } })
+      .find({ yumId: { $exists: true } })
       .sort({ createdAt: -1 })
       .project({
           _id: 1,
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
           username: 1,
           email: 1,
           createdAt: 1,
-          acyumId: 1,
+          yumId: 1,
           hasClaimedInitialSwea: 1
       })
       .toArray()

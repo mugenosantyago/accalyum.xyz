@@ -151,7 +151,7 @@ export default function IdRegistrationClient() {
         setIsRegistered(true)
         toast({
           title: "Registration successful",
-          description: "Your ACYUM ID has been created.",
+          description: "Your YUM ID has been created.",
           variant: "default",
         })
       }
@@ -177,7 +177,7 @@ export default function IdRegistrationClient() {
           <div className="max-w-md mx-auto">
             <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
-                <CardTitle>{t("registerYourAcyumId")}</CardTitle>
+                <CardTitle>{t("registerYourYumId")}</CardTitle>
                 <CardDescription className="text-gray-400">{t("connectWalletCreateIdentity")}</CardDescription>
               </CardHeader>
 
@@ -185,7 +185,7 @@ export default function IdRegistrationClient() {
                 <CardContent>
                   <div className="bg-green-900 p-4 rounded-md border border-green-700 text-green-100 mb-4">
                     <p className="font-medium">Registration Successful!</p>
-                    <p className="text-sm mt-1">Your ACYUM ID has been created and linked to your wallet address.</p>
+                    <p className="text-sm mt-1">Your YUM ID has been created and linked to your wallet address.</p>
                   </div>
                   {/* Display registered info */}
                     <div>
@@ -207,7 +207,7 @@ export default function IdRegistrationClient() {
                     <p className="font-medium">Registration Pending Approval</p>
                     <p className="text-sm mt-1">
                       Your registration has been submitted and is pending admin approval. You will be notified by email
-                      when your ACYUM ID is ready.
+                      when your YUM ID is ready.
                     </p>
                   </div>
                    {/* Display pending info */}

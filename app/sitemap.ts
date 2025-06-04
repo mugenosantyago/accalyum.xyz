@@ -7,8 +7,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
     "",
     "/id-registration",
-    "/acyum-bank",
-    "/acyum-swap",
+    "/yum-bank",
+    "/yum-swap",
     "/mutual-funding",
     "/bank",
     "/transactions",

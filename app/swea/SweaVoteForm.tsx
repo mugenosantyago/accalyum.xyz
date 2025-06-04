@@ -12,6 +12,7 @@ import { logger } from '@/lib/logger';
 import { config } from '@/lib/config';
 import { useBalance } from '@/components/balance-provider'; // To check YUM balance
 import { Loader2 } from 'lucide-react';
+import { useLanguage } from "@/components/language-provider";
 
 const DUST_AMOUNT = 10000n; // Define DUST_AMOUNT here as it's used in transactions
 
@@ -22,10 +23,11 @@ interface SweaVoteFormProps {
 export function SweaVoteForm({}: SweaVoteFormProps) {
   const { toast } = useToast();
   const { account, connectionStatus, signer } = useWallet();
-  const { acyumBalance: userAcyumTokenBalance, sweaBalance } = useBalance(); // Get YUM and sWEA balance from provider
+  const { yumBalance: userYumTokenBalance, sweaBalance } = useBalance(); // Get YUM and sWEA balance from provider
+  const { t } = useLanguage();
 
-  const [acyumId, setAcyumId] = useState(''); // This will be the Proposal ID
-  const [userAcyumIdentifier, setUserAcyumIdentifier] = useState(''); // New state for User's YUM ID
+  const [proposalId, setProposalId] = useState(''); // This will be the Proposal ID
+  const [userYumIdentifier, setUserYumIdentifier] = useState(''); // New state for User's YUM ID
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,7 +47,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
     logger.info('[SweaVoteForm Debug] Checking visibility:', {
       isConnected,
       isAdmin,
-      userAcyumTokenBalance,
+      userYumTokenBalance,
       userAddress
     });
 
@@ -53,15 +55,15 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
       if (isAdmin) {
         setCanShowForm(true);
       } else {
-        // Check if user holds ACYUM token
-        // Ensure hasAcyum is explicitly boolean
-        const hasAcyum = !!(userAcyumTokenBalance && parseFloat(userAcyumTokenBalance.replace(/,/g, '')) > 0);
-        setCanShowForm(hasAcyum);
+        // Check if user holds YUM token
+        // Ensure hasYum is explicitly boolean
+        const hasYum = !!(userYumTokenBalance && parseFloat(userYumTokenBalance.replace(/,/g, '')) > 0);
+        setCanShowForm(hasYum);
       }
     } else {
       setCanShowForm(false);
     }
-  }, [isConnected, isAdmin, userAcyumTokenBalance]);
+  }, [isConnected, isAdmin, userYumTokenBalance]);
 
   // New function to handle SWEA payment
   const handleSweaVotePayment = async () => {
@@ -139,7 +141,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!acyumId.trim() || !name.trim() || !message.trim() || !userAcyumIdentifier.trim()) {
+    if (!proposalId.trim() || !name.trim() || !message.trim() || !userYumIdentifier.trim()) {
       toast({ title: 'Validation Error', description: 'Proposal ID, Your YUM ID, Name, and Message fields are required.', variant: 'destructive' });
       return;
     }
@@ -154,7 +156,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
     }
     
     setIsSubmitting(true);
-    logger.info('Submitting sWEA vote/proposal:', { userAddress, proposalId: acyumId, userAcyumIdentifier, name, message });
+    logger.info('Submitting sWEA vote/proposal:', { userAddress, proposalId: proposalId, userYumIdentifier, name, message });
 
     try {
       const response = await fetch('/api/swea/submit-proposal', {
@@ -162,8 +164,8 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           submitterAddress: userAddress,
-          acyumProposalId: acyumId, // This is the Proposal ID
-          userAcyumIdentifier: userAcyumIdentifier.trim() || undefined, // Send if provided, else undefined
+          proposalId: proposalId, // This is the Proposal ID
+          userYumIdentifier: userYumIdentifier.trim() || undefined, // Send if provided, else undefined
           submitterName: name,
           voteMessage: message,
         }),
@@ -176,8 +178,8 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
 
       const result = await response.json();
       toast({ title: 'Submission Successful', description: result.message || 'Your vote/proposal has been recorded.' });
-      setAcyumId('');
-      setUserAcyumIdentifier(''); // Clear the new field
+      setProposalId('');
+      setUserYumIdentifier(''); // Clear the new field
       setName('');
       setMessage('');
     } catch (error) {
@@ -196,7 +198,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
     //       <CardTitle>Vote / Submit Proposal</CardTitle>
     //     </CardHeader>
     //     <CardContent>
-    //       <p>Please connect your wallet. Admins or ACYUM token holders can participate.</p>
+    //       <p>Please connect your wallet. Admins or YUM token holders can participate.</p>
     //     </CardContent>
     //   </Card>
     // );
@@ -208,43 +210,43 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
       <CardHeader>
         <CardTitle>Cast Your Vote / Submit Proposal</CardTitle>
         <CardDescription>
-          {isAdmin ? 'Admin vote/proposal submission.' : 'Participate in sWEA governance. Requires holding ACYUM token and 1 sWEA payment.'}
+          {isAdmin ? t('adminVoteProposalSubmission') : t('sweaGovernanceDescription')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="w-full">
-            <Label htmlFor="proposalId">Proposal ID</Label>
+            <Label htmlFor="proposalId">{t('proposalId')}</Label>
             <Input
               id="proposalId"
-              value={acyumId}
-              onChange={(e) => setAcyumId(e.target.value)}
-              placeholder="Enter the ID of the proposal or vote (e.g., SWP-001)"
+              value={proposalId}
+              onChange={(e) => setProposalId(e.target.value)}
+              placeholder={t('enterProposalId')}
               required
             />
           </div>
           <div className="w-full">
-            <Label htmlFor="userAcyumIdentifier">Your YUM ID</Label>
+            <Label htmlFor="userYumIdentifier">{t('yourYumId')}</Label>
             <Input
-              id="userAcyumIdentifier"
-              value={userAcyumIdentifier}
-              onChange={(e) => setUserAcyumIdentifier(e.target.value)}
-              placeholder="Your registered YUM ID (e.g., YUM-XYZ123)"
+              id="userYumIdentifier"
+              value={userYumIdentifier}
+              onChange={(e) => setUserYumIdentifier(e.target.value)}
+              placeholder={t('yourRegisteredYumId')}
               required
             />
           </div>
           <div className="w-full">
-            <Label htmlFor="name">Your Name</Label>
+            <Label htmlFor="name">{t('yourName')}</Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Your name or alias"
+              placeholder={t('yourNameOrAlias')}
               required
             />
           </div>
           <div className="w-full">
-            <Label htmlFor="message">Message / Justification</Label>
+            <Label htmlFor="message">{t('messageJustification')}</Label>
             <Textarea
               id="message"
               value={message}

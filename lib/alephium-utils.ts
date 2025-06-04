@@ -1,4 +1,7 @@
-import { Address, ContractId } from "@alephium/web3"
+import { NodeProvider } from "@alephium/web3"
+import { isAssetAddress, isContractAddress, groupOfAddress, addressFromContractId, contractIdFromAddress } from "@alephium/web3/dist/src/address/address"
+import { config } from "@/lib/config"
+import { Buffer } from 'buffer'
 
 // Add the token faucet configuration
 export const tokenFaucetConfig = {
@@ -25,20 +28,17 @@ export function formatAlphBalance(balance: string): string {
   }
 }
 
-// Format YUM balance for display - Changed from ACYUM
-export function formatYumBalance(balance: string): string { // Changed from formatAcyumBalance
-  if (!balance) return "0.00"
-
+// Format YUM balance for display
+export function formatYumBalance(balance: string): string {
   try {
-    // YUM has 4 decimal places - Changed from 7
-    const balanceNum = Number.parseFloat(balance) / 10 ** 4 // Changed from 7
-    return balanceNum.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
+    const num = parseFloat(balance)
+    if (isNaN(num)) {
+      return "N/A"
+    }
+    return num.toFixed(2)
   } catch (error) {
-    console.error("Error formatting YUM balance:", error) // Changed from ACYUM
-    return "0.00"
+    console.error("Error formatting YUM balance:", error)
+    return "Error"
   }
 }
 
@@ -53,23 +53,27 @@ export const AlephiumUtils = {
     }
 
     try {
-      // Check if it's a valid base58 address
-      if (Address.isBase58(address)) {
-        const addressObj = Address.fromBase58(address)
+      // Check if it's a valid base58 address or contract address
+      if (isAssetAddress(address) || isContractAddress(address)) {
         return {
           isValid: true,
-          isContract: addressObj.isContractAddress(),
-          isAsset: !addressObj.isContractAddress(),
+          isContract: isContractAddress(address),
+          isAsset: isAssetAddress(address),
         }
       }
 
-      // Check if it's a valid hex contract ID
-      if (ContractId.isHexString(address)) {
-        return {
-          isValid: true,
-          isContract: true,
-          isAsset: false,
+      // Check if it's a valid hex contract ID (can be converted to address)
+      try {
+        const convertedAddress = addressFromContractId(address)
+        if (isContractAddress(convertedAddress)) {
+          return {
+            isValid: true,
+            isContract: true,
+            isAsset: false,
+          }
         }
+      } catch (error) {
+        // If conversion fails, it's not a valid contract ID hex
       }
 
       return {
@@ -91,17 +95,7 @@ export const AlephiumUtils = {
     if (!address) return -1
 
     try {
-      if (Address.isBase58(address)) {
-        return Address.getGroup(address)
-      }
-
-      if (ContractId.isHexString(address)) {
-        const contractId = ContractId.fromHexString(address)
-        const contractAddress = Address.contract(contractId)
-        return Address.getGroup(contractAddress.toBase58())
-      }
-
-      return -1
+      return groupOfAddress(address)
     } catch (error) {
       console.error("Error getting address group:", error)
       return -1
@@ -114,11 +108,7 @@ export const AlephiumUtils = {
     }
 
     try {
-      if (!ContractId.isHexString(contractId)) {
-        throw new Error("Invalid contract ID format")
-      }
-      const contractIdObj = ContractId.fromHexString(contractId)
-      return Address.contract(contractIdObj).toBase58()
+      return addressFromContractId(contractId)
     } catch (error) {
       console.error("Error converting contract ID to address:", error)
       throw error
@@ -131,17 +121,22 @@ export const AlephiumUtils = {
     }
 
     try {
-      if (!Address.isBase58(address)) {
-        throw new Error("Invalid address format")
+      const contractId = contractIdFromAddress(address)
+      // contractIdFromAddress returns Uint8Array if valid, so we check its existence.
+      // It also throws an error if it's not a contract address, so we don't need isContractAddress() check here.
+      if (!contractId || contractId.length === 0) {
+        throw new Error("Address is not a contract address or invalid.")
       }
-      const addressObj = Address.fromBase58(address)
-      if (!addressObj.isContractAddress()) {
-        throw new Error("Address is not a contract address")
-      }
-      return addressObj.contractId.toHexString()
+      return Buffer.from(contractId).toString('hex')
     } catch (error) {
       console.error("Error converting address to contract ID:", error)
       throw error
     }
   },
+}
+
+export async function getYumTokenId(): Promise<string> {
+  // In a real scenario, this would likely be fetched from a deployed contract or a config file.
+  // For this example, we'll use the hardcoded token ID from your config.ts
+  return config.alephium.yumTokenIdHex;
 }

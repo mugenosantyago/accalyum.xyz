@@ -9,7 +9,7 @@ export function AboutSection() {
   // Define the content directly in the component to avoid translation issues
   const content = {
     en: {
-      aboutAcyum: "About YUM",
+      aboutYum: "About YUM",
       aboutDescription:
         "YUM (Youth Uprising Movement) is a socialist token built on the Alephium blockchain, dedicated to funding socialist movements, community centers, and mutual aid networks. This token serves as both a digital currency and a symbol of resistance.",
       fundingSocialist: "Funding Socialist Infrastructure",
@@ -23,7 +23,7 @@ export function AboutSection() {
         "We envision a future where financial systems are accessible to all, where communities can self-organize to address social challenges, and where technology serves as a force for good in the world. Our mission is to create a decentralized community that empowers individuals through blockchain technology. We believe in transparency, inclusivity, and the power of collective action to drive positive change.",
     },
     ja: {
-      aboutAcyum: "YUMについて",
+      aboutYum: "YUMについて",
       aboutDescription:
         "YUM（ユース・アップライジング・ムーブメント）は、Alephiumブロックチェーン上に構築された社会主義トークンで、社会主義運動、コミュニティセンター、相互扶助ネットワークへの資金提供に専念しています。このトークンはデジタル通貨としての役割と抵抗のシンボルとしての両方の役割を果たします。",
       fundingSocialist: "社会主義インフラへの資金提供",
@@ -50,7 +50,7 @@ export function AboutSection() {
       className="py-16 px-4"
     >
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center gradient-text">{currentContent.aboutAcyum}</h2>
+        <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center gradient-text">{currentContent.aboutYum}</h2>
 
         <div className="space-y-8">
           <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-xl border border-gray-800">

@@ -31,9 +31,9 @@ export async function GET(request: Request) {
     const db = await getDb();
     const usersCollection = db.collection<User>('users');
 
-    // 3. Query Users with Assigned acyumId and walletAddress using MongoDB driver syntax
+    // 3. Query Users with Assigned yumId and walletAddress using MongoDB driver syntax
     const query = {
-      acyumId: { $exists: true, $ne: null, $ne: "" },
+      yumId: { $exists: true, $ne: null, $ne: "" },
       address: { $exists: true, $ne: null, $ne: "" } // Check 'address' field
     };
 

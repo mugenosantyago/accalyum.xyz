@@ -7,20 +7,20 @@ import { logger } from '@/lib/logger';
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const { acyumId, requesterAddress, amount, tokenId } = data;
+    const { yumId, requesterAddress, amount, tokenId } = data;
 
     // Basic validation
-    if (!acyumId || !requesterAddress || !amount || !tokenId) {
+    if (!yumId || !requesterAddress || !amount || !tokenId) {
       logger.warn('API: Missing required fields in sWEA claim request POST', { body: data });
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    logger.info(`API: Received sWEA claim request for Acyum ID: ${acyumId}, Address: ${requesterAddress}`);
+    logger.info(`API: Received sWEA claim request for YUM ID: ${yumId}, Address: ${requesterAddress}`);
 
     await connectToDatabase();
 
-    // Optional: Add a check here to see if the address/acyumId has already claimed
-    const existingRequest = await SweaClaimRequest.findOne({ requesterAddress: requesterAddress, status: { $ne: 'rejected' } }); // Consider checking by acyumId too
+    // Optional: Add a check here to see if the address/yumId has already claimed
+    const existingRequest = await SweaClaimRequest.findOne({ requesterAddress: requesterAddress, status: { $ne: 'rejected' } }); // Consider checking by yumId too
     if (existingRequest) {
         logger.warn(`API: Duplicate sWEA claim request from address: ${requesterAddress}`);
         return NextResponse.json({ error: "You have already submitted a claim request or claimed sWEA." }, { status: 409 });
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     // Create a new claim request document
     const newClaimRequest = new SweaClaimRequest({
-      acyumId,
+      yumId,
       requesterAddress,
       amount: amount.toString(), // Ensure amount is stored as string
       tokenId,
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status') || 'pending'; // Default to fetching pending requests
-        // Optional: Add filtering by address or acyumId if needed for specific views
+        // Optional: Add filtering by address or yumId if needed for specific views
 
         logger.info(`API: Fetching sWEA claim requests with status: ${status}`);
 

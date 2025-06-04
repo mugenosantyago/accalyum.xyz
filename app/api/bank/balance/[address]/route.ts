@@ -77,7 +77,7 @@ export async function GET(request: Request, { params }: { params: { address: str
       logger.warn(`API: No transactions found for address: ${address}`);
       return NextResponse.json({
         alphBalance: '0',
-        acyumBalance: '0',
+        yumBalance: '0',
         sweaBalance: '0'
       });
     }
@@ -86,15 +86,15 @@ export async function GET(request: Request, { params }: { params: { address: str
 
     // Calculate net balances for all three tokens
     const alphBalance = calculateNetBalance(userTransactions, 'ALPH');
-    const acyumBalance = calculateNetBalance(userTransactions, 'YUM');
+    const yumBalance = calculateNetBalance(userTransactions, 'YUM');
     const sweaBalance = calculateNetBalance(userTransactions, 'sWEA');
 
-    logger.info(`API: Calculated net balance for ${address}: ALPH=${alphBalance}, YUM=${acyumBalance}, sWEA=${sweaBalance}`);
+    logger.info(`API: Calculated net balance for ${address}: ALPH=${alphBalance}, YUM=${yumBalance}, sWEA=${sweaBalance}`);
 
     // Return all balances as strings
     return NextResponse.json({
       alphBalance,
-      acyumBalance,
+      yumBalance,
       sweaBalance,
     });
 

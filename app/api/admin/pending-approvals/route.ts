@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     // const db = await getDb()
     // const pendingUsers = await db
     //   .collection("users")
-    //   .find({ acyumId: { $exists: false } })
+    //   .find({ yumId: { $exists: false } })
     //   .sort({ createdAt: -1 })
     //   .toArray()
 

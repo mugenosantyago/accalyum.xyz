@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'Privacy Policy for the ACYUM platform.',
+  description: 'Privacy Policy for the YUM platform.',
 };
 
 export default function PrivacyPolicyPage() {
@@ -21,16 +21,16 @@ export default function PrivacyPolicyPage() {
     <ClientLayoutWrapper>
       <main className="container mx-auto py-12 px-4">
         <article className="prose dark:prose-invert max-w-3xl mx-auto">
-          <h1>Privacy Policy for ACYUM Platform</h1>
+          <h1>Privacy Policy for YUM Platform</h1>
           <p className="text-sm text-muted-foreground">Last Updated: {getCurrentDate()}</p>
           
-          <p>ACYUM ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we handle your information on the ACYUM platform and its associated services.</p>
+          <p>YUM ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we handle your information on the YUM platform and its associated services.</p>
 
           <h2>Information We Handle</h2>
           <p>Our platform interacts with blockchain data which is, by its nature, public. However, we are committed to ensuring the privacy of specific user-associated information within our direct control.</p>
           <ul>
-            <li><strong>Blockchain Addresses & Ledger Details:</strong> Your blockchain address and transaction history (ledger details) are inherent to using a blockchain platform. While this information is publicly verifiable on the Alephium blockchain, ACYUM does not aggregate or share your specific ledger details or address activity with any third parties, except as necessary to provide the services to you (e.g., displaying your own transaction history to you when you are logged in). We treat your individual ledger information as private to you.</li>
-            <li><strong>Political Affiliation:</strong> If our platform includes features where users may optionally disclose or be associated with political affiliations (e.g., for governance or community features), ACYUM does not share this information with any third parties. This information, if collected with your consent for a specific feature, is treated as private to you and the specific context for which it was provided.</li>
+            <li><strong>Blockchain Addresses & Ledger Details:</strong> Your blockchain address and transaction history (ledger details) are inherent to using a blockchain platform. While this information is publicly verifiable on the Alephium blockchain, YUM does not aggregate or share your specific ledger details or address activity with any third parties, except as necessary to provide the services to you (e.g., displaying your own transaction history to you when you are logged in). We treat your individual ledger information as private to you.</li>
+            <li><strong>Political Affiliation:</strong> If our platform includes features where users may optionally disclose or be associated with political affiliations (e.g., for governance or community features), YUM does not share this information with any third parties. This information, if collected with your consent for a specific feature, is treated as private to you and the specific context for which it was provided.</li>
             <li><strong>Contact Information (for Privacy Inquiries):</strong> If you contact us regarding privacy concerns using the form below, we will use the information you provide (such as your email address and message) solely to respond to your inquiry.</li>
           </ul>
 

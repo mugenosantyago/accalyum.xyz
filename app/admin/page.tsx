@@ -58,7 +58,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 // --- Imports from Bank Client ---
 import { MakeDeposit, Withdraw } from "../../artifacts/ts/scripts"
-import { getTokenBalanceAction, getAcyumTokenId } from "@/app/actions/token-actions"
+import { getTokenBalanceAction, getYumTokenId } from "@/app/actions/token-actions"
 // --- End Imports ---
 
 // --- Constants from Bank Client ---
@@ -80,7 +80,7 @@ interface PendingApproval {
 
 interface SweaClaimRequest {
   _id: string;
-  acyumId: string;
+  yumId: string;
   requesterAddress: string;
   amount: string;
   tokenId: string;
@@ -116,14 +116,14 @@ export default function AdminPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [newAcyumId, setNewAcyumId] = useState("")
+  const [newYumId, setNewYumId] = useState("")
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [newUserData, setNewUserData] = useState({
     username: "",
     email: "",
     address: "",
-    acyumId: "",
+    yumId: "",
   })
 
   // Treasury management states
@@ -392,7 +392,7 @@ export default function AdminPage() {
 
       toast({
         title: "Success",
-        description: "User has been approved and ACYUM ID has been assigned.",
+        description: "User has been approved and YUM ID has been assigned.",
         variant: "default",
       })
 
@@ -446,7 +446,7 @@ export default function AdminPage() {
 
   const handleEditUser = (user: User) => {
     setEditingUser(user)
-    setNewAcyumId(user.acyumId || "")
+    setNewYumId(user.yumId || "")
     setIsEditDialogOpen(true)
   }
 
@@ -463,7 +463,7 @@ export default function AdminPage() {
         },
         body: JSON.stringify({
           id: editingUser._id,
-          acyumId: newAcyumId,
+          yumId: newYumId,
         }),
       })
 
@@ -473,7 +473,7 @@ export default function AdminPage() {
 
       toast({
         title: "Success",
-        description: "User ACYUM ID has been updated.",
+        description: "User YUM ID has been updated.",
         variant: "default",
       })
 
@@ -489,7 +489,7 @@ export default function AdminPage() {
     } finally {
       setIsProcessing(false)
     }
-  }, [editingUser, newAcyumId, address, toast, fetchData]) // Added dependencies
+  }, [editingUser, newYumId, address, toast, fetchData]) // Added dependencies
 
   const handleDeleteUser = useCallback(async (id: string) => {
     if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
@@ -531,7 +531,7 @@ export default function AdminPage() {
   }, [address, toast, fetchData]) // Added dependencies
 
   const handleCreateUser = useCallback(async () => {
-    if (!newUserData.username || !newUserData.email || !newUserData.address || !newUserData.acyumId) {
+    if (!newUserData.username || !newUserData.email || !newUserData.address || !newUserData.yumId) {
       toast({
         title: "Error",
         description: "All fields are required.",
@@ -557,7 +557,7 @@ export default function AdminPage() {
 
       toast({
         title: "Success",
-        description: "User has been created with ACYUM ID.",
+        description: "User has been created with YUM ID.",
         variant: "default",
       })
 
@@ -566,7 +566,7 @@ export default function AdminPage() {
         username: "",
         email: "",
         address: "",
-        acyumId: "",
+        yumId: "",
       })
       await fetchData()
     } catch (error) {
@@ -581,12 +581,13 @@ export default function AdminPage() {
     }
   }, [newUserData, address, toast, fetchData]) // Added dependencies
 
-  const generateAcyumId = () => {
+  const generateYumId = () => {
     const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    let result = "ACYUM-"
-    for (let i = 0; i < 8; i++) {
+    let result = "YUM-"
+    for (let i = 0; i < 6; i++) {
       result += characters.charAt(Math.floor(Math.random() * characters.length))
     }
+    setNewYumId(result)
     return result
   }
 
@@ -595,7 +596,7 @@ export default function AdminPage() {
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.acyumId && user.acyumId.toLowerCase().includes(searchTerm.toLowerCase())),
+      (user.yumId && user.yumId.toLowerCase().includes(searchTerm.toLowerCase())),
   )
 
   // sWEA Treasury Handlers (using server action for deposit simulation)
@@ -802,7 +803,7 @@ export default function AdminPage() {
     }
 
     setIsProcessing(true); // Use general processing state for now
-    toast({ title: "Processing Claim", description: `Processing claim for ${request.acyumId}...`, variant: "default" });
+    toast({ title: "Processing Claim", description: `Processing claim for ${request.yumId}...`, variant: "default" });
 
     try {
       // Convert amount string to BigInt for transaction
@@ -858,7 +859,7 @@ export default function AdminPage() {
     } catch (error) {
       logger.error("Admin: Error processing sWEA claim request:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred.";
-      toast({ title: "Processing Failed", description: `Failed to process claim for ${request.acyumId}: ${message}`, variant: "destructive" });
+      toast({ title: "Processing Failed", description: `Failed to process claim for ${request.yumId}: ${message}`, variant: "destructive" });
     } finally {
       setIsProcessing(false);
     }
@@ -971,7 +972,7 @@ export default function AdminPage() {
                 <CardHeader>
                   <CardTitle>Registered Users</CardTitle>
                   <CardDescription className="text-gray-400">
-                    View and manage all registered users with ACYUM IDs.
+                    View and manage all registered users with YUM IDs.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -996,7 +997,7 @@ export default function AdminPage() {
                           <TableHead className="text-gray-400">Username</TableHead>
                           <TableHead className="text-gray-400">Email</TableHead>
                           <TableHead className="text-gray-400">Wallet Address</TableHead>
-                          <TableHead className="text-gray-400">ACYUM ID</TableHead>
+                          <TableHead className="text-gray-400">YUM ID</TableHead>
                           <TableHead className="text-gray-400">Claimed sWEA</TableHead>
                           <TableHead className="text-gray-400">Actions</TableHead>
                         </TableRow>
@@ -1007,7 +1008,7 @@ export default function AdminPage() {
                             <TableCell className="font-medium text-gray-300">{user.username}</TableCell>
                             <TableCell className="text-gray-300">{user.email}</TableCell>
                             <TableCell className="font-mono text-xs text-gray-300">{user.address}</TableCell>
-                            <TableCell className="text-gray-300">{user.acyumId || "Not assigned"}</TableCell>
+                            <TableCell className="text-gray-300">{user.yumId || "Not assigned"}</TableCell>
                             <TableCell className="text-gray-300">
                               {user.hasClaimedInitialSwea ? (
                                 <span className="text-green-400">Yes</span>
@@ -1267,7 +1268,7 @@ export default function AdminPage() {
                       <TableHeader>
                         <TableRow className="border-gray-800">
                           <TableHead className="text-gray-400">Request ID</TableHead>
-                          <TableHead className="text-gray-400">ACYUM ID</TableHead>
+                          <TableHead className="text-gray-400">YUM ID</TableHead>
                           <TableHead className="text-gray-400">Requester Address</TableHead>
                           <TableHead className="text-gray-400">Amount (sWEA)</TableHead>
                           <TableHead className="text-gray-400">Status</TableHead>
@@ -1279,7 +1280,7 @@ export default function AdminPage() {
                         {pendingSweaClaimRequests.map((request) => (
                           <TableRow key={request._id} className="border-gray-800">
                             <TableCell>{request._id.substring(0, 6)}...</TableCell>
-                            <TableCell>{request.acyumId}</TableCell>
+                            <TableCell>{request.yumId}</TableCell>
                             <TableCell>{request.requesterAddress.substring(0, 10)}...</TableCell>
                             <TableCell>{formatBigIntAmount(BigInt(request.amount), sweaDecimals)}</TableCell>
                             <TableCell>{request.status}</TableCell>
@@ -1312,51 +1313,32 @@ export default function AdminPage() {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="bg-gray-900 border-gray-800">
             <DialogHeader>
-              <DialogTitle>Edit ACYUM ID</DialogTitle>
-              <DialogDescription className="text-gray-400">Update the ACYUM ID for this user.</DialogDescription>
+              <DialogTitle>Edit YUM ID</DialogTitle>
+              <DialogDescription className="text-gray-400">Update the YUM ID for this user.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="username" className="text-right text-gray-300">
-                  Username
+                <Label htmlFor="yumId" className="text-right text-gray-300">
+                  YUM ID
                 </Label>
                 <Input
-                  id="username"
-                  value={editingUser?.username}
+                  id="yumId"
+                  value={newYumId}
+                  onChange={(e) => setNewYumId(e.target.value)}
                   className="col-span-3 bg-gray-800 border-gray-700 text-white"
-                  disabled
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="email" className="text-right text-gray-300">
-                  Email
+                <Label htmlFor="generateYumId" className="text-right text-gray-300">
+                  Generate ID
                 </Label>
-                <Input
-                  id="email"
-                  value={editingUser?.email}
-                  className="col-span-3 bg-gray-800 border-gray-700 text-white"
-                  disabled
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="acyumId" className="text-right text-gray-300">
-                  ACYUM ID
-                </Label>
-                <div className="col-span-3 flex gap-2">
-                  <Input
-                    id="acyumId"
-                    value={newAcyumId}
-                    onChange={(e) => setNewAcyumId(e.target.value)}
-                    className="flex-1 bg-gray-800 border-gray-700 text-white"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => setNewAcyumId(generateAcyumId())}
-                    className="border-gray-700 text-gray-300"
-                  >
-                    Generate
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  onClick={() => setNewYumId(generateYumId())}
+                  className="col-span-3"
+                >
+                  Generate YUM ID
+                </Button>
               </div>
             </div>
             <DialogFooter>

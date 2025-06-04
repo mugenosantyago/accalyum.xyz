@@ -27,7 +27,7 @@ export function SweaClaim() {
   const isConnected = connectionStatus === 'connected' && !!address
   const isConfigured = true;
 
-  const [acyumId, setAcyumId] = useState("")
+  const [yumId, setYumId] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [claimStatus, setClaimStatus] = useState<'idle' | 'checking_eligibility' | 'requesting_claim' | 'request_submitted' | 'claimed' | 'error'>('idle')
@@ -40,8 +40,8 @@ export function SweaClaim() {
     }
     const isDisabled = isProcessing || ['request_submitted', 'claimed'].includes(claimStatus);
     if (isDisabled) return;
-    if (!acyumId) {
-        toast({ title: t("error"), description: "Please enter your Acyum ID", variant: "destructive" })
+    if (!yumId) {
+        toast({ title: t("error"), description: t("pleaseEnterYourYumId"), variant: "destructive" })
         return;
     }
 
@@ -50,14 +50,14 @@ export function SweaClaim() {
     setClaimStatus('checking_eligibility');
 
     try {
-      logger.info(`Checking eligibility and submitting claim request for Acyum ID: ${acyumId}, Address: ${address}`);
+      logger.info(`Checking eligibility and submitting claim request for YUM ID: ${yumId}, Address: ${address}`);
       const apiResponse = await fetch('/api/swea/claim-requests', {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-              acyumId: acyumId,
+              yumId: yumId,
               requesterAddress: address,
               amount: INITIAL_SWEA_AMOUNT,
               tokenId: SWEA_TOKEN_ID,
@@ -77,7 +77,7 @@ export function SweaClaim() {
       logger.info(`Claim request submitted successfully for ${address}.`);
       setClaimStatus('request_submitted');
       toast({ title: t("success"), description: "Your sWEA claim request has been submitted for admin review." });
-      setAcyumId("");
+      setYumId("");
 
     } catch (err) {
       logger.error("sWEA Claim process error:", err)
@@ -96,9 +96,9 @@ export function SweaClaim() {
   return (
     <Card className="w-full max-w-md mx-auto mt-10 bg-gradient-to-br from-purple-900/30 via-gray-850 to-gray-850 border-purple-600/50">
       <CardHeader>
-        <CardTitle className="text-2xl text-center text-purple-300">Request Initial sWEA Claim</CardTitle>
+        <CardTitle className="text-2xl text-center text-purple-300">{t("requestInitialSweaClaim")}</CardTitle>
         <CardDescription className="text-center text-gray-400">
-          Enter your registered Acyum ID and submit a request to claim your first {INITIAL_SWEA_AMOUNT} sWEA tokens. Admin review is required.
+          {t("requestClaimDescription").replace("{amount}", INITIAL_SWEA_AMOUNT.toString())}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -125,16 +125,16 @@ export function SweaClaim() {
         ) : (
           <form onSubmit={handleClaim} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="acyumId" className="text-gray-300">Your Acyum ID</Label>
+              <Label htmlFor="yumId" className="text-gray-300">{t("yourYumId")}</Label>
               <Input
-                id="acyumId"
+                id="yumId"
                 type="text"
-                placeholder="Enter your registered Acyum ID"
-                value={acyumId}
-                onChange={(e) => setAcyumId(e.target.value)}
+                placeholder={t("enterYourRegisteredYumId")}
+                value={yumId}
+                onChange={(e) => setYumId(e.target.value)}
                 required
                 className="bg-gray-800 border-gray-700 text-lg text-white"
-                disabled={isProcessing || ['claimed', 'request_submitted'].includes(claimStatus)}
+                disabled={isProcessing || ['request_submitted', 'claimed'].includes(claimStatus)}
               />
             </div>
 
@@ -145,23 +145,23 @@ export function SweaClaim() {
             <Button
               type="submit"
               className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-              disabled={isProcessing || !acyumId || ['claimed', 'request_submitted'].includes(claimStatus)}
+              disabled={isProcessing || !yumId || ['claimed', 'request_submitted'].includes(claimStatus)}
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {claimStatus === 'checking_eligibility' ? 'Checking Eligibility...' : 'Submitting Request...'}
+                  {claimStatus === 'checking_eligibility' ? t("checkingEligibility") : t("submittingRequest")}
                 </>
               ) : (
                 <>
                   <Gift className="mr-2 h-4 w-4" />
-                  Request {INITIAL_SWEA_AMOUNT} sWEA Claim
+                  {t("requestSweaClaimButton").replace("{amount}", INITIAL_SWEA_AMOUNT.toString())}
                 </>
               )}
             </Button>
              {claimStatus === 'error' && error && (
                  <Button variant="outline" size="sm" onClick={() => { setError(null); setClaimStatus('idle'); }} className="w-full mt-2">
-                    Try Again
+                    {t("tryAgain")}
                  </Button>
              )}
           </form>
