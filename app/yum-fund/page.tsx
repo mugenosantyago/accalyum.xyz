@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import AcyumFundClient from './acyum-fund-client' // Import the new client component
+import AcyumFundClient from '../acyum-fund/acyum-fund-client' // Import the new client component
 
 // Add metadata for the Acyum Bank page
 // Note: Metadata must be defined outside the component function
