@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger'; // Import logger
 interface Transaction {
   _id?: string; // Optional _id
   address: string; // User's Alephium address
-  type: "deposit" | "withdraw" | "donation" | "interest_payout"; // Include all types from model
+  type: "deposit" | "withdraw" | "donation" | "interest_payout" | "vote_payment"; // Include new vote_payment type
   token: 'ALPH' | 'YUM' | 'sWEA'; // Added token
   amount: string;
   txId: string;
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     }
 
     // Validate types (optional but good practice)
-    if (!['deposit', 'withdraw', 'donation', 'interest_payout'].includes(type)) {
+    if (!['deposit', 'withdraw', 'donation', 'interest_payout', 'vote_payment'].includes(type)) {
        logger.warn('API: Invalid transaction type in POST request', { type });
        return NextResponse.json({ error: 'Invalid transaction type' }, { status: 400 });
     }

@@ -13,25 +13,33 @@ import { config } from '@/lib/config';
 import { useBalance } from '@/components/balance-provider'; // To check YUM balance
 import { Loader2 } from 'lucide-react';
 
+const DUST_AMOUNT = 10000n; // Define DUST_AMOUNT here as it's used in transactions
+
 interface SweaVoteFormProps {
   // Props if any, e.g., a callback after submission
 }
 
 export function SweaVoteForm({}: SweaVoteFormProps) {
   const { toast } = useToast();
-  const { account, connectionStatus } = useWallet();
-  const { acyumBalance: userAcyumTokenBalance } = useBalance(); // Get YUM balance from provider
+  const { account, connectionStatus, signer } = useWallet();
+  const { acyumBalance: userAcyumTokenBalance, sweaBalance } = useBalance(); // Get YUM and sWEA balance from provider
 
   const [acyumId, setAcyumId] = useState(''); // This will be the Proposal ID
   const [userAcyumIdentifier, setUserAcyumIdentifier] = useState(''); // New state for User's YUM ID
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPayingSwea, setIsPayingSwea] = useState(false); // New state for payment processing
   const [canShowForm, setCanShowForm] = useState(false);
 
   const userAddress = account?.address;
   const isAdmin = !!userAddress && userAddress === config.alephium.adminAddress; // Ensure userAddress is defined for comparison
   const isConnected = connectionStatus === 'connected';
+
+  // Moved SWEA config to a separate constant for easier access
+  const S_WEA_TOKEN_ID = config.alephium.sweaTokenIdHex;
+  const SWEA_DECIMALS = config.alephium.sweaDecimals;
+  const SWEA_BANK_ADDRESS = config.treasury.sweaBank;
 
   useEffect(() => {
     logger.info('[SweaVoteForm Debug] Checking visibility:', {
@@ -55,12 +63,96 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
     }
   }, [isConnected, isAdmin, userAcyumTokenBalance]);
 
+  // New function to handle SWEA payment
+  const handleSweaVotePayment = async () => {
+    if (!isConnected || !userAddress || !signer) {
+      toast({ title: "Wallet Not Connected", description: "Please connect your wallet first.", variant: "destructive" });
+      return false; // Indicate failure
+    }
+
+    if (!S_WEA_TOKEN_ID || S_WEA_TOKEN_ID === "YOUR_SWEA_TOKEN_ID_HEX") {
+      toast({ title: "Configuration Error", description: "sWEA token ID is not configured.", variant: "destructive" });
+      return false;
+    }
+
+    // Check if user has enough sWEA balance
+    const requiredSweaAmount = 1;
+    const userSweaBalanceNum = sweaBalance ? parseFloat(sweaBalance.replace(/,/g, '')) : 0;
+    if (userSweaBalanceNum < requiredSweaAmount) {
+      toast({ title: "Insufficient sWEA", description: `You need ${requiredSweaAmount} sWEA to vote. Your current balance is ${userSweaBalanceNum} sWEA.`, variant: "destructive" });
+      return false;
+    }
+
+    setIsPayingSwea(true);
+    logger.info(`Client: Initiating 1 sWEA payment for vote to ${SWEA_BANK_ADDRESS}`);
+
+    try {
+      const amountInSmallestUnit = BigInt(Math.floor(requiredSweaAmount * (10 ** SWEA_DECIMALS)));
+      
+      const txResult = await signer.signAndSubmitTransferTx({
+        signerAddress: userAddress,
+         destinations: [{
+           address: SWEA_BANK_ADDRESS, // Send 1 sWEA to the sWEA Bank address
+           attoAlphAmount: DUST_AMOUNT, // Include DUST_AMOUNT for the ALPH part of the UTXO
+           tokens: [{
+               id: S_WEA_TOKEN_ID,
+               amount: amountInSmallestUnit
+           }]
+         }]
+      });
+
+      logger.info(`Client: sWEA payment for vote successful: Tx ID ${txResult.txId}`);
+
+      // Record this as a 'vote_payment' transaction type
+      await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            userAddress: userAddress,
+            token: 'sWEA',
+            amount: amountInSmallestUnit.toString(),
+            txId: txResult.txId,
+            type: 'vote_payment', // New type for vote payment
+            // initiative: 'vote-module' // Optional: add an initiative
+        }),
+      });
+
+      toast({
+        title: "Payment Successful",
+        description: `1 sWEA paid for your vote (Tx: ${txResult.txId}). Proceeding with vote submission.`,
+        variant: "default",
+      });
+      return true; // Indicate success
+
+    } catch (error) {
+      logger.error("Error submitting sWEA payment for vote:", error);
+      toast({
+        title: "Payment Failed",
+        description: error instanceof Error ? error.message : "Failed to submit sWEA payment for vote.",
+        variant: "destructive",
+      });
+      return false; // Indicate failure
+    } finally {
+      setIsPayingSwea(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!acyumId.trim() || !name.trim() || !message.trim() || !userAcyumIdentifier.trim()) { // Make userAcyumIdentifier required
+    if (!acyumId.trim() || !name.trim() || !message.trim() || !userAcyumIdentifier.trim()) {
       toast({ title: 'Validation Error', description: 'Proposal ID, Your YUM ID, Name, and Message fields are required.', variant: 'destructive' });
       return;
     }
+
+    // Only require payment if not an admin
+    let paymentSuccessful = true;
+    if (!isAdmin) {
+      paymentSuccessful = await handleSweaVotePayment();
+      if (!paymentSuccessful) {
+        return; // Stop if payment failed
+      }
+    }
+    
     setIsSubmitting(true);
     logger.info('Submitting sWEA vote/proposal:', { userAddress, proposalId: acyumId, userAcyumIdentifier, name, message });
 
@@ -116,7 +208,7 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
       <CardHeader>
         <CardTitle>Cast Your Vote / Submit Proposal</CardTitle>
         <CardDescription>
-          {isAdmin ? 'Admin vote/proposal submission.' : 'Participate in sWEA governance. Requires holding ACYUM token.'}
+          {isAdmin ? 'Admin vote/proposal submission.' : 'Participate in sWEA governance. Requires holding ACYUM token and 1 sWEA payment.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -162,9 +254,9 @@ export function SweaVoteForm({}: SweaVoteFormProps) {
               rows={4}
             />
           </div>
-          <Button type="submit" disabled={isSubmitting || !isConnected} className="w-full">
-            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Submit
+          <Button type="submit" disabled={isSubmitting || isPayingSwea || !isConnected} className="w-full">
+            {(isSubmitting || isPayingSwea) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isPayingSwea ? 'Processing Payment...' : 'Submit'}
           </Button>
         </form>
       </CardContent>

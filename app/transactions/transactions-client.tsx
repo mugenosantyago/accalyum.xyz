@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowDown, ArrowUp, Loader2, Heart, Coins } from "lucide-react"
+import { ArrowDown, ArrowUp, Loader2, Heart, Coins, Handshake } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
@@ -14,7 +14,7 @@ import { logger } from "@/lib/logger"
 interface Transaction {
   _id: string;
   address: string;
-  type: "deposit" | "withdraw" | "donation" | "interest_payout";
+  type: "deposit" | "withdraw" | "donation" | "interest_payout" | "vote_payment";
   token: 'ALPH' | 'ACYUM' | 'sWEA';
   amount: string;
   txId: string;
@@ -84,6 +84,8 @@ export default function TransactionsClient() {
         return <Heart className="mr-2 h-4 w-4 text-red-500" />;
       case 'interest_payout':
         return <Coins className="mr-2 h-4 w-4 text-yellow-500" />;
+      case 'vote_payment':
+        return <Handshake className="mr-2 h-4 w-4 text-blue-500" />;
       default:
         return null;
     }
