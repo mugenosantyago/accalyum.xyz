@@ -6,7 +6,7 @@ export function GlobalStructuredData() {
   const organizationData = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "YUM Network",
+    name: "ACYUM Network",
     url: baseUrl,
     logo: `${baseUrl}/images/logo.png`,
     sameAs: ["https://twitter.com/acyum_network", "https://github.com/acyum", "https://discord.gg/acyum"],

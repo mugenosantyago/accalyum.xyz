@@ -15,7 +15,7 @@ export const translations = {
     connectWallet: "Connect Wallet",
 
     // Hero Section
-    welcomeToAccalyum: "Welcome to the YUM Network",
+    welcomeToAccalyum: "Welcome to the ACYUM Network",
     communityDriven:
       "A community-driven token built on the Alephium blockchain, designed to empower social causes and mutual aid.",
     registerNow: "Register Now",
