@@ -28,8 +28,8 @@ export const config = {
     sweaBank: process.env.NEXT_PUBLIC_TREASURY_SWEA_BANK || "1DjCZbKGATt82mxygUDuNr8yYxf786SNc7ek9ZEeY3CYC",
   },
   mongo: {
-    uri: process.env.MONGODB_URI ?? "mongodb+srv://yum:SQ87wyXxmxBPKeuB@users.ie7ie.mongodb.net/?retryWrites=true&w=majority&appName=Users",
-    dbName: process.env.MONGODB_DB_NAME ?? "yum",
+    uri: process.env.MONGODB_URI ?? "mongodb+srv://acyum:SQ87wyXxmxBPKeuB@users.ie7ie.mongodb.net/?retryWrites=true&w=majority&appName=Users",
+    dbName: process.env.MONGODB_DB_NAME ?? "acyum",
   },
   storage: {
     blobToken: process.env.BLOB_READ_WRITE_TOKEN || "",

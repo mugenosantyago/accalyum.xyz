@@ -1,7 +1,7 @@
 import { MongoClient } from 'mongodb';
 
-const uri = 'mongodb+srv://yum:SQ87wyXxmxBPKeuB@users.ie7ie.mongodb.net/?retryWrites=true&w=majority&appName=Users';
-const dbName = 'yum';
+const uri = 'mongodb+srv://acyum:SQ87wyXxmxBPKeuB@users.ie7ie.mongodb.net/?retryWrites=true&w=majority&appName=Users';
+const dbName = 'acyum';
 
 async function createDatabase() {
   const client = new MongoClient(uri);
