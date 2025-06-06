@@ -1,13 +1,13 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowDown, ArrowUp, Loader2 } from "lucide-react"
+import { ArrowUp, Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
@@ -15,51 +15,12 @@ import { WalletStatusDisplay } from "@/components/wallet-status-display"
 import { useToast } from "@/components/ui/use-toast"
 import { useWallet } from "@alephium/web3-react"
 import { useBalance } from "@/components/balance-provider"
-import { NodeProvider } from "@alephium/web3"
 import { logger } from "@/lib/logger"
 import { config } from "@/lib/config"
-import Image from 'next/image'
 import { BankLedger } from '@/components/bank-ledger'
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Terminal } from "lucide-react"
-
-// Constants and Interfaces (copied from original page.tsx)
-const ONE_ALPH = 10n ** 18n;
-const ALPH_TOKEN_ID = "0000000000000000000000000000000000000000000000000000000000000000";
-const DUST_AMOUNT = 10000n;
-const YUM_DECIMALS = 7; // Define decimals explicitly
-
-// Add sWEA constants, pulling from config or using placeholders
-const S_WEA_TOKEN_ID = config.alephium.sweaTokenIdHex ?? "YOUR_SWEA_TOKEN_ID_HEX";
-const S_WEA_DECIMALS = config.alephium.sweaDecimals ?? 18;
-
-// Re-declare yumTokenId constant for use throughout the component
-const yumTokenId = config.alephium.yumTokenIdHex;
-
-interface CandySwapTokenData {
-  id: string; 
-  collectionTicker: string; 
-  name: string;
-  slug: string;
-  orderBookPrice?: number; 
-  totalVolume?: number;
-  dailyVolume?: number;
-  // Note: CandySwap API doesn't provide token decimals here, we assume it for YUM
-}
-
-interface NodeTokenBalance {
-  id: string;
-  amount: string; // API returns amount as string
-}
-
-// Expected return type for getAddressesAddressBalance
-interface AddressBalance {
-  balance: string; // ALPH balance
-  tokenBalances?: NodeTokenBalance[]; // Optional array of token balances
-  lockedBalance?: string;
-  lockedTokenBalances?: NodeTokenBalance[];
-  // Other fields might exist depending on the node version
-}
+import { EthereumProvider, useEthereum } from "@/components/ethereum-provider"
+import { EthereumConnectButton } from "@/components/ethereum-connect-button"
+import { ethers } from "ethers"
 
 function formatBigIntAmount(amount: bigint | undefined | null, decimals: number, displayDecimals: number = 4): string {
   const safeAmount = amount ?? 0n; 
@@ -91,8 +52,7 @@ function formatBigIntAmount(amount: bigint | undefined | null, decimals: number,
   return `${integerPart}${displayFractional.length > 0 ? '.' + displayFractional : ''}`;
 }
 
-// Renamed component
-export default function YumFundClient() {
+function YumFundClientInner() {
   const { t } = useLanguage()
   const { toast } = useToast()
   
@@ -107,132 +67,40 @@ export default function YumFundClient() {
   
   const { 
     alphBalance: displayAlphBalance,
-    yumBalance: displayYumBalance,
-    sweaBalance: displaySweaBalance,
     isLoadingBalances,
     balanceError
   } = useBalance();
 
-  const [yumMarketData, setYumMarketData] = useState<CandySwapTokenData | null>(null);
-  const [alphUsdPrice, setAlphUsdPrice] = useState<number | null>(null);
-  const [isMarketDataLoading, setIsMarketDataLoading] = useState(true);
-  const [marketDataError, setMarketDataError] = useState<string | null>(null);
+  // Ethereum wallet context
+  const {
+    signer: ethereumSigner,
+    account: ethereumAccount,
+    isConnected: isEthereumConnected,
+    chainId,
+    usdtBalance,
+    isLoadingBalance: isLoadingUsdtBalance,
+    refreshBalance: refreshUsdtBalance
+  } = useEthereum();
 
   const [donateAmount, setDonateAmount] = useState("")
-  const [donateTokenType, setDonateTokenType] = useState<"ALPH" | "YUM" | "sWEA">("ALPH")
+  const [donateTokenType, setDonateTokenType] = useState<"ALPH" | "USDT">("ALPH")
   const [isProcessingDonation, setIsProcessingDonation] = useState(false)
 
   const bankTreasuryAddress = config.treasury.communist;
-  const providerUrl = "https://node.alphaga.app/";
 
-  // Fetch Treasury Balances - Moved outside useEffect and wrapped in useCallback
-  // Removed fetchTreasuryBalances function
-
-  useEffect(() => {
-    const fetchMarketData = async () => {
-      setIsMarketDataLoading(true);
-      setMarketDataError(null);
-      setYumMarketData(null);
-      setAlphUsdPrice(null);
-
-      try {
-        const [tokenListRes, coingeckoRes] = await Promise.all([
-          fetch('/api/candyswap/token-list'),
-          fetch('https://api.coingecko.com/api/v3/simple/price?ids=alephium&vs_currencies=usd')
-        ]);
-
-        // Process CandySwap data
-        if (!tokenListRes.ok) {
-          throw new Error(`CandySwap API error! status: ${tokenListRes.status}`);
-        }
-        const candySwapData: CandySwapTokenData[] = await tokenListRes.json();
-        const yumData = candySwapData.find(token => token.collectionTicker === yumTokenId);
-
-        if (yumData) {
-          setYumMarketData(yumData);
-          logger.info("Fetched YUM market data from CandySwap:", yumData);
-        } else {
-          logger.warn(`YUM token ID (${yumTokenId}) not found in CandySwap API response.`);
-          setMarketDataError("YUM data not found on CandySwap.");
-        }
-
-        // Process CoinGecko data
-        if (!coingeckoRes.ok) {
-          throw new Error(`CoinGecko API error! status: ${coingeckoRes.status}`);
-        }
-        const coingeckoData = await coingeckoRes.json();
-        const price = coingeckoData?.alephium?.usd;
-        if (typeof price === 'number') {
-          setAlphUsdPrice(price);
-          logger.info(`Fetched ALPH/USD price from CoinGecko: ${price}`);
-        } else {
-           throw new Error('Invalid data format from CoinGecko API');
-        }
-        
-        if (!yumData) {
-           setMarketDataError("YUM data not found on CandySwap.");
-        }
-
-      } catch (error) {
-        logger.error("Failed to fetch market data:", error);
-        const message = error instanceof Error ? error.message : "Failed to load market data";
-        setMarketDataError(message);
-      } finally {
-        setIsMarketDataLoading(false);
-      }
-    };
-
-    if (yumTokenId) {
-      fetchMarketData();
-    } else {
-      logger.warn("YUM Token ID not configured, skipping market data fetch.");
-      setIsMarketDataLoading(false);
-      setMarketDataError("YUM Token ID not configured.");
-    }
-  }, [yumTokenId]);
-
-  // Effect to fetch User's Bank Balance (Uses API) - Keep this useEffect for potential future use/display
-  useEffect(() => {
-    const fetchUserBankBalance = async () => {
-      if (!address || !isConnected) {
-        return;
-      }
-      logger.info(`Fetching bank balance ledger for user: ${address}`);
-      try {
-        const response = await fetch(`/api/bank/balance/${address}`);
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `Failed to fetch user bank balance: ${response.statusText}`);
-        }
-        const data = await response.json();
-        logger.info(`User bank balance fetched: ALPH=${data.alphBalance}, YUM=${data.yumBalance}, sWEA=${data.sweaBalance}`);
-
-      } catch (error) {
-        logger.error("Failed to fetch user bank balance:", error);
-        const message = error instanceof Error ? error.message : "Could not load deposited balance";
-      }
-    };
-
-    fetchUserBankBalance();
-
-  }, [address, isConnected]); // Dependencies for this useEffect
-
-  // --- Function to record transaction --- 
-  const recordDonation = async (token: 'ALPH' | 'YUM' | 'sWEA', amountInSmallestUnit: bigint, txId: string) => {
-    logger.info(`Recording donation: ${formatBigIntAmount(amountInSmallestUnit, token === 'ALPH' ? 18 : (token === 'YUM' ? YUM_DECIMALS : S_WEA_DECIMALS))} ${token} with Tx ID ${txId}`);
+  // Function to record transaction
+  const recordDonation = async (token: 'ALPH' | 'USDT', amountInSmallestUnit: bigint, txId: string) => {
+    logger.info(`Recording donation: ${formatBigIntAmount(amountInSmallestUnit, token === 'ALPH' ? 18 : config.ethereum.usdtDecimals)} ${token} with Tx ID ${txId}`);
     try {
-        // Assuming there's an API endpoint to record donations
         const response = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                userAddress: address, // Include user address
+                userAddress: token === 'ALPH' ? address : ethereumAccount,
                 token: token,
                 amount: amountInSmallestUnit.toString(),
                 txId: txId,
-                type: 'donation', // Explicitly set type as 'donation'
-                // Add timestamp or other relevant info if needed - API handles timestamp
-                // initiative: initiativeId // Omit initiativeId for general fund donations
+                type: 'donation',
             }),
       });
       if (!response.ok) {
@@ -240,29 +108,23 @@ export default function YumFundClient() {
             logger.error(`Failed to record donation on backend: ${response.status}`, errorText);
             toast({
                 title: "Donation Recorded (Backend Sync Warning)",
-                description: `Your donation Tx ${txId} was submitted, but there was an issue recording it on the backend. The donation is on chain, but might not appear in your history immediately.`, // TODO: Adjust message based on ledger implementation
-                variant: "default", // or warning
+                description: `Your donation Tx ${txId} was submitted, but there was an issue recording it on the backend. The donation is on chain, but might not appear in your history immediately.`,
+                variant: "default",
                 duration: 10000
             });
         } else {
             logger.info('Donation successfully recorded on backend.');
-            // Optionally trigger a refetch of user's donation history here if implemented
-            // fetchUserDonations(); // TODO: Implement fetchUserDonation history fetch on Transactions page
         }
     } catch (error) {
         logger.error("Error recording donation on backend:", error);
         toast({
             title: "Donation Recorded (Backend Sync Warning)",
-            description: `Your donation Tx ${txId} was submitted, but there was an issue recording it on the backend. The donation is on chain, but might not appear in your history immediately.`, // TODO: Adjust message based on ledger implementation
-            variant: "default", // or warning
+            description: `Your donation Tx ${txId} was submitted, but there was an issue recording it on the backend. The donation is on chain, but might not appear in your history immediately.`,
+            variant: "default",
             duration: 10000
         });
     }
   };
-
-  const yumUsdPrice = yumMarketData?.orderBookPrice && alphUsdPrice
-    ? yumMarketData.orderBookPrice * alphUsdPrice
-    : null;
 
   const handleAlphDonate = async () => {
     if (!isConnected || !address || !signer) {
@@ -283,7 +145,7 @@ export default function YumFundClient() {
       const txResult = await signer.signAndSubmitTransferTx({
         signerAddress: address,
         destinations: [{
-           address: bankTreasuryAddress, // Donate directly to the treasury address
+           address: bankTreasuryAddress,
            attoAlphAmount: amountInSmallestUnit
         }]
       });
@@ -311,120 +173,71 @@ export default function YumFundClient() {
     }
   }
 
-  const handleYumDonate = async () => {
-    if (!isConnected || !address || !signer) {
-      toast({ title: "Wallet Not Connected", description: "Please connect your wallet first.", variant: "destructive" });
+  const handleUsdtDonate = async () => {
+    if (!isEthereumConnected || !ethereumAccount || !ethereumSigner) {
+      toast({ title: "Ethereum Wallet Not Connected", description: "Please connect your Ethereum wallet first.", variant: "destructive" });
       return;
     }
-    if (!yumTokenId || yumTokenId === "") {
-        toast({ title: "Configuration Error", description: "YUM token ID is not configured.", variant: "destructive" });
-        return;
+    
+    if (chainId !== config.ethereum.chainId) {
+      toast({ title: "Wrong Network", description: "Please switch to Ethereum mainnet to donate USDT.", variant: "destructive" });
+      return;
     }
+
+    if (!config.ethereum.treasuryEthereumAddress) {
+      toast({ title: "Configuration Error", description: "Treasury Ethereum address is not configured.", variant: "destructive" });
+      return;
+    }
+
     const amountNum = parseFloat(donateAmount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a positive YUM amount to donate.", variant: "destructive" });
+      toast({ title: "Invalid Amount", description: "Please enter a positive USDT amount to donate.", variant: "destructive" });
       return;
     }
     setIsProcessingDonation(true);
 
     try {
-      // YUM has 7 decimals based on config.alephium.yumDecimals
-      const yumDecimals = config.alephium.yumDecimals ?? 7; // Use fallback if config is not set
-      const amountInSmallestUnit = BigInt(Math.floor(amountNum * (10 ** yumDecimals)));
+      const amountInSmallestUnit = ethers.parseUnits(donateAmount, config.ethereum.usdtDecimals);
 
-      logger.info(`Client: Signing YUM donation of ${donateAmount} to ${bankTreasuryAddress}`);
+      logger.info(`Client: Signing USDT donation of ${donateAmount} to ${config.ethereum.treasuryEthereumAddress}`);
 
-      // Use the MakeDeposit script for tokens - assuming MakeDeposit is suitable for direct token transfer to an address
-      // Note: If MakeDeposit script is specifically for interacting with a contract, this might need adjustment.
-      // For direct token transfer to an address, signAndSubmitTransferTx is more appropriate.
-      // Assuming bankTreasuryAddress is a standard address, let's use signAndSubmitTransferTx for consistency.
-      const txResult = await signer.signAndSubmitTransferTx({
-        signerAddress: address,
-         destinations: [{
-           address: bankTreasuryAddress, // Donate directly to the treasury address
-           attoAlphAmount: DUST_AMOUNT, // Include DUST_AMOUNT for the ALPH part of the UTXO
-           tokens: [{
-               id: yumTokenId,
-               amount: amountInSmallestUnit
-           }]
-         }]
-      });
+      // Create USDT contract instance
+      const usdtContract = new ethers.Contract(
+        config.ethereum.usdtContractAddress,
+        ["function transfer(address to, uint256 amount) returns (bool)"],
+        ethereumSigner
+      );
 
-      logger.info(`Client: YUM Donation successful: Tx ID ${txResult.txId}`);
+      // Execute USDT transfer
+      const txResult = await usdtContract.transfer(
+        config.ethereum.treasuryEthereumAddress,
+        amountInSmallestUnit
+      );
 
-      recordDonation('YUM', amountInSmallestUnit, txResult.txId);
-
-      toast({
-        title: "Success",
-        description: `YUM donation submitted (Tx: ${txResult.txId})`,
-        variant: "default",
-      });
-      setDonateAmount("");
-
-    } catch (error) {
-      logger.error("Error submitting YUM donation transaction:", error);
-      toast({
-        title: "Donation Error",
-        description: error instanceof Error ? error.message : "Failed to submit YUM donation",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessingDonation(false);
-    }
-  }
-
-  // Add sWEA deposit handler
-  const handleSweaDonate = async () => {
-    if (!isConnected || !address || !signer) {
-      toast({ title: "Wallet Not Connected", description: "Please connect your wallet first.", variant: "destructive" });
-      return;
-    }
-    if (!S_WEA_TOKEN_ID || S_WEA_TOKEN_ID === "YOUR_SWEA_TOKEN_ID_HEX") { // Check against placeholder too
-        toast({ title: "Configuration Error", description: "sWEA token ID is not configured.", variant: "destructive" });
-        return;
-    }
-    const amountNum = parseFloat(donateAmount);
-    if (isNaN(amountNum) || amountNum <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a positive sWEA amount to donate.", variant: "destructive" });
-      return;
-    }
-    setIsProcessingDonation(true);
-
-    try {
-      const sweaDecimals = config.alephium.sweaDecimals ?? 18; // Use fallback if config is not set
-      const amountInSmallestUnit = BigInt(Math.floor(amountNum * (10 ** sweaDecimals)));
-
-      logger.info(`Client: Signing sWEA donation of ${donateAmount} to ${bankTreasuryAddress}`);
+      logger.info(`Client: USDT Donation transaction sent: ${txResult.hash}`);
       
-      // Use signAndSubmitTransferTx for direct token transfer
-      const txResult = await signer.signAndSubmitTransferTx({
-        signerAddress: address,
-         destinations: [{
-           address: bankTreasuryAddress, // Donate directly to the treasury address
-           attoAlphAmount: DUST_AMOUNT, // Include DUST_AMOUNT for the ALPH part of the UTXO
-           tokens: [{
-               id: S_WEA_TOKEN_ID,
-               amount: amountInSmallestUnit
-           }]
-         }]
-      });
+      // Wait for transaction confirmation
+      await txResult.wait();
 
-      logger.info(`Client: sWEA Donation successful: Tx ID ${txResult.txId}`);
+      logger.info(`Client: USDT Donation successful: Tx ID ${txResult.hash}`);
 
-      recordDonation('sWEA', amountInSmallestUnit, txResult.txId);
+      recordDonation('USDT', amountInSmallestUnit, txResult.hash);
 
       toast({
         title: "Success",
-        description: `sWEA donation submitted (Tx: ${txResult.txId})`,
+        description: `USDT donation submitted (Tx: ${txResult.hash})`,
         variant: "default",
       });
       setDonateAmount("");
+      
+      // Refresh USDT balance
+      setTimeout(() => refreshUsdtBalance(), 2000);
 
     } catch (error) {
-      logger.error("Error submitting sWEA donation transaction:", error);
+      logger.error("Error submitting USDT donation transaction:", error);
       toast({
         title: "Donation Error",
-        description: error instanceof Error ? error.message : "Failed to submit sWEA donation",
+        description: error instanceof Error ? error.message : "Failed to submit USDT donation",
         variant: "destructive",
       });
     } finally {
@@ -436,10 +249,8 @@ export default function YumFundClient() {
     e.preventDefault();
     if (donateTokenType === 'ALPH') {
       handleAlphDonate();
-    } else if (donateTokenType === 'YUM') {
-      handleYumDonate();
-    } else if (donateTokenType === 'sWEA') { // Handle sWEA donations
-      handleSweaDonate();
+    } else if (donateTokenType === 'USDT') {
+      handleUsdtDonate();
     }
   }
 
@@ -449,92 +260,112 @@ export default function YumFundClient() {
         <main className="flex-grow container mx-auto py-12 px-4">
           <h1 className="text-3xl font-bold text-center my-8">Donate to the YUM movement and mutual aid funding for indigenous communities</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Treasury Balances Card - Removed */}
-            {/* The card that was here has been removed as requested. */}
-            {/* It previously displayed the treasury balances. */}
             {/* Main Content Column */} 
              <div className="md:col-span-2 space-y-6">
                 {/* User Wallet/Connection Card */}
-                {!isConnected ? (
+                {!isConnected && !isEthereumConnected ? (
                   <div className="text-center py-6">
                     <p className="mb-4 text-amber-600">{t("pleaseConnectWallet")}</p>
-                    <WalletConnectDisplay />
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2">For ALPH donations:</h3>
+                        <WalletConnectDisplay />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2">For USDT donations:</h3>
+                        <EthereumConnectButton />
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <>
-                    {/* Wallet Info Card with improved styling and all balances */}
+                    {/* Wallet Info Card */}
                     <Card className="mb-6 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg text-gray-900 dark:text-white">{t("yourWallet")}</CardTitle>
-                        <CardDescription className="font-mono text-xs break-all text-gray-600 dark:text-gray-400">{address}</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        {isLoadingBalances ? (
-                          <div className="flex items-center justify-center h-20 text-gray-500 dark:text-gray-400">
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Loading balances...
-                          </div>
-                        ) : balanceError ? (
-                          <div className="text-red-600 dark:text-red-500 p-3 bg-red-100 dark:bg-red-900/30 rounded-md">
-                            Error loading balances: {balanceError}
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            {/* ALPH Balance */}
-                            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
-                              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">ALPH Balance</p>
-                              <p className="text-xl font-bold text-gray-900 dark:text-white">{displayAlphBalance ?? '0'} ALPH</p>
-                              <a 
-                                href="https://buy.onramper.com/" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-xs text-blue-500 hover:text-blue-600 mt-1 inline-block"
-                              >
-                                Buy ALPH with fiat →
-                              </a>
-                            </div>
-                            {/* YUM Balance */}
-                            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
-                              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">YUM Balance</p>
-                              <p className="text-xl font-bold text-gray-900 dark:text-white">{displayYumBalance ?? '0'} YUM</p>
-                              {/* Display YUM Market Value */}
-                              {yumMarketData?.orderBookPrice !== undefined && alphUsdPrice !== null && displayYumBalance && (
-                                <>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    ≈ {(Number(displayYumBalance.replace(/,/g, '')) * yumMarketData.orderBookPrice).toFixed(2)} ALPH
-                                  </p>
-                                  {yumUsdPrice !== null && (
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                      ≈ ${(Number(displayYumBalance.replace(/,/g, '')) * yumUsdPrice).toFixed(2)} USD
-                                    </p>
-                                  )}
-                                </>
+                        <div className="space-y-4">
+                          {/* Alephium Wallet */}
+                          {isConnected && (
+                            <div>
+                              <CardDescription className="font-mono text-xs break-all text-gray-600 dark:text-gray-400 mb-2">
+                                Alephium: {address}
+                              </CardDescription>
+                              {isLoadingBalances ? (
+                                <div className="flex items-center text-gray-500 dark:text-gray-400">
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Loading ALPH balance...
+                                </div>
+                              ) : balanceError ? (
+                                <div className="text-red-600 dark:text-red-500 p-3 bg-red-100 dark:bg-red-900/30 rounded-md">
+                                  Error loading ALPH balance: {balanceError}
+                                </div>
+                              ) : (
+                                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
+                                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">ALPH Balance</p>
+                                  <p className="text-xl font-bold text-gray-900 dark:text-white">{displayAlphBalance ?? '0'} ALPH</p>
+                                  <a 
+                                    href="https://buy.onramper.com/" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-blue-500 hover:text-blue-600 mt-1 inline-block"
+                                  >
+                                    Buy ALPH with fiat →
+                                  </a>
+                                </div>
                               )}
+                              <WalletStatusDisplay />
                             </div>
-                            {/* sWEA Balance */}
-                            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
-                              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                                <span className="flex items-center gap-1">
-                                   <Image src="/IMG_5086_Original.jpg" alt="sWEA" width={14} height={14} className="rounded-full inline-block"/> sWEA Balance
-                                </span>
-                              </p>
-                              <p className="text-xl font-bold text-gray-900 dark:text-white">{displaySweaBalance ?? '0'} sWEA</p>
-                              {/* Potential placeholder for sWEA market value if needed later */}
+                          )}
+
+                          {/* Ethereum Wallet */}
+                          {isEthereumConnected && (
+                            <div>
+                              <CardDescription className="font-mono text-xs break-all text-gray-600 dark:text-gray-400 mb-2">
+                                Ethereum: {ethereumAccount}
+                              </CardDescription>
+                              {isLoadingUsdtBalance ? (
+                                <div className="flex items-center text-gray-500 dark:text-gray-400">
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Loading USDT balance...
+                                </div>
+                              ) : (
+                                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
+                                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">USDT Balance</p>
+                                  <p className="text-xl font-bold text-gray-900 dark:text-white">{usdtBalance ?? '0'} USDT</p>
+                                  {chainId !== config.ethereum.chainId && (
+                                    <p className="text-xs text-amber-600 mt-1">⚠️ Wrong network - switch to Ethereum mainnet</p>
+                                  )}
+                                </div>
+                              )}
+                              <EthereumConnectButton />
                             </div>
-                          </div>
-                        )}
-                        <div className="mt-4">
-                          <WalletStatusDisplay />
+                          )}
+
+                          {/* Connection prompts */}
+                          {!isConnected && (
+                            <div className="border border-gray-300 dark:border-gray-600 rounded-md p-3">
+                              <p className="text-sm mb-2">Connect Alephium wallet for ALPH donations:</p>
+                              <WalletConnectDisplay />
+                            </div>
+                          )}
+                          
+                          {!isEthereumConnected && (
+                            <div className="border border-gray-300 dark:border-gray-600 rounded-md p-3">
+                              <p className="text-sm mb-2">Connect Ethereum wallet for USDT donations:</p>
+                              <EthereumConnectButton />
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
 
-                    {/* Deposit/Withdraw Tabs - This starts here */} 
+                    {/* Donation Tabs */} 
                      <Tabs defaultValue="ALPH" className="w-full">
-                       <TabsList className="grid w-full grid-cols-3">
+                       <TabsList className="grid w-full grid-cols-2">
                          <TabsTrigger value="ALPH" onClick={() => setDonateTokenType('ALPH')}>ALPH</TabsTrigger>
-                         <TabsTrigger value="YUM" onClick={() => setDonateTokenType('YUM')}>YUM</TabsTrigger>
-                         <TabsTrigger value="sWEA" onClick={() => setDonateTokenType('sWEA')}>sWEA</TabsTrigger>
+                         <TabsTrigger value="USDT" onClick={() => setDonateTokenType('USDT')}>USDT</TabsTrigger>
                       </TabsList>
                        <TabsContent value="ALPH">
                          <form onSubmit={handleDonateSubmit} className="space-y-4 mt-4">
@@ -551,7 +382,6 @@ export default function YumFundClient() {
                               required
                                className="bg-gray-800 border-gray-700 text-lg"
                             />
-                             {/* Display user's ALPH balance */}
                              {displayAlphBalance !== null && (
                                 <p className="text-sm text-gray-400">Your balance: {displayAlphBalance} ALPH</p>
                              )}
@@ -559,82 +389,48 @@ export default function YumFundClient() {
                           <Button
                             type="submit"
                              className="w-full bg-green-600 hover:bg-green-700"
-                             disabled={isProcessingDonation || !donateAmount || parseFloat(donateAmount) <= 0}
+                             disabled={isProcessingDonation || !donateAmount || parseFloat(donateAmount) <= 0 || !isConnected}
                           >
                              {isProcessingDonation ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                             ) : <ArrowUp className="mr-2 h-4 w-4" />} {/* Keep arrow up for 'sending' */}
+                             ) : <ArrowUp className="mr-2 h-4 w-4" />}
                              Donate ALPH
                           </Button>
                         </form>
                       </TabsContent>
-                       <TabsContent value="YUM">
+                       <TabsContent value="USDT">
                          <form onSubmit={handleDonateSubmit} className="space-y-4 mt-4">
                            <div className="space-y-2">
-                             <Label htmlFor="yumAmountDonate">YUM Amount to Donate</Label>
+                             <Label htmlFor="usdtAmountDonate">USDT Amount to Donate</Label>
                              <Input
-                               id="yumAmountDonate"
+                               id="usdtAmountDonate"
                                type="number"
                                step="any"
-                               min="0.0000001"
+                               min="0.01"
                                placeholder="10.0"
                                value={donateAmount}
                                onChange={(e) => setDonateAmount(e.target.value)}
                                required
                                className="bg-gray-800 border-gray-700 text-lg"
                              />
-                             {/* Display user's YUM balance */}
-                             {displayYumBalance !== null && yumTokenId && ( // Check yumTokenId exists before displaying balance
-                                 <p className="text-sm text-gray-400">Your balance: {displayYumBalance} YUM</p>
+                             {usdtBalance !== null && (
+                                 <p className="text-sm text-gray-400">Your balance: {usdtBalance} USDT</p>
                             )}
                          </div>
                            <Button
                              type="submit"
                              className="w-full bg-green-600 hover:bg-green-700"
-                             disabled={isProcessingDonation || !donateAmount || parseFloat(donateAmount) <= 0}
+                             disabled={isProcessingDonation || !donateAmount || parseFloat(donateAmount) <= 0 || !isEthereumConnected || chainId !== config.ethereum.chainId}
                            >
                              {isProcessingDonation ? (
                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                             ) : <ArrowUp className="mr-2 h-4 w-4" />} {/* Keep arrow up for 'sending' */}
-                             Donate YUM
+                             ) : <ArrowUp className="mr-2 h-4 w-4" />}
+                             Donate USDT
                            </Button>
                          </form>
                        </TabsContent>
-                       <TabsContent value="sWEA">
-                          <form onSubmit={handleDonateSubmit} className="space-y-4 mt-4">
-                          <div className="space-y-2">
-                              <Label htmlFor="sweaAmountDonate">sWEA Amount to Donate</Label>
-                            <Input
-                                id="sweaAmountDonate"
-                              type="number"
-                              step="any"
-                                min="0.000000001"
-                                placeholder="10.0"
-                                value={donateAmount}
-                                onChange={(e) => setDonateAmount(e.target.value)}
-                              required
-                                className="bg-gray-800 border-gray-700 text-lg"
-                            />
-                              {/* Display user's sWEA balance */}
-                              {displaySweaBalance !== null && S_WEA_TOKEN_ID && S_WEA_TOKEN_ID !== "YOUR_SWEA_TOKEN_ID_HEX" && ( // Check token ID is configured
-                                  <p className="text-sm text-gray-400">Your balance: {displaySweaBalance} sWEA</p>
-                              )}
-                          </div>
-                          <Button
-                            type="submit"
-                              className="w-full bg-green-600 hover:bg-green-700"
-                              disabled={isProcessingDonation || !donateAmount || parseFloat(donateAmount) <= 0}
-                          >
-                              {isProcessingDonation ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              ) : <ArrowUp className="mr-2 h-4 w-4" />} {/* Keep arrow up for 'sending' */}
-                              Donate sWEA
-                          </Button>
-                        </form>
-                      </TabsContent>
                     </Tabs>
 
-                    {/* Deposit/Withdraw Tabs - This starts here */} 
                     <div className="mt-8 text-center text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
                       <p className="text-sm leading-relaxed">
                         {t("yumFundDescription")}
@@ -643,9 +439,9 @@ export default function YumFundClient() {
                   </>
                 )}
 
-                {/* Add Bank Ledger Component - Update props */}
-                {isConnected && address && (
-                   <BankLedger address={address} bankName="YUM Fund Donations" /> // Pass address and a descriptive name
+                {/* Add Bank Ledger Component */}
+                {(isConnected && address) && (
+                   <BankLedger address={address} bankName="YUM Fund Donations" />
                 )}
              </div>
           </div> 
@@ -655,5 +451,13 @@ export default function YumFundClient() {
         </footer>
       </div>
     </ClientLayoutWrapper>
+  )
+}
+
+export default function YumFundClient() {
+  return (
+    <EthereumProvider>
+      <YumFundClientInner />
+    </EthereumProvider>
   )
 } 

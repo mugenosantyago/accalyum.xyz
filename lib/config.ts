@@ -21,6 +21,13 @@ export const config = {
     backendWalletPrivateKey: process.env.BACKEND_WALLET_PRIVATE_KEY || "",
     adminAddress: process.env.NEXT_PUBLIC_ADMIN_ADDRESS || "16Wr9KvdT31S99Yw3GCnsXciS9uB2vuxpnD75qQvAFmay",
   },
+  ethereum: {
+    rpcUrl: process.env.NEXT_PUBLIC_ETHEREUM_RPC_URL || "https://eth.llamarpc.com",
+    chainId: parseInt(process.env.NEXT_PUBLIC_ETHEREUM_CHAIN_ID || "1", 10), // 1 for mainnet
+    usdtContractAddress: process.env.NEXT_PUBLIC_USDT_CONTRACT_ADDRESS || "0xdAC17F958D2ee523a2206206994597C13D831ec7", // USDT mainnet
+    usdtDecimals: 6, // USDT has 6 decimals
+    treasuryEthereumAddress: process.env.NEXT_PUBLIC_TREASURY_ETHEREUM_ADDRESS || "0xB43301E1Fe9Ce0681C644234c7750846076839cD", // YUM treasury Ethereum address
+  },
   treasury: {
     homelessness: process.env.NEXT_PUBLIC_TREASURY_HOMELESSNESS || "",
     palestine: process.env.NEXT_PUBLIC_TREASURY_PALESTINE || "",
