@@ -20,6 +20,7 @@ import {
   BarChart3,
   Menu,
   X,
+  Gamepad2,
 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { WalletConnectDisplay } from "@/components/alephium-connect-button"
@@ -47,6 +48,7 @@ export function ModernNav() {
     { href: "/nightshade-swap", icon: <BarChart3 size={20} />, label: t("tradeTokens") },
     { href: "/swea", icon: <Scale size={20} />, label: "sWEA" },
     { href: "/transactions", icon: <History size={20} />, label: t("transactions") },
+    { href: "/minecraft", icon: <Gamepad2 size={20} />, label: t("minecraft") },
   ]
 
   return (

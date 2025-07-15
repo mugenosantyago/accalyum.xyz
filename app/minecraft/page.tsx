@@ -1,0 +1,222 @@
+import { Metadata } from "next"
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Clock, Users, Globe, Trophy, Pickaxe, Zap, Heart } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "YumBlock Minecraft Server - AccalYUM",
+  description: "Join our Minecraft server! YumBlock is minecraft with a couple extra mods such as Biome Expansion, gunblades, QoL and our signature burgers and fries!",
+  keywords: ["minecraft", "server", "yumblock", "alephium", "community", "gaming"],
+  openGraph: {
+    title: "YumBlock Minecraft Server",
+    description: "Join our Minecraft server! YumBlock is minecraft with a couple extra mods such as Biome Expansion, gunblades, QoL and our signature burgers and fries!",
+    images: [
+      {
+        url: "/images/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "YumBlock Minecraft Server",
+      },
+    ],
+  },
+}
+
+export default function MinecraftPage() {
+  const serverIP = "play.accalyum.xyz"
+  const discordLink = "https://discord.gg/VHPe2GyQ"
+  const voteLink = "https://minecraft-mp.com/server-s345983"
+
+  const copyServerIP = () => {
+    navigator.clipboard.writeText(serverIP)
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="relative container mx-auto px-4 py-20 text-center">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white">
+              YumBlock
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 text-green-100">
+              Minecraft with a couple extra mods such as Biome Expansion, gunblades, QoL and our signature burgers and fries!
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button 
+                onClick={copyServerIP}
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-200 hover:scale-105"
+                size="lg"
+              >
+                <Pickaxe className="mr-2 h-6 w-6" />
+                {serverIP}
+              </Button>
+              <p className="text-green-200 text-sm">Click to copy server IP</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Server Info Cards */}
+      <div className="container mx-auto px-4 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <Card className="bg-black/20 border-green-500/30 text-white">
+            <CardHeader className="text-center">
+              <Users className="h-12 w-12 mx-auto mb-4 text-green-400" />
+              <CardTitle>Community</CardTitle>
+              <CardDescription className="text-green-200">
+                Join our growing community of builders and adventurers
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <Button 
+                asChild
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                size="lg"
+              >
+                <a href={discordLink} target="_blank" rel="noopener noreferrer">
+                  <Heart className="mr-2 h-5 w-5" />
+                  Join Discord
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-black/20 border-green-500/30 text-white">
+            <CardHeader className="text-center">
+              <Globe className="h-12 w-12 mx-auto mb-4 text-green-400" />
+              <CardTitle>Server Type</CardTitle>
+              <CardDescription className="text-green-200">
+                Adventure, Survival, Vanilla with mods
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <div className="flex flex-wrap gap-2 justify-center">
+                <Badge variant="secondary" className="bg-green-600 text-white">Adventure</Badge>
+                <Badge variant="secondary" className="bg-green-600 text-white">Survival</Badge>
+                <Badge variant="secondary" className="bg-green-600 text-white">Vanilla</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-black/20 border-green-500/30 text-white">
+            <CardHeader className="text-center">
+              <Trophy className="h-12 w-12 mx-auto mb-4 text-green-400" />
+              <CardTitle>Vote & Support</CardTitle>
+              <CardDescription className="text-green-200">
+                Help us grow by voting for our server
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <Button 
+                asChild
+                className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                size="lg"
+              >
+                <a href={voteLink} target="_blank" rel="noopener noreferrer">
+                  <Trophy className="mr-2 h-5 w-5" />
+                  Vote Now
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Features Section */}
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold mb-8 text-white">Server Features</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="bg-black/20 border-green-500/30 text-white">
+              <CardContent className="p-6 text-center">
+                <Zap className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <h3 className="font-semibold mb-2">Biome Expansion</h3>
+                <p className="text-sm text-green-200">Explore new and exciting biomes</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-black/20 border-green-500/30 text-white">
+              <CardContent className="p-6 text-center">
+                <Pickaxe className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <h3 className="font-semibold mb-2">Gunblades</h3>
+                <p className="text-sm text-green-200">Unique weapons for epic battles</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-black/20 border-green-500/30 text-white">
+              <CardContent className="p-6 text-center">
+                <Heart className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <h3 className="font-semibold mb-2">Quality of Life</h3>
+                <p className="text-sm text-green-200">Improved gameplay experience</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-black/20 border-green-500/30 text-white">
+              <CardContent className="p-6 text-center">
+                <Users className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <h3 className="font-semibold mb-2">Burgers & Fries</h3>
+                <p className="text-sm text-green-200">Our signature food items</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Connection Instructions */}
+        <div className="max-w-4xl mx-auto">
+          <Card className="bg-black/20 border-green-500/30 text-white">
+            <CardHeader>
+              <CardTitle className="text-2xl text-center">How to Connect</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="font-semibold mb-2 text-green-400">Java Edition</h3>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-green-200">
+                    <li>Open Minecraft Java Edition</li>
+                    <li>Click "Multiplayer"</li>
+                    <li>Click "Add Server"</li>
+                    <li>Enter server address: <code className="bg-green-800/50 px-2 py-1 rounded text-green-300">{serverIP}</code></li>
+                    <li>Click "Done" and connect!</li>
+                  </ol>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2 text-green-400">Community Guidelines</h3>
+                  <ul className="list-disc list-inside space-y-2 text-sm text-green-200">
+                    <li>Be respectful to all players</li>
+                    <li>No griefing or stealing</li>
+                    <li>Follow server rules</li>
+                    <li>Have fun and build together!</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="text-center pt-4">
+                <p className="text-green-200 mb-4">
+                  Join our community and help us build something amazing together!
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button 
+                    onClick={copyServerIP}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    size="lg"
+                  >
+                    <Pickaxe className="mr-2 h-5 w-5" />
+                    Copy Server IP
+                  </Button>
+                  <Button 
+                    asChild
+                    variant="outline"
+                    className="border-green-500 text-green-400 hover:bg-green-600 hover:text-white"
+                    size="lg"
+                  >
+                    <a href={discordLink} target="_blank" rel="noopener noreferrer">
+                      Join Discord
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+} 
