@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Clock, Users, Globe, Trophy, Pickaxe, Zap, Heart } from "lucide-react"
+import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 
 export default function MinecraftPage() {
   const serverIP = "play.accalyum.xyz"
@@ -16,7 +17,8 @@ export default function MinecraftPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900">
+    <ClientLayoutWrapper>
+      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-black/40" />
@@ -201,5 +203,6 @@ export default function MinecraftPage() {
         </div>
       </div>
     </div>
+    </ClientLayoutWrapper>
   )
 } 
