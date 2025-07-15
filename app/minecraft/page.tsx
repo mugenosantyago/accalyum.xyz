@@ -113,7 +113,7 @@ export default function MinecraftPage() {
         {/* Features Section */}
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-8 text-white">Server Features</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="bg-black/20 border-green-500/30 text-white">
               <CardContent className="p-6 text-center">
                 <Zap className="h-8 w-8 mx-auto mb-4 text-green-400" />
@@ -124,8 +124,8 @@ export default function MinecraftPage() {
             <Card className="bg-black/20 border-green-500/30 text-white">
               <CardContent className="p-6 text-center">
                 <Pickaxe className="h-8 w-8 mx-auto mb-4 text-green-400" />
-                <h3 className="font-semibold mb-2">Gunblades</h3>
-                <p className="text-sm text-green-200">Unique weapons for epic battles</p>
+                <h3 className="font-semibold mb-2">Added Weapons</h3>
+                <p className="text-sm text-green-200">Such as gunblades and maces</p>
               </CardContent>
             </Card>
             <Card className="bg-black/20 border-green-500/30 text-white">
@@ -138,8 +138,36 @@ export default function MinecraftPage() {
             <Card className="bg-black/20 border-green-500/30 text-white">
               <CardContent className="p-6 text-center">
                 <Users className="h-8 w-8 mx-auto mb-4 text-green-400" />
-                <h3 className="font-semibold mb-2">Burgers & Fries</h3>
-                <p className="text-sm text-green-200">Our signature food items</p>
+                <h3 className="font-semibold mb-2">Added Foods</h3>
+                <p className="text-sm text-green-200">Including burgers and fries</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-black/20 border-green-500/30 text-white">
+              <CardContent className="p-6 text-center">
+                <Globe className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <h3 className="font-semibold mb-2">Warp Stones</h3>
+                <p className="text-sm text-green-200">Fast travel across the world</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-black/20 border-green-500/30 text-white">
+              <CardContent className="p-6 text-center">
+                <Trophy className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <h3 className="font-semibold mb-2">Portal Blocks</h3>
+                <p className="text-sm text-green-200">Create custom portals and gateways</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-black/20 border-green-500/30 text-white">
+              <CardContent className="p-6 text-center">
+                <Zap className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <h3 className="font-semibold mb-2">Dragon Drops Elytra</h3>
+                <p className="text-sm text-green-200">Enhanced dragon loot system</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-black/20 border-green-500/30 text-white">
+              <CardContent className="p-6 text-center">
+                <Heart className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <h3 className="font-semibold mb-2">Special Material</h3>
+                <p className="text-sm text-green-200">Unique crafting materials and resources</p>
               </CardContent>
             </Card>
           </div>
@@ -156,6 +184,18 @@ export default function MinecraftPage() {
                 <div>
                   <h3 className="font-semibold mb-2 text-green-400">Java Edition</h3>
                   <ol className="list-decimal list-inside space-y-2 text-sm text-green-200">
+                    <li>Install NeoForge for your Minecraft version</li>
+                    <li>Download our mod package from{" "}
+                      <a 
+                        href="https://discord.com/channels/1247377755960770694/1392182433054589119/1393650907031273553"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-green-300 hover:text-green-100 underline"
+                      >
+                        Discord
+                      </a>
+                    </li>
+                    <li>Drag the plugins into your NeoForge Mods folder</li>
                     <li>Open Minecraft Java Edition</li>
                     <li>Click "Multiplayer"</li>
                     <li>Click "Add Server"</li>
