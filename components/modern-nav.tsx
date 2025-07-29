@@ -46,7 +46,6 @@ export function ModernNav() {
     { href: "/id-registration", icon: <IdCard size={20} />, label: t("idRegistration") },
     { href: "/yum-fund", icon: <Landmark size={20} />, label: t("yumFund") },
     { href: "/nightshade-swap", icon: <BarChart3 size={20} />, label: t("tradeTokens") },
-    { href: "/swea", icon: <Scale size={20} />, label: "sWEA" },
     { href: "/transactions", icon: <History size={20} />, label: t("transactions") },
     { href: "/minecraft", icon: <Gamepad2 size={20} />, label: t("minecraft") },
   ]

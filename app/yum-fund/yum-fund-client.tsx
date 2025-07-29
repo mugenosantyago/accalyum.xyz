@@ -21,6 +21,9 @@ import { BankLedger } from '@/components/bank-ledger'
 import { EthereumProvider, useEthereum } from "@/components/ethereum-provider"
 import { EthereumConnectButton } from "@/components/ethereum-connect-button"
 import { ethers } from "ethers"
+import { YumFundProposals } from './YumFundProposals'
+import { YumFundVoteForm } from './YumFundVoteForm'
+import { Separator } from '@/components/ui/separator'
 
 function formatBigIntAmount(amount: bigint | undefined | null, decimals: number, displayDecimals: number = 4): string {
   const safeAmount = amount ?? 0n; 
@@ -443,6 +446,13 @@ function YumFundClientInner() {
                 {(isConnected && address) && (
                    <BankLedger address={address} bankName="YUM Fund Donations" />
                 )}
+
+                {/* Proposals and Voting Section */}
+                <Separator className="my-12 bg-gradient-to-r from-transparent via-blue-600/50 to-transparent h-[1px]" />
+                
+                <YumFundProposals className="mb-8" />
+                
+                <YumFundVoteForm className="mb-8" />
              </div>
           </div> 
         </main>

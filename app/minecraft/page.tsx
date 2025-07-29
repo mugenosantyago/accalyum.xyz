@@ -18,7 +18,7 @@ export default function MinecraftPage() {
 
   return (
     <ClientLayoutWrapper>
-      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900">
+      <div className="min-h-screen bg-gradient-to-br from-black via-purple-900 to-yellow-600">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-black/40" />
@@ -27,19 +27,16 @@ export default function MinecraftPage() {
             <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white">
               YumBlock
             </h1>
-            <p className="text-xl md:text-2xl mb-8 text-green-100">
-              Minecraft with a couple extra mods such as Biome Expansion, gunblades, QoL and our signature burgers and fries!
-            </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button 
                 onClick={copyServerIP}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-200 hover:scale-105"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-200 hover:scale-105"
                 size="lg"
               >
                 <Pickaxe className="mr-2 h-6 w-6" />
                 {serverIP}
               </Button>
-              <p className="text-green-200 text-sm">Click to copy server IP</p>
+              <p className="text-yellow-300 text-sm">Click to copy server IP</p>
             </div>
           </div>
         </div>
@@ -48,11 +45,11 @@ export default function MinecraftPage() {
       {/* Server Info Cards */}
       <div className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          <Card className="bg-black/20 border-green-500/30 text-white">
+          <Card className="bg-black/20 border-purple-500/30 text-white">
             <CardHeader className="text-center">
-              <Users className="h-12 w-12 mx-auto mb-4 text-green-400" />
+              <Users className="h-12 w-12 mx-auto mb-4 text-purple-400" />
               <CardTitle>Community</CardTitle>
-              <CardDescription className="text-green-200">
+              <CardDescription className="text-yellow-300">
                 Join our growing community of builders and adventurers
               </CardDescription>
             </CardHeader>
@@ -70,28 +67,28 @@ export default function MinecraftPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 border-green-500/30 text-white">
+          <Card className="bg-black/20 border-purple-500/30 text-white">
             <CardHeader className="text-center">
-              <Globe className="h-12 w-12 mx-auto mb-4 text-green-400" />
+              <Globe className="h-12 w-12 mx-auto mb-4 text-purple-400" />
               <CardTitle>Server Type</CardTitle>
-              <CardDescription className="text-green-200">
+              <CardDescription className="text-yellow-300">
                 Adventure, Survival, Vanilla with mods
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
               <div className="flex flex-wrap gap-2 justify-center">
-                <Badge variant="secondary" className="bg-green-600 text-white">Adventure</Badge>
-                <Badge variant="secondary" className="bg-green-600 text-white">Survival</Badge>
-                <Badge variant="secondary" className="bg-green-600 text-white">Vanilla</Badge>
+                <Badge variant="secondary" className="bg-purple-600 text-white">Adventure</Badge>
+                <Badge variant="secondary" className="bg-purple-600 text-white">Survival</Badge>
+                <Badge variant="secondary" className="bg-purple-600 text-white">Vanilla</Badge>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-black/20 border-green-500/30 text-white">
+          <Card className="bg-black/20 border-purple-500/30 text-white">
             <CardHeader className="text-center">
-              <Trophy className="h-12 w-12 mx-auto mb-4 text-green-400" />
+              <Trophy className="h-12 w-12 mx-auto mb-4 text-yellow-400" />
               <CardTitle>Vote & Support</CardTitle>
-              <CardDescription className="text-green-200">
+              <CardDescription className="text-yellow-300">
                 Help us grow by voting for our server
               </CardDescription>
             </CardHeader>
@@ -114,60 +111,58 @@ export default function MinecraftPage() {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-8 text-white">Server Features</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="bg-black/20 border-green-500/30 text-white">
+            <Card className="bg-black/20 border-purple-500/30 text-white">
               <CardContent className="p-6 text-center">
-                <Zap className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <Zap className="h-8 w-8 mx-auto mb-4 text-purple-400" />
                 <h3 className="font-semibold mb-2">Biome Expansion</h3>
-                <p className="text-sm text-green-200">Explore new and exciting biomes</p>
+                <p className="text-sm text-yellow-300">Explore new and exciting biomes</p>
               </CardContent>
             </Card>
-            <Card className="bg-black/20 border-green-500/30 text-white">
+            <Card className="bg-black/20 border-purple-500/30 text-white">
               <CardContent className="p-6 text-center">
-                <Pickaxe className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <Pickaxe className="h-8 w-8 mx-auto mb-4 text-yellow-400" />
                 <h3 className="font-semibold mb-2">Added Weapons</h3>
-                <p className="text-sm text-green-200">Such as gunblades and maces</p>
               </CardContent>
             </Card>
-            <Card className="bg-black/20 border-green-500/30 text-white">
+            <Card className="bg-black/20 border-purple-500/30 text-white">
               <CardContent className="p-6 text-center">
-                <Heart className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <Heart className="h-8 w-8 mx-auto mb-4 text-purple-400" />
                 <h3 className="font-semibold mb-2">Quality of Life</h3>
-                <p className="text-sm text-green-200">Improved gameplay experience</p>
+                <p className="text-sm text-yellow-300">Improved gameplay experience</p>
               </CardContent>
             </Card>
-            <Card className="bg-black/20 border-green-500/30 text-white">
+            <Card className="bg-black/20 border-purple-500/30 text-white">
               <CardContent className="p-6 text-center">
-                <Users className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <Users className="h-8 w-8 mx-auto mb-4 text-yellow-400" />
                 <h3 className="font-semibold mb-2">Added Foods</h3>
-                <p className="text-sm text-green-200">Including burgers and fries</p>
               </CardContent>
             </Card>
-            <Card className="bg-black/20 border-green-500/30 text-white">
+            <Card className="bg-black/20 border-purple-500/30 text-white">
               <CardContent className="p-6 text-center">
-                <Globe className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <Globe className="h-8 w-8 mx-auto mb-4 text-purple-400" />
                 <h3 className="font-semibold mb-2">Warp Stones</h3>
-                <p className="text-sm text-green-200">Fast travel across the world</p>
+                <p className="text-sm text-yellow-300">Fast travel across the world</p>
               </CardContent>
             </Card>
-            <Card className="bg-black/20 border-green-500/30 text-white">
+            <Card className="bg-black/20 border-purple-500/30 text-white">
               <CardContent className="p-6 text-center">
-                <Trophy className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <Trophy className="h-8 w-8 mx-auto mb-4 text-yellow-400" />
                 <h3 className="font-semibold mb-2">Portal Blocks</h3>
-                <p className="text-sm text-green-200">Create custom portals and gateways</p>
+                <p className="text-sm text-yellow-300">Create custom portals and gateways</p>
               </CardContent>
             </Card>
-            <Card className="bg-black/20 border-green-500/30 text-white">
+            <Card className="bg-black/20 border-purple-500/30 text-white">
               <CardContent className="p-6 text-center">
-                <Zap className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <Zap className="h-8 w-8 mx-auto mb-4 text-purple-400" />
                 <h3 className="font-semibold mb-2">Dragon Drops Elytra</h3>
-                <p className="text-sm text-green-200">Enhanced dragon loot system</p>
+                <p className="text-sm text-yellow-300">Enhanced dragon loot system</p>
               </CardContent>
             </Card>
-            <Card className="bg-black/20 border-green-500/30 text-white">
+            <Card className="bg-black/20 border-purple-500/30 text-white">
               <CardContent className="p-6 text-center">
-                <Heart className="h-8 w-8 mx-auto mb-4 text-green-400" />
+                <Heart className="h-8 w-8 mx-auto mb-4 text-yellow-400" />
                 <h3 className="font-semibold mb-2">Special Material</h3>
-                <p className="text-sm text-green-200">Unique crafting materials and resources</p>
+                <p className="text-sm text-yellow-300">Unique crafting materials and resources</p>
               </CardContent>
             </Card>
           </div>
@@ -175,22 +170,22 @@ export default function MinecraftPage() {
 
         {/* Connection Instructions */}
         <div className="max-w-4xl mx-auto">
-          <Card className="bg-black/20 border-green-500/30 text-white">
+          <Card className="bg-black/20 border-purple-500/30 text-white">
             <CardHeader>
               <CardTitle className="text-2xl text-center">How to Connect</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <h3 className="font-semibold mb-2 text-green-400">Java Edition</h3>
-                  <ol className="list-decimal list-inside space-y-2 text-sm text-green-200">
+                  <h3 className="font-semibold mb-2 text-purple-400">Java Edition</h3>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-yellow-300">
                     <li>Install NeoForge for your Minecraft version</li>
                     <li>Download our mod package from{" "}
                       <a 
                         href="https://discord.com/channels/1247377755960770694/1392182433054589119/1393650907031273553"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-green-300 hover:text-green-100 underline"
+                        className="text-yellow-400 hover:text-yellow-200 underline"
                       >
                         Discord
                       </a>
@@ -199,13 +194,13 @@ export default function MinecraftPage() {
                     <li>Open Minecraft Java Edition</li>
                     <li>Click "Multiplayer"</li>
                     <li>Click "Add Server"</li>
-                    <li>Enter server address: <code className="bg-green-800/50 px-2 py-1 rounded text-green-300">{serverIP}</code></li>
+                    <li>Enter server address: <code className="bg-purple-800/50 px-2 py-1 rounded text-yellow-300">{serverIP}</code></li>
                     <li>Click "Done" and connect!</li>
                   </ol>
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2 text-green-400">Community Guidelines</h3>
-                  <ul className="list-disc list-inside space-y-2 text-sm text-green-200">
+                  <h3 className="font-semibold mb-2 text-purple-400">Community Guidelines</h3>
+                  <ul className="list-disc list-inside space-y-2 text-sm text-yellow-300">
                     <li>Be respectful to all players</li>
                     <li>No griefing or stealing</li>
                     <li>Follow server rules</li>
@@ -214,13 +209,13 @@ export default function MinecraftPage() {
                 </div>
               </div>
               <div className="text-center pt-4">
-                <p className="text-green-200 mb-4">
+                <p className="text-yellow-300 mb-4">
                   Join our community and help us build something amazing together!
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button 
                     onClick={copyServerIP}
-                    className="bg-green-600 hover:bg-green-700 text-white"
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
                     size="lg"
                   >
                     <Pickaxe className="mr-2 h-5 w-5" />
@@ -229,7 +224,7 @@ export default function MinecraftPage() {
                   <Button 
                     asChild
                     variant="outline"
-                    className="border-green-500 text-green-400 hover:bg-green-600 hover:text-white"
+                    className="border-yellow-500 text-yellow-400 hover:bg-yellow-600 hover:text-white"
                     size="lg"
                   >
                     <a href={discordLink} target="_blank" rel="noopener noreferrer">
