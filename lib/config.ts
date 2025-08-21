@@ -13,10 +13,10 @@ export const config = {
     nodeUrl: process.env.NEXT_PUBLIC_NODE_URL,
     yumTokenIdHex: process.env.NEXT_PUBLIC_YUM_TOKEN_ID_HEX ?? "",
     yumDecimals: parseInt(process.env.NEXT_PUBLIC_YUM_DECIMALS || "4", 10),
-    yumFaucetAddress: process.env.NEXT_PUBLIC_YUM_FAUCET_ADDRESS || "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
+    yumFaucetAddress: "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
     sweaTokenIdHex: process.env.NEXT_PUBLIC_SWEA_TOKEN_ID_HEX ?? "5d738e4fda3dab2c3edf175842df94f877f4be41b06bba553f61328b5c276300",
     sweaDecimals: parseInt(process.env.NEXT_PUBLIC_SWEA_DECIMALS || "9", 10),
-    sweaFaucetAddress: process.env.NEXT_PUBLIC_SWEA_FAUCET_ADDRESS || "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
+    sweaFaucetAddress: "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
     depositContractAddress: process.env.NEXT_PUBLIC_DEPOSIT_CONTRACT_ADDRESS || "",
     backendWalletPrivateKey: process.env.BACKEND_WALLET_PRIVATE_KEY || "",
     adminAddress: process.env.NEXT_PUBLIC_ADMIN_ADDRESS || "16Wr9KvdT31S99Yw3GCnsXciS9uB2vuxpnD75qQvAFmay",
@@ -29,10 +29,10 @@ export const config = {
     treasuryEthereumAddress: process.env.NEXT_PUBLIC_TREASURY_ETHEREUM_ADDRESS || "0xB43301E1Fe9Ce0681C644234c7750846076839cD", // YUM treasury Ethereum address
   },
   treasury: {
-    homelessness: process.env.NEXT_PUBLIC_TREASURY_HOMELESSNESS || "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
-    palestine: process.env.NEXT_PUBLIC_TREASURY_PALESTINE || "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
-    communist: process.env.NEXT_PUBLIC_TREASURY_COMMUNIST || "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
-    sweaBank: process.env.NEXT_PUBLIC_TREASURY_SWEA_BANK || "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
+    homelessness: "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
+    palestine: "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
+    communist: "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
+    sweaBank: "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
   },
   mongo: {
     uri: process.env.MONGODB_URI ?? "mongodb+srv://acyum:SQ87wyXxmxBPKeuB@users.ie7ie.mongodb.net/?retryWrites=true&w=majority&appName=Users",
