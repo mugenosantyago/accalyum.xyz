@@ -1,54 +1,67 @@
 "use client"
 
-import { useEffect, useRef } from 'react'
-import dynamic from 'next/dynamic'
+import { useEffect } from 'react'
 
 interface LenisProviderProps {
   children: React.ReactNode
 }
 
 export function LenisProvider({ children }: LenisProviderProps) {
-  const lenisRef = useRef<any>(null)
-
   useEffect(() => {
-    // Only run on client side
-    if (typeof window === 'undefined') return
+    // Check if we're in the browser
+    if (typeof window === 'undefined') {
+      return
+    }
 
-    let lenis: any
-    let rafId: number
+    let lenisInstance: any = null
+    let rafId: number | null = null
 
-    // Dynamically import Lenis to avoid SSR issues
-    import('lenis').then(({ default: Lenis }) => {
-      // Initialize Lenis
-      lenis = new Lenis({
-        duration: 1.2, // Duration of the scroll animation
-        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Easing function
-        direction: 'vertical', // Vertical scroll
-        gestureDirection: 'vertical', // Vertical gesture direction
-        smooth: true,
-        mouseMultiplier: 1, // Mouse scroll multiplier
-        smoothTouch: false, // Disable smooth scroll on touch devices for better mobile experience
-        touchMultiplier: 2, // Touch scroll multiplier
-        infinite: false, // Infinite scroll
-      })
+    // Create a function to initialize Lenis
+    const initSmoothScroll = async () => {
+      try {
+        // Dynamically import Lenis only on client side
+        const LenisModule = await import('lenis')
+        const Lenis = LenisModule.default || LenisModule
 
-      lenisRef.current = lenis
+        // Create Lenis instance
+        lenisInstance = new Lenis({
+          duration: 1.2,
+          easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+          direction: 'vertical',
+          gestureDirection: 'vertical',
+          smooth: true,
+          mouseMultiplier: 1,
+          smoothTouch: false,
+          touchMultiplier: 2,
+          infinite: false,
+        })
 
-      // Animation frame loop
-      function raf(time: number) {
-        lenis.raf(time)
-        rafId = requestAnimationFrame(raf)
+        // Update scroll position
+        const raf = (time: number) => {
+          lenisInstance.raf(time)
+          rafId = window.requestAnimationFrame(raf)
+        }
+
+        rafId = window.requestAnimationFrame(raf)
+      } catch (error) {
+        // Fail silently in production, log in development
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Lenis initialization failed:', error)
+        }
       }
+    }
 
-      rafId = requestAnimationFrame(raf)
-    })
+    // Initialize after a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(initSmoothScroll, 0)
 
     // Cleanup function
     return () => {
-      if (lenis) {
-        cancelAnimationFrame(rafId)
-        lenis.destroy()
-        lenisRef.current = null
+      clearTimeout(timeoutId)
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId)
+      }
+      if (lenisInstance) {
+        lenisInstance.destroy()
       }
     }
   }, [])

@@ -4,6 +4,9 @@
   "private": true,
   "main": "./src/index.ts",
   "type": "module",
+  "engines": {
+    "node": ">=18.17.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
