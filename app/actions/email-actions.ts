@@ -3,8 +3,6 @@
 import { Resend } from "resend"
 import { config } from "@/lib/config"
 
-const resend = new Resend(config.email.resendApiKey)
-
 interface ContactFormData {
   name: string
   email: string
@@ -18,6 +16,8 @@ export async function sendContactEmail(data: ContactFormData) {
       console.warn("RESEND_API_KEY not set, skipping email send")
       return { success: false, error: "Email service not configured" }
     }
+
+    const resend = new Resend(config.email.resendApiKey)
 
     const { name, email, subject, message } = data
 
