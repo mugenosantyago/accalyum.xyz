@@ -5,6 +5,7 @@ import { LanguageProvider } from "@/components/language-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { AlephiumWalletProvider } from "@alephium/web3-react"
 import { BalanceProvider } from "@/components/balance-provider"
+import { LenisProvider } from "@/components/lenis-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -42,12 +43,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AlephiumWalletProvider network="mainnet">
-          <BalanceProvider>
-            <LanguageProvider>{children}</LanguageProvider>
-          </BalanceProvider>
-        </AlephiumWalletProvider>
-        <Toaster />
+        <LenisProvider>
+          <AlephiumWalletProvider network="mainnet">
+            <BalanceProvider>
+              <LanguageProvider>{children}</LanguageProvider>
+            </BalanceProvider>
+          </AlephiumWalletProvider>
+          <Toaster />
+        </LenisProvider>
       </body>
     </html>
   )
