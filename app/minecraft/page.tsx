@@ -4,7 +4,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Clock, Users, Globe, Trophy, Pickaxe, Zap, Heart } from "lucide-react"
+import { Clock, Users, Globe, Trophy, Pickaxe, Zap, Heart, Download } from "lucide-react"
 import { ClientLayoutWrapper } from "@/components/client-layout-wrapper"
 
 export default function MinecraftPage() {
@@ -180,15 +180,40 @@ export default function MinecraftPage() {
                   <h3 className="font-semibold mb-2 text-purple-400">Java Edition</h3>
                   <ol className="list-decimal list-inside space-y-2 text-sm text-yellow-300">
                     <li>Install NeoForge for your Minecraft version</li>
-                    <li>Download our mod package from{" "}
-                      <a 
-                        href="https://discord.com/channels/1247377755960770694/1392182433054589119/1393650907031273553"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-yellow-400 hover:text-yellow-200 underline"
-                      >
-                        Discord
-                      </a>
+                    <li>Download our mod package:
+                      <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="border-yellow-500 text-yellow-400 hover:bg-yellow-600 hover:text-white"
+                        >
+                          <a 
+                            href="https://discord.com/channels/1247377755960770694/1392182433054589119/1393650907031273553"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Discord Download
+                          </a>
+                        </Button>
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="border-purple-500 text-purple-400 hover:bg-purple-600 hover:text-white"
+                        >
+                          <a 
+                            href="https://github.com/mugenosantyago/acyoom/releases/latest"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            GitHub Releases
+                          </a>
+                        </Button>
+                      </div>
+                      <p className="text-xs text-yellow-400 mt-1">Modpack: yumplugs14_v3-9.8.25.zip (~300MB)</p>
                     </li>
                     <li>Drag the plugins into your NeoForge Mods folder</li>
                     <li>Open Minecraft Java Edition</li>
