@@ -14,8 +14,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@alephium/web3": "2.0.0-rc.1",
-    "@alephium/web3-react": "2.0.0-rc.1",
+    "@alephium/web3": "2.0.4",
+    "@alephium/web3-react": "2.0.4",
     "@alephium/web3-wallet": "^1.11.7",
     "@aws-sdk/credential-providers": "latest",
     "@emotion/is-prop-valid": "latest",
@@ -52,7 +52,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
-    "date-fns": "4.1.0",
+    "date-fns": "3.6.0",
     "embla-carousel-react": "8.5.1",
     "ethers": "^6.14.3",
     "framer-motion": "latest",

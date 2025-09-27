@@ -90,13 +90,13 @@ export function ClientWrapper({ children }: { children: ReactNode }) {
     <AlephiumProvider>
       <AlephiumWalletProvider
         network={network}
-        addressGroup={0}
+        addressGroup={undefined}
         walletConnectProjectId={projectId}
         walletConnectOptions={{
           projectId: projectId,
           metadata: {
-            name: "Accalyum Network",
-            description: "Accalyum Network dApp",
+            name: "Accalyum Network - Danube Enhanced",
+            description: "Experience Danube features: 8s block times, 20k+ TPS, groupless addresses",
             url: "https://accalyum.xyz",
             icons: ["https://accalyum.xyz/images/logo.png"],
           },

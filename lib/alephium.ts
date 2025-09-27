@@ -703,19 +703,22 @@ export class AlephiumWeb3 {
     }
     console.log(`Waiting for ${confirmations} confirmations for Tx ID: ${txId}`)
     const startTime = Date.now()
+    
+    // With Danube's 8-second blocks, we can check more frequently
+    const checkInterval = config.alephium.fastBlockTime / 2 // Check every 4 seconds
 
     return new Promise((resolve, reject) => {
       const checkConfirmation = async () => {
         try {
           const txStatus = await this.nodeProvider!.transactions.getTransactionsStatus({ txId: txId })
           if (txStatus.confirmations && txStatus.confirmations >= confirmations) {
-            console.log(`Transaction ${txId} confirmed with ${txStatus.confirmations} confirmations.`)
+            console.log(`Transaction ${txId} confirmed with ${txStatus.confirmations} confirmations in ${Date.now() - startTime}ms`)
             resolve(true)
           } else if (Date.now() - startTime > timeoutMs) {
             console.warn(`Timeout waiting for transaction ${txId} to be confirmed.`)
             resolve(false)
           } else {
-            setTimeout(checkConfirmation, 4000)
+            setTimeout(checkConfirmation, checkInterval)
           }
         } catch (error) {
           console.error(`Error checking transaction status for ${txId}:`, error)
@@ -723,7 +726,7 @@ export class AlephiumWeb3 {
             console.warn(`Timeout due to error while waiting for transaction ${txId}.`)
             resolve(false)
           } else {
-            setTimeout(checkConfirmation, 4000)
+            setTimeout(checkConfirmation, checkInterval)
           }
         }
       }
@@ -745,6 +748,18 @@ export class AlephiumWeb3 {
 
   public getNetworkName(): string | null {
     return this.networkName
+  }
+
+  public isDanubeEnabled(): boolean {
+    return config.alephium.enableGrouplessAddresses
+  }
+
+  public getBlockTime(): number {
+    return config.alephium.fastBlockTime
+  }
+
+  public getMaxTPS(): number {
+    return config.alephium.maxTxPerSecond
   }
 
   public disconnect(): void {

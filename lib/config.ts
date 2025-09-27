@@ -11,6 +11,8 @@ export const config = {
   alephium: {
     network: (process.env.NEXT_PUBLIC_ALEPHIUM_NETWORK || "testnet") as "mainnet" | "testnet" | "devnet",
     nodeUrl: process.env.NEXT_PUBLIC_NODE_URL,
+    providerUrl: process.env.NEXT_PUBLIC_ALEPHIUM_PROVIDER_URL || "https://node.alephium.org",
+    walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
     yumTokenIdHex: process.env.NEXT_PUBLIC_YUM_TOKEN_ID_HEX ?? "",
     yumDecimals: parseInt(process.env.NEXT_PUBLIC_YUM_DECIMALS || "4", 10),
     yumFaucetAddress: "1C8jLgCh8tV8HKnvcCo3hTVK1obVCS99cbWXE6c1QHVd8",
@@ -20,6 +22,11 @@ export const config = {
     depositContractAddress: process.env.NEXT_PUBLIC_DEPOSIT_CONTRACT_ADDRESS || "",
     backendWalletPrivateKey: process.env.BACKEND_WALLET_PRIVATE_KEY || "",
     adminAddress: process.env.NEXT_PUBLIC_ADMIN_ADDRESS || "16Wr9KvdT31S99Yw3GCnsXciS9uB2vuxpnD75qQvAFmay",
+    // Danube upgrade features
+    enableGrouplessAddresses: true,
+    enablePasskeys: process.env.NEXT_PUBLIC_ENABLE_PASSKEYS === "true",
+    fastBlockTime: 8000, // 8 seconds
+    maxTxPerSecond: 20000,
   },
   ethereum: {
     rpcUrl: process.env.NEXT_PUBLIC_ETHEREUM_RPC_URL || "https://eth.llamarpc.com",
@@ -55,14 +62,22 @@ export const config = {
 
 // Site configuration for metadata
 export const siteConfig = {
-  name: "YUM Network",
+  name: "YUM Network - Danube Enhanced",
   description:
-    "A community-driven socialist token built on the Alephium blockchain, designed to empower social causes and mutual aid.",
+    "Experience next-generation DeFi on Alephium's Danube upgrade: 8-second blocks, 20k+ TPS, groupless addresses. A community-driven socialist token empowering social causes with revolutionary blockchain technology.",
   url: "https://accalyum.xyz",
   ogImage: "https://accalyum.xyz/images/og-image.jpg",
   links: {
     twitter: "https://x.com/alephionline",
     roadmap: "https://roadmap.alephi.online",
+  },
+  features: {
+    blockTime: "8 seconds",
+    throughput: "20,000+ TPS",
+    sharding: "Invisible & Seamless",
+    passkeys: "Biometric Authentication",
+    chained: "Multi-call Transactions",
+    vm: "Enhanced Ralph VM"
   },
   defaultOpenGraph: {
     // ... existing code ...

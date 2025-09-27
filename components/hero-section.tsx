@@ -3,9 +3,10 @@
 import Link from "next/link"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Zap, Clock } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { HeroLogo } from "./hero-logo"
+import { Badge } from "@/components/ui/badge"
 
 export function HeroSection() {
   const { t } = useLanguage()
@@ -59,6 +60,12 @@ export function HeroSection() {
             <HeroLogo />
           </motion.div>
 
+          <motion.div variants={itemVariants} className="mb-6">
+            <Badge variant="secondary" className="text-lg px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white border-none">
+              🚀 Powered by Danube Upgrade
+            </Badge>
+          </motion.div>
+
           <motion.h1
             variants={itemVariants}
             className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-6 gradient-text glow-text leading-tight break-words overflow-hidden"
@@ -66,9 +73,25 @@ export function HeroSection() {
             {t("welcomeToAccalyum")}
           </motion.h1>
 
-          <motion.p variants={itemVariants} className="text-xl md:text-2xl mb-10 text-gray-300">
+          <motion.p variants={itemVariants} className="text-xl md:text-2xl mb-6 text-gray-300">
             {t("communityDriven")}
           </motion.p>
+
+          <motion.div variants={itemVariants} className="mb-10">
+            <div className="flex flex-wrap justify-center gap-4 text-sm">
+              <div className="flex items-center gap-2 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
+                <Clock className="h-4 w-4 text-blue-400" />
+                <span className="text-gray-200">8s Block Times</span>
+              </div>
+              <div className="flex items-center gap-2 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
+                <Zap className="h-4 w-4 text-yellow-400" />
+                <span className="text-gray-200">20k+ TPS</span>
+              </div>
+              <div className="flex items-center gap-2 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
+                <span className="text-gray-200">🔗 Groupless Addresses</span>
+              </div>
+            </div>
+          </motion.div>
 
           <motion.div variants={itemVariants}>
             <Link
