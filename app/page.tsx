@@ -6,8 +6,8 @@ import type { Metadata } from 'next'
 
 // Add metadata for the homepage
 export const metadata: Metadata = {
-  title: 'Home - Danube Enhanced',
-  description: 'Experience YUM on Alephium\'s Danube upgrade: 8-second blocks, 20k+ TPS, groupless addresses, and seamless DeFi with revolutionary blockchain technology.',
+  title: 'Home',
+  description: 'Welcome to YUM, your portal to decentralized finance features like token swapping, banking, and mutual funding on the Alephium blockchain.',
 };
 
 export default function Home() {
@@ -15,16 +15,11 @@ export default function Home() {
     <ClientLayoutWrapper>
       <div className="flex flex-col">
         <HeroSection />
-        <section className="py-16 px-4">
-          <div className="max-w-7xl mx-auto">
-            <DanubeFeatures />
-          </div>
-        </section>
         <AboutSection />
         <section className="py-8 px-4 text-center">
           <h3 className="text-xl font-semibold mb-2">Discover Alephi Online</h3>
           <p className="text-md text-muted-foreground mb-4">
-            A cryptographic socialist media platform built on Alephium and Irys - now with Danube features.
+            A cryptographic socialist media platform built on Alephium and Irys.
           </p>
           <a
             href="https://alephi.online"
